@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    [
+      -45,
+      445,
+      90,
+      85
+    ],
+    [
+      -45,
+      575,
+      90,
+      85
+    ]
+  ],
+  "scoreFloor": 0.95,
+  "runnerUpGap": 0.2,
+  "stableScore": 0.9999,
+  "entries": [
+    {
+      "id": "boar",
+      "name": "野猪公主",
+      "patches": [
+        "assets/opening/野猪公主-v01-p01.png",
+        "assets/opening/野猪公主-v01-p02.png"
+      ]
+    },
+    {
+      "id": "draw",
+      "name": "运筹帷幄",
+      "patches": [
+        "assets/opening/运筹帷幄-v01-p01.png",
+        "assets/opening/运筹帷幄-v01-p02.png"
+      ]
+    },
+    {
+      "id": "gambler",
+      "name": "赌徒的耳环",
+      "patches": [
+        "assets/opening/赌徒的耳环-v01-p01.png",
+        "assets/opening/赌徒的耳环-v01-p02.png"
+      ]
+    },
+    {
+      "id": "garden",
+      "name": "旧时庭园",
+      "patches": [
+        "assets/opening/旧时庭园-v01-p01.png",
+        "assets/opening/旧时庭园-v01-p02.png"
+      ]
+    },
+    {
+      "id": "gilded",
+      "name": "饰金之梦",
+      "patches": [
+        "assets/opening/饰金之梦-v01-p01.png",
+        "assets/opening/饰金之梦-v01-p02.png"
+      ]
+    },
+    {
+      "id": "heart",
+      "name": "灵光明烁之心",
+      "patches": [
+        "assets/opening/灵光明烁之心-v01-p01.png",
+        "assets/opening/灵光明烁之心-v01-p02.png"
+      ]
+    },
+    {
+      "id": "house",
+      "name": "黄金屋",
+      "patches": [
+        "assets/opening/黄金屋-v01-p01.png",
+        "assets/opening/黄金屋-v01-p02.png"
+      ]
+    },
+    {
+      "id": "lyre",
+      "name": "琴音之诗",
+      "patches": [
+        "assets/opening/琴音之诗-v01-p01.png",
+        "assets/opening/琴音之诗-v01-p02.png"
+      ]
+    },
+    {
+      "id": "moon",
+      "name": "贯月矢",
+      "patches": [
+        "assets/opening/贯月矢-v01-p01.png",
+        "assets/opening/贯月矢-v01-p02.png"
+      ]
+    },
+    {
+      "id": "opera",
+      "name": "欧庇克莱歌剧院",
+      "patches": [
+        "assets/opening/欧庇克莱歌剧院-v01-p01.png",
+        "assets/opening/欧庇克莱歌剧院-v01-p02.png"
+      ]
+    },
+    {
+      "id": "revel",
+      "name": "「狂欢节奏」",
+      "patches": [
+        "assets/opening/狂欢节奏-v01-p01.png",
+        "assets/opening/狂欢节奏-v01-p02.png"
+      ]
+    },
+    {
+      "id": "shift",
+      "name": "换班时间",
+      "patches": [
+        "assets/opening/换班时间-v01-p01.png",
+        "assets/opening/换班时间-v01-p02.png"
+      ]
+    },
+    {
+      "id": "sing",
+      "name": "纵声欢唱",
+      "patches": [
+        "assets/opening/纵声欢唱-v01-p01.png",
+        "assets/opening/纵声欢唱-v01-p02.png"
+      ]
+    },
+    {
+      "id": "soup",
+      "name": "奇瑰之汤",
+      "patches": [
+        "assets/opening/奇瑰之汤-v01-p01.png",
+        "assets/opening/奇瑰之汤-v01-p02.png"
+      ]
+    },
+    {
+      "id": "talent",
+      "name": "偷懒的新方法",
+      "patches": [
+        "assets/opening/偷懒的新方法-v01-p01.png",
+        "assets/opening/偷懒的新方法-v01-p02.png"
+      ],
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/opening/偷懒的新方法-v01-p01.png",
+            "assets/opening/偷懒的新方法-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-fed54f1d3b-f0",
+          "patches": [
+            "assets/opening/偷懒的新方法-v02-p01.png",
+            "assets/opening/偷懒的新方法-v02-p02.png"
+          ]
+        },
+        {
+          "name": "native-fed54f1d3b-f1",
+          "patches": [
+            "assets/opening/偷懒的新方法-v03-p01.png",
+            "assets/opening/偷懒的新方法-v03-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.9,
+      "animated": true
+    },
+    {
+      "id": "troupe",
+      "name": "黄金剧团的奖赏",
+      "patches": [
+        "assets/opening/黄金剧团的奖赏-v01-p01.png",
+        "assets/opening/黄金剧团的奖赏-v01-p02.png"
+      ]
+    },
+    {
+      "id": "wolf",
+      "name": "狼的末路",
+      "patches": [
+        "assets/opening/狼的末路-v01-p01.png",
+        "assets/opening/狼的末路-v01-p02.png"
+      ]
+    }
+  ]
+}

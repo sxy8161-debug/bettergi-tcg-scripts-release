@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    [
+      34,
+      48,
+      46,
+      22
+    ],
+    [
+      34,
+      74,
+      46,
+      22
+    ]
+  ],
+  "scoreFloor": 0.95,
+  "runnerUpGap": 0.2,
+  "entries": [
+    {
+      "id": "boar",
+      "name": "野猪公主",
+      "scoreFloor": 0.94,
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/野猪公主-v01-p01.png",
+            "assets/hand/野猪公主-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "name": "运筹帷幄",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/运筹帷幄-v01-p01.png",
+            "assets/hand/运筹帷幄-v01-p02.png"
+          ]
+        },
+        {
+          "name": "half-left",
+          "patches": [
+            "assets/hand/运筹帷幄-v02-p01.png",
+            "assets/hand/运筹帷幄-v02-p02.png"
+          ]
+        },
+        {
+          "name": "half-right",
+          "patches": [
+            "assets/hand/运筹帷幄-v03-p01.png",
+            "assets/hand/运筹帷幄-v03-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gambler",
+      "name": "赌徒的耳环",
+      "scoreFloor": 0.94,
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/赌徒的耳环-v01-p01.png",
+            "assets/hand/赌徒的耳环-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "garden",
+      "name": "旧时庭园",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/旧时庭园-v01-p01.png",
+            "assets/hand/旧时庭园-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gilded",
+      "name": "饰金之梦",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/饰金之梦-v01-p01.png",
+            "assets/hand/饰金之梦-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "heart",
+      "name": "灵光明烁之心",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/灵光明烁之心-v01-p01.png",
+            "assets/hand/灵光明烁之心-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "house",
+      "name": "黄金屋",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/黄金屋-v01-p01.png",
+            "assets/hand/黄金屋-v01-p02.png"
+          ]
+        },
+        {
+          "name": "half-left",
+          "patches": [
+            "assets/hand/黄金屋-v02-p01.png",
+            "assets/hand/黄金屋-v02-p02.png"
+          ]
+        },
+        {
+          "name": "half-right",
+          "patches": [
+            "assets/hand/黄金屋-v03-p01.png",
+            "assets/hand/黄金屋-v03-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lyre",
+      "name": "琴音之诗",
+      "views": [
+        {
+          "name": "native-display",
+          "patches": [
+            "assets/hand/琴音之诗-v01-p01.png",
+            "assets/hand/琴音之诗-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moon",
+      "name": "贯月矢",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/贯月矢-v01-p01.png",
+            "assets/hand/贯月矢-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opera",
+      "name": "欧庇克莱歌剧院",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/欧庇克莱歌剧院-v01-p01.png",
+            "assets/hand/欧庇克莱歌剧院-v01-p02.png"
+          ]
+        },
+        {
+          "name": "half-left",
+          "patches": [
+            "assets/hand/欧庇克莱歌剧院-v02-p01.png",
+            "assets/hand/欧庇克莱歌剧院-v02-p02.png"
+          ]
+        },
+        {
+          "name": "half-right",
+          "patches": [
+            "assets/hand/欧庇克莱歌剧院-v03-p01.png",
+            "assets/hand/欧庇克莱歌剧院-v03-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "revel",
+      "name": "「狂欢节奏」",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/狂欢节奏-v01-p01.png",
+            "assets/hand/狂欢节奏-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shift",
+      "name": "换班时间",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/换班时间-v01-p01.png",
+            "assets/hand/换班时间-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sing",
+      "name": "纵声欢唱",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/纵声欢唱-v01-p01.png",
+            "assets/hand/纵声欢唱-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "soup",
+      "name": "奇瑰之汤",
+      "views": [
+        {
+          "name": "native-4ff49e53fc-f0",
+          "patches": [
+            "assets/hand/奇瑰之汤-v01-p01.png",
+            "assets/hand/奇瑰之汤-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-4ff49e53fc-f1",
+          "patches": [
+            "assets/hand/奇瑰之汤-v02-p01.png",
+            "assets/hand/奇瑰之汤-v02-p02.png"
+          ]
+        },
+        {
+          "name": "runtime-7817cff292",
+          "patches": [
+            "assets/hand/奇瑰之汤-v03-p01.png",
+            "assets/hand/奇瑰之汤-v03-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "talent",
+      "name": "偷懒的新方法",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/偷懒的新方法-v01-p01.png",
+            "assets/hand/偷懒的新方法-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-display",
+          "patches": [
+            "assets/hand/偷懒的新方法-v02-p01.png",
+            "assets/hand/偷懒的新方法-v02-p02.png"
+          ]
+        },
+        {
+          "name": "native-424de8c459-f0",
+          "patches": [
+            "assets/hand/偷懒的新方法-v03-p01.png",
+            "assets/hand/偷懒的新方法-v03-p02.png"
+          ]
+        },
+        {
+          "name": "native-424de8c459-f1",
+          "patches": [
+            "assets/hand/偷懒的新方法-v04-p01.png",
+            "assets/hand/偷懒的新方法-v04-p02.png"
+          ]
+        },
+        {
+          "name": "runtime-88eec12268",
+          "patches": [
+            "assets/hand/偷懒的新方法-v05-p01.png",
+            "assets/hand/偷懒的新方法-v05-p02.png"
+          ]
+        },
+        {
+          "name": "runtime-ac6f79eed7",
+          "patches": [
+            "assets/hand/偷懒的新方法-v06-p01.png",
+            "assets/hand/偷懒的新方法-v06-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.87,
+      "animated": true
+    },
+    {
+      "id": "troupe",
+      "name": "黄金剧团的奖赏",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/黄金剧团的奖赏-v01-p01.png",
+            "assets/hand/黄金剧团的奖赏-v01-p02.png"
+          ]
+        },
+        {
+          "name": "half-left",
+          "patches": [
+            "assets/hand/黄金剧团的奖赏-v02-p01.png",
+            "assets/hand/黄金剧团的奖赏-v02-p02.png"
+          ]
+        },
+        {
+          "name": "half-right",
+          "patches": [
+            "assets/hand/黄金剧团的奖赏-v03-p01.png",
+            "assets/hand/黄金剧团的奖赏-v03-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wolf",
+      "name": "狼的末路",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/狼的末路-v01-p01.png",
+            "assets/hand/狼的末路-v01-p02.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "expanded": {
+    "scoreFloor": 0.95,
+    "runnerUpGap": 0.2,
+    "patches": [
+      [
+        34,
+        65,
+        32,
+        26
+      ],
+      [
+        34,
+        103,
+        32,
+        26
+      ]
+    ],
+    "entries": [
+      {
+        "id": "soup",
+        "name": "奇瑰之汤",
+        "views": [
+          {
+            "name": "d6077c4a2204",
+            "patches": [
+              "assets/expanded/奇瑰之汤-v01-p01.png",
+              "assets/expanded/奇瑰之汤-v01-p02.png"
+            ]
+          },
+          {
+            "name": "08f8c8830ff0",
+            "patches": [
+              "assets/expanded/奇瑰之汤-v02-p01.png",
+              "assets/expanded/奇瑰之汤-v02-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-a83db07942",
+            "patches": [
+              "assets/expanded/奇瑰之汤-v03-p01.png",
+              "assets/expanded/奇瑰之汤-v03-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "talent",
+        "name": "偷懒的新方法",
+        "views": [
+          {
+            "name": "f90fe6cc6638",
+            "patches": [
+              "assets/expanded/偷懒的新方法-v01-p01.png",
+              "assets/expanded/偷懒的新方法-v01-p02.png"
+            ]
+          },
+          {
+            "name": "2129c6115116",
+            "patches": [
+              "assets/expanded/偷懒的新方法-v02-p01.png",
+              "assets/expanded/偷懒的新方法-v02-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-0401249d22",
+            "patches": [
+              "assets/expanded/偷懒的新方法-v03-p01.png",
+              "assets/expanded/偷懒的新方法-v03-p02.png"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

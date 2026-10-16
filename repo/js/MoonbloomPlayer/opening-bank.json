@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    [
+      -45,
+      445,
+      90,
+      85
+    ],
+    [
+      -45,
+      575,
+      90,
+      85
+    ]
+  ],
+  "scoreFloor": 0.95,
+  "runnerUpGap": 0.2,
+  "stableScore": 0.9999,
+  "entries": [
+    {
+      "id": "calx",
+      "name": "白垩之术",
+      "views": [
+        {
+          "name": "native-61a1bf4b4c-f0",
+          "patches": [
+            "assets/opening/白垩之术-v01-p01.png",
+            "assets/opening/白垩之术-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-61a1bf4b4c-f1",
+          "patches": [
+            "assets/opening/白垩之术-v02-p01.png",
+            "assets/opening/白垩之术-v02-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.9
+    },
+    {
+      "id": "draw",
+      "name": "运筹帷幄",
+      "patches": [
+        "assets/opening/运筹帷幄-v01-p01.png",
+        "assets/opening/运筹帷幄-v01-p02.png"
+      ]
+    },
+    {
+      "id": "gambler",
+      "name": "赌徒的耳环",
+      "patches": [
+        "assets/opening/赌徒的耳环-v01-p01.png",
+        "assets/opening/赌徒的耳环-v01-p02.png"
+      ]
+    },
+    {
+      "id": "shift",
+      "name": "换班时间",
+      "patches": [
+        "assets/opening/换班时间-v01-p01.png",
+        "assets/opening/换班时间-v01-p02.png"
+      ]
+    },
+    {
+      "id": "canopy",
+      "name": "「悬木人」",
+      "views": [
+        {
+          "name": "native-d1a525abb8-0",
+          "patches": [
+            "assets/opening/悬木人-v01-p01.png",
+            "assets/opening/悬木人-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-d1a525abb8-1",
+          "patches": [
+            "assets/opening/悬木人-v02-p01.png",
+            "assets/opening/悬木人-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sand",
+      "name": "「沙中遗事」",
+      "views": [
+        {
+          "name": "native-f8245637fe-0",
+          "patches": [
+            "assets/opening/沙中遗事-v01-p01.png",
+            "assets/opening/沙中遗事-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-f8245637fe-1",
+          "patches": [
+            "assets/opening/沙中遗事-v02-p01.png",
+            "assets/opening/沙中遗事-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "woven",
+      "name": "元素共鸣：交织之草",
+      "views": [
+        {
+          "name": "native-c7aa88f642-0",
+          "patches": [
+            "assets/opening/元素共鸣-交织之草-v01-p01.png",
+            "assets/opening/元素共鸣-交织之草-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-c7aa88f642-1",
+          "patches": [
+            "assets/opening/元素共鸣-交织之草-v02-p01.png",
+            "assets/opening/元素共鸣-交织之草-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "razor",
+      "name": "藏锋何处",
+      "views": [
+        {
+          "name": "native-32beb2c1af-0",
+          "patches": [
+            "assets/opening/藏锋何处-v01-p01.png",
+            "assets/opening/藏锋何处-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-32beb2c1af-1",
+          "patches": [
+            "assets/opening/藏锋何处-v02-p01.png",
+            "assets/opening/藏锋何处-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "meditation",
+      "name": "困困冥想术",
+      "views": [
+        {
+          "name": "native-aa33bc3652-0",
+          "patches": [
+            "assets/opening/困困冥想术-v01-p01.png",
+            "assets/opening/困困冥想术-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-aa33bc3652-1",
+          "patches": [
+            "assets/opening/困困冥想术-v02-p01.png",
+            "assets/opening/困困冥想术-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sashimi",
+      "name": "刺身拼盘",
+      "views": [
+        {
+          "name": "native-14b0432dc4-0",
+          "patches": [
+            "assets/opening/刺身拼盘-v01-p01.png",
+            "assets/opening/刺身拼盘-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-14b0432dc4-1",
+          "patches": [
+            "assets/opening/刺身拼盘-v02-p01.png",
+            "assets/opening/刺身拼盘-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "countdown3",
+      "name": "幻戏倒计时：3",
+      "views": [
+        {
+          "name": "native-74c06360bf-0",
+          "patches": [
+            "assets/opening/幻戏倒计时-3-v01-p01.png",
+            "assets/opening/幻戏倒计时-3-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-74c06360bf-1",
+          "patches": [
+            "assets/opening/幻戏倒计时-3-v02-p01.png",
+            "assets/opening/幻戏倒计时-3-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "upgrade",
+      "name": "天才的改造法",
+      "views": [
+        {
+          "name": "native-9b294a1175-0",
+          "patches": [
+            "assets/opening/天才的改造法-v01-p01.png",
+            "assets/opening/天才的改造法-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-9b294a1175-1",
+          "patches": [
+            "assets/opening/天才的改造法-v02-p01.png",
+            "assets/opening/天才的改造法-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cleaning",
+      "name": "清扫时间",
+      "views": [
+        {
+          "name": "native-ed60de95b6-0",
+          "patches": [
+            "assets/opening/清扫时间-v01-p01.png",
+            "assets/opening/清扫时间-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-ed60de95b6-1",
+          "patches": [
+            "assets/opening/清扫时间-v02-p01.png",
+            "assets/opening/清扫时间-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gleam",
+      "name": "月兆·满辉",
+      "views": [
+        {
+          "name": "native-2e3757fa7a-0",
+          "patches": [
+            "assets/opening/月兆-满辉-v01-p01.png",
+            "assets/opening/月兆-满辉-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-2e3757fa7a-1",
+          "patches": [
+            "assets/opening/月兆-满辉-v02-p01.png",
+            "assets/opening/月兆-满辉-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fruit",
+      "name": "盈满之实",
+      "views": [
+        {
+          "name": "native-12565cc736-0",
+          "patches": [
+            "assets/opening/盈满之实-v01-p01.png",
+            "assets/opening/盈满之实-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-12565cc736-1",
+          "patches": [
+            "assets/opening/盈满之实-v02-p01.png",
+            "assets/opening/盈满之实-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "research",
+      "name": "科研的动力",
+      "views": [
+        {
+          "name": "native-9b35d89b3c-0",
+          "patches": [
+            "assets/opening/科研的动力-v01-p01.png",
+            "assets/opening/科研的动力-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-9b35d89b3c-1",
+          "patches": [
+            "assets/opening/科研的动力-v02-p01.png",
+            "assets/opening/科研的动力-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adventure",
+      "name": "水仙十字大冒险",
+      "views": [
+        {
+          "name": "native-7d5ad1f67c-0",
+          "patches": [
+            "assets/opening/水仙十字大冒险-v01-p01.png",
+            "assets/opening/水仙十字大冒险-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-7d5ad1f67c-1",
+          "patches": [
+            "assets/opening/水仙十字大冒险-v02-p01.png",
+            "assets/opening/水仙十字大冒险-v02-p02.png"
+          ]
+        }
+      ]
+    }
+  ]
+}
