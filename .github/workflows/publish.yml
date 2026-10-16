@@ -1,0 +1,270 @@
+# Install on release-repository main as .github/workflows/publish.yml.
+name: Publish public TCG scripts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish.yml
+
+permissions: {}
+
+concurrency:
+  group: tcg-release-publication
+  cancel-in-progress: false
+
+env:
+  PAYLOAD: ${{ github.workspace }}/payload
+
+jobs:
+  build:
+    if: github.repository == 'sxy8161-debug/bettergi-tcg-scripts-release' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      build: ${{ steps.source.outputs.build }}
+      source_sha: ${{ steps.source.outputs.sha }}
+      manifest_sha: ${{ steps.package.outputs.manifest_sha }}
+      archives_sha: ${{ steps.package.outputs.archives_sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: sxy8161-debug/bettergi-tcg-scripts
+          ref: main
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Record source revision and skip an already published SHA
+        id: source
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const cp = require('node:child_process');
+          (async () => {
+            const sha = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
+            const date = cp.execFileSync('git', ['show', '-s', '--format=%cI', 'HEAD'], {encoding: 'utf8'}).trim();
+            const repo = 'sxy8161-debug/bettergi-tcg-scripts-release';
+            const get = url => fetch(url, {
+              headers: {'User-Agent': 'bettergi-tcg-publication', Accept: 'application/vnd.github+json'},
+              signal: AbortSignal.timeout(30000)
+            });
+            let published = false;
+            const response = await get('https://raw.githubusercontent.com/' + repo + '/release/release-manifest.json');
+            if (response.ok) {
+              const manifest = await response.json();
+              if (manifest.sourceCommit === sha) {
+                const versions = Object.values(manifest.playerVersions || {});
+                if (versions.length !== 3 || !/^\d+\.\d+\.\d+$/.test(versions[0]) ||
+                    !versions.every(v => v === versions[0])) throw Error('Invalid published playerVersions');
+                const tag = 'v' + versions[0] + '-' + sha.slice(0, 12);
+                const release = await get('https://api.github.com/repos/' + repo + '/releases/tags/' + tag);
+                if (release.ok) published = true;
+                else if (release.status !== 404) throw Error('Release lookup failed: HTTP ' + release.status);
+              }
+            } else if (response.status !== 404) throw Error('Manifest lookup failed: HTTP ' + response.status);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'sha=' + sha + '\ndate=' + date + '\nbuild=' + !published + '\n');
+            console.log(published ? 'Already published; skipping build and publish: ' + sha : 'Build source: ' + sha);
+          })().catch(error => { console.error(error.message); process.exitCode = 1; });
+          NODE
+      - name: Check and build the public source (offline only)
+        if: steps.source.outputs.build == 'true'
+        working-directory: source
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_DATE: ${{ steps.source.outputs.date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/repository-release.cjs
+          node tools/build-release.cjs --output dist --source-sha "$SOURCE_SHA" --source-date "$SOURCE_DATE"
+      - name: Package the entire distribution and each standalone player
+        if: steps.source.outputs.build == 'true'
+        id: package
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$PAYLOAD"
+          cp -a dist "$PAYLOAD/dist"
+          (cd "$PAYLOAD/dist" && zip -qr "$PAYLOAD/tcg-scripts.zip" .)
+          for player in RaidenColleiKeqingPlayer IansanGamingSayuPlayer MoonbloomPlayer; do
+            (cd "$PAYLOAD/dist/repo/js" && zip -qr "$PAYLOAD/$player.zip" "$player")
+          done
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const hash = name => crypto.createHash('sha256').update(fs.readFileSync(path.join(process.env.PAYLOAD, name))).digest('hex');
+          const archives = ['tcg-scripts.zip', 'RaidenColleiKeqingPlayer.zip', 'IansanGamingSayuPlayer.zip', 'MoonbloomPlayer.zip'];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            'manifest_sha=' + hash('dist/release-manifest.json') + '\narchives_sha=' +
+            JSON.stringify(Object.fromEntries(archives.map(name => [name, hash(name)]))) + '\n');
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.source.outputs.build == 'true'
+        with:
+          name: tcg-release-payload
+          path: ${{ env.PAYLOAD }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: needs.build.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: release
+          path: release-checkout
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tcg-release-payload
+          path: ${{ env.PAYLOAD }}
+      # This fixed verifier only parses JSON and hashes bytes; it never loads artifact JS.
+      - name: Verify the manifest, safe paths, complete file set and ZIP hashes
+        id: verify
+        env:
+          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+          MANIFEST_SHA: ${{ needs.build.outputs.manifest_sha }}
+          ARCHIVES_SHA: ${{ needs.build.outputs.archives_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const zlib = require('node:zlib');
+          const root = path.join(process.env.PAYLOAD, 'dist');
+          const players = {raiden: 'RaidenColleiKeqingPlayer', iansan: 'IansanGamingSayuPlayer', moonbloom: 'MoonbloomPlayer'};
+          const roots = ['repo.json', 'repo.json.gz', 'README.md', 'LICENSE-GPL-3.0.txt'];
+          const safe = name => typeof name === 'string' && name.length > 0 &&
+            !path.posix.isAbsolute(name) && !/[\\:\u0000-\u001f\u007f]/.test(name) &&
+            name.split('/').every(part => part && part !== '.' && part !== '..' && !part.toLowerCase().startsWith('.git'));
+          function walk(dir, prefix = '') {
+            assert(fs.lstatSync(dir).isDirectory() && !fs.lstatSync(dir).isSymbolicLink(), 'Unsafe directory: ' + dir);
+            return fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
+              const rel = prefix + entry.name;
+              assert(safe(rel) && !entry.isSymbolicLink(), 'Unsafe artifact path: ' + rel);
+              if (entry.isDirectory()) return walk(path.join(dir, entry.name), rel + '/');
+              assert(entry.isFile(), 'Non-regular artifact: ' + rel);
+              return [rel];
+            });
+          }
+          const actual = walk(root);
+          const read = rel => fs.readFileSync(path.join(root, rel));
+          const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+          assert.match(process.env.MANIFEST_SHA, /^[a-f0-9]{64}$/);
+          assert.equal(hash(read('release-manifest.json')), process.env.MANIFEST_SHA, 'Manifest SHA mismatch');
+          const manifest = JSON.parse(read('release-manifest.json'));
+          assert.equal(manifest.schemaVersion, 1);
+          assert.equal(manifest.sourceRepository, 'sxy8161-debug/bettergi-tcg-scripts');
+          assert.match(manifest.sourceCommit, /^[a-f0-9]{40}$/);
+          assert.equal(manifest.sourceCommit, process.env.SOURCE_SHA, 'Wrong source revision');
+          assert(Number.isFinite(Date.parse(manifest.sourceDate)), 'Invalid sourceDate');
+          assert(manifest.files && typeof manifest.files === 'object' && !Array.isArray(manifest.files));
+          assert(manifest.playerVersions && typeof manifest.playerVersions === 'object');
+          assert.deepEqual(Object.keys(manifest.playerVersions).sort(), Object.keys(players).sort());
+          const versions = Object.values(manifest.playerVersions);
+          assert.match(versions[0], /^\d+\.\d+\.\d+$/);
+          assert(versions.every(version => version === versions[0]), 'One release tag requires one player version');
+          const listed = Object.keys(manifest.files);
+          assert(!Object.hasOwn(manifest.files, 'release-manifest.json'), 'Manifest cannot hash itself');
+          assert.deepEqual(actual.sort(), [...listed, 'release-manifest.json'].sort(), 'Unexpected/missing distribution files');
+          for (const rel of listed) {
+            assert(safe(rel) && (roots.includes(rel) || Object.values(players).some(id => rel.startsWith('repo/js/' + id + '/'))),
+              'Path outside publication scope: ' + rel);
+            assert.match(manifest.files[rel], /^[a-f0-9]{64}$/);
+            assert.equal(hash(read(rel)), manifest.files[rel], 'File SHA mismatch: ' + rel);
+          }
+          for (const rel of roots) assert(Object.hasOwn(manifest.files, rel), 'Missing root file: ' + rel);
+          assert(zlib.gunzipSync(read('repo.json.gz')).equals(read('repo.json')), 'Compressed index mismatch');
+          const index = JSON.parse(read('repo.json'));
+          assert.match(index.time, /^\d{14}$/);
+          const js = index.indexes.filter(node => node.name === 'js');
+          assert.equal(js.length, 1);
+          assert.equal(js[0].type, 'directory');
+          assert.deepEqual(js[0].children.map(node => node.name).sort(), Object.values(players).sort());
+          for (const [id, folder] of Object.entries(players)) {
+            const node = js[0].children.find(item => item.name === folder);
+            assert.equal(node.type, 'directory');
+            assert(node.children === undefined || (Array.isArray(node.children) && node.children.length === 0));
+            assert.equal(node.version, manifest.playerVersions[id]);
+            const prefix = 'repo/js/' + folder + '/';
+            const pkg = JSON.parse(read(prefix + 'manifest.json'));
+            assert(typeof pkg.name === 'string' && pkg.name.trim(), 'Missing player name');
+            assert.equal(pkg.version, manifest.playerVersions[id]);
+            assert(safe(pkg.main) && Object.hasOwn(manifest.files, prefix + pkg.main), 'Missing player entry');
+          }
+          const archives = ['tcg-scripts.zip', ...Object.values(players).map(id => id + '.zip')];
+          const archiveHashes = JSON.parse(process.env.ARCHIVES_SHA);
+          assert.deepEqual(Object.keys(archiveHashes).sort(), [...archives].sort());
+          assert.deepEqual(fs.readdirSync(process.env.PAYLOAD).sort(), ['dist', ...archives].sort());
+          for (const name of archives) {
+            const file = path.join(process.env.PAYLOAD, name);
+            const stat = fs.lstatSync(file);
+            assert(stat.isFile() && !stat.isSymbolicLink(), 'Unsafe ZIP');
+            assert.match(archiveHashes[name], /^[a-f0-9]{64}$/);
+            assert.equal(hash(fs.readFileSync(file)), archiveHashes[name], 'ZIP SHA mismatch: ' + name);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tag=v' + versions[0] + '-' + manifest.sourceCommit.slice(0, 12) + '\n');
+          console.log('Verified ' + listed.length + ' hashed files and four ZIP archives; no artifact code executed.');
+          NODE
+      - name: Commit the release tree and create an immutable GitHub Release
+        working-directory: release-checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+          TAG: ${{ steps.verify.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git --work-tree="$PAYLOAD/dist" add -A -- repo repo.json repo.json.gz release-manifest.json README.md LICENSE-GPL-3.0.txt
+          if ! git diff --cached --quiet; then
+            git -c core.hooksPath=/dev/null commit -m "Publish TCG scripts from $SOURCE_SHA"
+          fi
+          RELEASE_HEAD=$(git rev-parse HEAD)
+          git push origin HEAD:release
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            TAG_HEAD=$(git rev-parse "refs/tags/$TAG^{commit}")
+            if [ "$TAG_HEAD" != "$RELEASE_HEAD" ]; then
+              echo "Tag $TAG already targets $TAG_HEAD; leaving the existing tag and Release unchanged."
+              exit 0
+            fi
+          else
+            git tag "$TAG" "$RELEASE_HEAD"
+            git push origin "refs/tags/$TAG"
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; keeping its notes and assets unchanged."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            "$PAYLOAD/tcg-scripts.zip" \
+            "$PAYLOAD/RaidenColleiKeqingPlayer.zip" \
+            "$PAYLOAD/IansanGamingSayuPlayer.zip" \
+            "$PAYLOAD/MoonbloomPlayer.zip" \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --target "$RELEASE_HEAD" \
+            --title "自动牌手 ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
