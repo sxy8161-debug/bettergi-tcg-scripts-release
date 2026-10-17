@@ -646,7 +646,7 @@
         const targets=T.characterTarget(def)?local.characters.map((c,i)=>T.alive(c)?i:-1).filter(i=>i>=0):[null];
         for(const target of targets){
           const a=card(local,h,target);
-          if(!T.cardLegal(local,a,mem))continue;
+          if(!T.cardLegal(local,a,mem)||blocked(local,mem,a))continue;
           // Equal, fully known copies have the same resource transition.
           // Unknown attachments remain separate observations.
           const same=T.attachedCost(h)!==null&&["empowered","noTuning","effectless"].every(k=>typeof h.attachments[k]==="boolean")?

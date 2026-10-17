@@ -421,6 +421,7 @@
       }
       this.admitActionHand(state);
       if (!this.openingFlow.complete) this.finishOpening();
+      T.refreshSkillCosts(this.memory,state);
       T.noteBoard(this.memory, state);
       host.trace("state", { round: this.memory.round, state, memory: this.memory });
       return state;

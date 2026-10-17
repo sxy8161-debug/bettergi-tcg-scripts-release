@@ -134,6 +134,30 @@ function handInstanceFacts(h) {
     return [h.currentCost ?? null, ...["empowered", "noTuning", "effectless", "reduction", "increase"]
       .map(k => h.attachments?.[k] ?? null)];
   }
+// Quotes and failed attempts belong to one observed board, not a whole round.
+// Card-fact probeKeys are independent and are never cleared here.
+function skillQuoteKey(a) { return [a.who,a.skill,a.technique ?? null].join("/"); }
+function skillQuote(s,m,a) {
+    return m.skillCosts?.key === boardKey(s) ? m.skillCosts.entries[skillQuoteKey(a)] : undefined;
+  }
+function skillProbeAttempted(s,m,a) { return skillQuote(s,m,a) !== undefined; }
+function recordSkillCost(s,m,a,n,source="native-skill-preview") {
+    const key=boardKey(s);
+    if(m.skillCosts?.key!==key)m.skillCosts={key,entries:{}};
+    m.skillCosts.entries[skillQuoteKey(a)]={n,source};
+  }
+function clearSkillCosts(m) { m.skillCosts=null; }
+function refreshSkillCosts(m,s) {
+    if(m?.skillCosts&&m.skillCosts.key!==boardKey(s))clearSkillCosts(m);
+  }
+function drawConsumptionProven(a,b,s) {
+    const r=s?.drawConsumption,h=b?.hand?.[a?.index];
+    return a?.type==="card"&&byId[a.id]?.type==="draw"&&s.phase==="board"&&s.turn==="user"&&
+      r?.kind==="native-paid-draw"&&r.beforeKey===boardKey(b)&&r.id===a.id&&r.index===a.index&&
+      r.target===(a.target??null)&&r.inputSent===true&&r.stableReads===2&&r.cost>0&&
+      h?.id===a.id&&r.sourceInstanceIds?.length>0&&JSON.stringify(r.sourceInstanceIds)===JSON.stringify(h.instanceIds)&&
+      r.diceKey===JSON.stringify(diceOrder.map(e=>s.dice?.[e]||0));
+  }
 // Positive native rejection proves that input did not mutate the hand. Only
 // that recovery may bind an unchanged complete ordered row directly. Else use
 // native cost/attachment distinctions; indistinguishable copies stay ambiguous.
@@ -294,7 +318,7 @@ function actionRefused(s, m, action) {
       extraMaxHp: [0, 0, 0],
       uncertainActions: [],
       refusedActions: [],
-      costEvidence: null,
+      skillCosts: null,
       probeKeys: [],
       thundergrassSupport: null,
       route: "接力轴",
@@ -317,7 +341,7 @@ function actionRefused(s, m, action) {
     m.firstCard = true;
     m.uncertainActions = [];
     m.refusedActions = [];
-    m.costEvidence = null;
+    m.skillCosts = null;
     m.probeKeys = [];
     m.talentDrawUsed=false;m.gildedDrawUsed=[0,0,0];
     m.relayTask = null;
@@ -407,13 +431,10 @@ function actionRefused(s, m, action) {
       reduction -= n;
     }
     base.n = Math.max(0, base.n - reduction);
-    const e = m.costEvidence;
+    const e = s && skillQuote(s,m,{who,skill});
     if (
       s &&
       e?.source === "native-skill-preview" &&
-      e.key === boardKey(s) &&
-      e.who === who &&
-      e.skill === skill &&
       known(e.n) &&
       e.n <= 3
     ) {
@@ -826,7 +847,7 @@ function actionRefused(s, m, action) {
       if (who === 1 && a.skill === "E" && after.active === 1) m.gamingReturn = false;
       noteBoard(m, after, damageOwner ?? m.enemyLastActive);
     }
-    m.costEvidence = null;
+    m.skillCosts = null;
   }
   const safeFood = (b) => b.characters.map((c) => alive(c));
   function deferUncertain(m, a, before) {
@@ -840,7 +861,7 @@ function actionRefused(s, m, action) {
     // Invalidate only effects this action can consume or establish. Null is
     // unknown, not an observed absence; fee readers use the undiscounted upper
     // bound unless a matching native fee quote is available.
-    m.costEvidence = null;
+    m.skillCosts = null;
     const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "skivingNewAndImproved" ? 2 : null;
     if (a.type === "switch" || who !== null) {
       m.passiveHealEvidence = { status: "uncertain" };
@@ -888,13 +909,14 @@ function actionRefused(s, m, action) {
     if (a.type === "card" && a.id === "skivingNewAndImproved") m.talent = null;
   }
   function rejectAction(m, a, before) {
+    clearSkillCosts(m);
     // A positive rejection consumes no effect. Invalidate the transient fee
     // quote, not unrelated buffs already established by confirmed actions.
     blockAction(m,a,before);
     // A proven failed tune did not play a card, spend dice or consume any
     // confirmed buffs. Block only the owned instance/target/conditions.
     if (a.type === "tune") return;
-    m.costEvidence = null;
+    m.skillCosts = null;
   }
   function bag(hand) {
     const out = {};
@@ -966,7 +988,7 @@ function actionRefused(s, m, action) {
     if (!confirmationReady(a, b, after)) return false;
     const consumed = (bag(b.hand)[a.id] || 0) > (bag(after.hand)[a.id] || 0);
     if (["draw", "revel", "sing"].includes(a.id))
-      return cardCountDecreased(b.hand, after.hand, a.id);
+      return drawConsumptionProven(a,b,after) || cardCountDecreased(b.hand, after.hand, a.id);
     if (a.id === "lyre") return consumed && after.hand.length === b.hand.length;
     if (a.id === "skivingNewAndImproved")
       return (
@@ -1176,6 +1198,8 @@ function actionRefused(s, m, action) {
     reconcileHand,
     actionRefused,
     blockAction,
+    skillQuote,skillProbeAttempted,recordSkillCost,clearSkillCosts,refreshSkillCosts,drawConsumptionProven,
+    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"?cardCost(a.id,a.target,m,s):null,
     refusalCost: (s,m,a) => a.type === "card" ? cardCost(a.id,a.target,m,s) :
       a.type === "skill" ? skillCost(a.who,a.skill,m,s) : a.type === "switch" ? switchCost(m) : {},
     characterName,
@@ -1227,8 +1251,8 @@ function actionRefused(s, m, action) {
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.5";
-globalThis.TCG.sharedVersion = "1.5.4";
+globalThis.TCG.version = "1.3.6";
+globalThis.TCG.sharedVersion = "1.5.5";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

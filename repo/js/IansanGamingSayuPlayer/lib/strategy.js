@@ -1491,7 +1491,7 @@
     if (!T.legalState(s))
       return { type: "stop", reason: "行动页的回合、手牌、血量、状态或充能未读清" };
     // An unresolved action invalidates only its own discounts. Read a native
-    // quote once per skill/round instead of treating an unknown cut as zero or
+    // quote once per skill/observed board instead of treating an unknown cut as zero or
     // repeatedly opening the same preview. A failed read leaves the safe,
     // undiscounted cost bound in place; it never authorizes a cast.
     const who=s.active;
@@ -1499,7 +1499,7 @@
       const unknown=m.soupDiscount[who]===null || skill==="E"&&
         (m.moonRound[who]===null||m.troupe[who]===null||who===1&&m.manchai===null),
         key="uncertain-fee/"+m.round+"/"+who+"/"+skill;
-      if(unknown&&!m.probeKeys.includes(key)&&T.total(s.dice)>0&&
+      if(unknown&&!T.skillProbeAttempted(s,m,{who,skill})&&T.total(s.dice)>0&&
         (skill!=="Q"||s.characters[who].energy>=T.team[who].maxEnergy))
         return {type:"probe",who,skill,key,reason:"未决动作后局部核实当前技能费用，不提交技能"};
     }

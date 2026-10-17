@@ -134,21 +134,22 @@ const projectionBudget = (() => {
       sproutRound:-1,sproutUsedRound:-1,sproutUncertainRound:-1,
       artifactKinds:[null,null,null],exileUsedRound:[-1,-1,-1],gamblerUsed:[0,0,0],
       enemyAliveCount:null,enemyLastActive:null,penance:false,legendUsed:false,
-      immuneUntil:[-1,-1,-1],defeatRound:-1,lostUsedRound:-1,blessingUsed:0,costEvidence:null,probeKeys:[] };
+      immuneUntil:[-1,-1,-1],defeatRound:-1,lostUsedRound:-1,blessingUsed:0,skillCosts:null,probeKeys:[] };
   }
   function nextRound(m) {
     m.round++;
     m.food = [false, false, false];
     m.normalDiscount = [0, 0, 0];
     m.uncertainActions = []; m.refusedActions = [];
-    m.blessingUsed=0;m.costEvidence=null;m.probeKeys=[];
+    m.blessingUsed=0;m.skillCosts=null;m.probeKeys=[];
     // Switch discounts survive round boundaries (they are not oneDuration).
   }
   function rejectAction(m, action, before) {
+    clearSkillCosts(m);
     blockAction(m, action, before);
     // A proven rejection consumes neither the card nor confirmed equipment.
     if (action.type === "tune") return;
-    m.costEvidence = null;
+    m.skillCosts = null;
     m.probeKeys = [];
   }
   // Opening lifecycle is independent of round counters: a first roll may
@@ -255,8 +256,8 @@ const projectionBudget = (() => {
     const base=skill === "Q" ? { element:team[who].element,n:who===2?4:3 } :
       skill === "E" ? {element:team[who].element,n:3} :
       {element:team[who].element,n:1,any:m.normalDiscount[who]>0?1:2};
-    const evidence=m.costEvidence;
-    if(s && evidence?.key===boardKey(s) && evidence.who===who && evidence.skill===skill &&
+    const evidence=s&&skillQuote(s,m,{who,skill});
+    if(s && evidence &&
         known(evidence.n) && evidence.n<=size(base) && evidence.source==="native-skill-preview") {
       return skill==="NA" ? {element:base.element,n:Math.min(1,evidence.n),any:Math.max(0,evidence.n-1)} :
         {element:base.element,n:evidence.n};
@@ -450,6 +451,7 @@ const projectionBudget = (() => {
       const p=payment(dice,{any:1},team[goal.who].element);if(!p)return false;dice=p.remaining;
     }
     const local={...s,active:goal.who,dice};
+    if(actionRefused(local,m,{type:"skill",...goal}))return false;
     return skillLegal(local,goal,m) || Array.isArray(local.hand) && !!tuningPlan(local,m,goal);
   }
   function switchPreparationReachable(s,m,goal) {
@@ -626,6 +628,30 @@ function handInstanceFacts(h) {
     return [h.currentCost ?? null, ...["empowered", "noTuning", "effectless", "reduction", "increase"]
       .map(k => h.attachments?.[k] ?? null)];
   }
+// Quotes and failed attempts belong to one observed board, not a whole round.
+// Card-fact probeKeys are independent and are never cleared here.
+function skillQuoteKey(a) { return [a.who,a.skill,a.technique ?? null].join("/"); }
+function skillQuote(s,m,a) {
+    return m.skillCosts?.key === boardKey(s) ? m.skillCosts.entries[skillQuoteKey(a)] : undefined;
+  }
+function skillProbeAttempted(s,m,a) { return skillQuote(s,m,a) !== undefined; }
+function recordSkillCost(s,m,a,n,source="native-skill-preview") {
+    const key=boardKey(s);
+    if(m.skillCosts?.key!==key)m.skillCosts={key,entries:{}};
+    m.skillCosts.entries[skillQuoteKey(a)]={n,source};
+  }
+function clearSkillCosts(m) { m.skillCosts=null; }
+function refreshSkillCosts(m,s) {
+    if(m?.skillCosts&&m.skillCosts.key!==boardKey(s))clearSkillCosts(m);
+  }
+function drawConsumptionProven(a,b,s) {
+    const r=s?.drawConsumption,h=b?.hand?.[a?.index];
+    return a?.type==="card"&&byId[a.id]?.type==="draw"&&s.phase==="board"&&s.turn==="user"&&
+      r?.kind==="native-paid-draw"&&r.beforeKey===boardKey(b)&&r.id===a.id&&r.index===a.index&&
+      r.target===(a.target??null)&&r.inputSent===true&&r.stableReads===2&&r.cost>0&&
+      h?.id===a.id&&r.sourceInstanceIds?.length>0&&JSON.stringify(r.sourceInstanceIds)===JSON.stringify(h.instanceIds)&&
+      r.diceKey===JSON.stringify(diceOrder.map(e=>s.dice?.[e]||0));
+  }
 // Positive native rejection proves that input did not mutate the hand. Only
 // that recovery may bind an unchanged complete ordered row directly. Else use
 // native cost/attachment distinctions; indistinguishable copies stay ambiguous.
@@ -718,7 +744,7 @@ function actionRefused(s, m, action) {
     if (action.type === "card") {
       if (!byId[action.id]) return false;
       if (!after.hand) return false;
-      if (action.id === "draw") return cardCountDecreased(before.hand, after.hand, action.id) &&
+      if (action.id === "draw") return drawConsumptionProven(action,before,after) || cardCountDecreased(before.hand, after.hand, action.id) &&
         after.hand.length === Math.min(10, before.hand.length + 1);
       // Combat cards may generate/discard another card: require the selected card's count drop,
       // and a real combat effect, rather than assuming a drag succeeded.
@@ -772,6 +798,7 @@ function actionRefused(s, m, action) {
   return {direct,shieldSpent,guaranteed:target.defenseKnown===true?direct:null};
 }
   function deferUncertain(m, action, before) {
+    clearSkillCosts(m);
     // Do not replay an outcome-unknown action in the same round. A food might
     // already have resolved, so conservatively reserve that target's food slot.
     blockAction(m, action, before, true);
@@ -782,6 +809,7 @@ function actionRefused(s, m, action) {
         skillElement(m,cast.who,cast.skill))m.sproutUncertainRound=m.round;
   }
   function commit(m, action, before, after=null) {
+    clearSkillCosts(m);
     commitSprout(m,action,before);
     // Board layouts shrink after defeats. Count only complete known enemy
     // observations, and attribute a forced-card cast to its actual wearer.
@@ -886,13 +914,15 @@ function actionRefused(s, m, action) {
   root.TCG = { projectionBudget, openingContext, openingPlan, team, cards, byId, norm, identify, observedCard, handCardKnown, characterName, total, size, payment, rerollPlan,
     openingSetting, known, alive, freshMemory, nextRound, OpeningFlow, freshActionBoard, skillCost, skillLegal, cardLegal, cardInputError, intent, survivorIntent, followupReachable, switchPreparationReachable, replacement, noteBoard, tuningPlan, legalState, choose, verify, commit, emptyHandEffect, diceOrder,
     indexedHand, reconcileHand, actionRefused, blockAction,
+    skillQuote,skillProbeAttempted,recordSkillCost,clearSkillCosts,refreshSkillCosts,drawConsumptionProven,
+    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"?byId[a.id].cost:null,
     refusalCost:(s,m,a)=>a.type==="card"?byId[a.id]?.cost:a.type==="skill"?skillCost(a.who,a.skill,m,s):null,
     handPlan, verifyResynchronized, actionKey, rejectAction, deferUncertain, removalEffect, blessingChoice,boardKey,burnableHand,
     actionRerollGoal,rerollCounter,enemyCount,gamblerRemaining,skillElement,dendroReaction,sproutAvailable,activeKeqingInfusion,damageAgainst };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.4";
-globalThis.TCG.sharedVersion = "1.5.4";
+globalThis.TCG.version = "1.3.5";
+globalThis.TCG.sharedVersion = "1.5.5";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

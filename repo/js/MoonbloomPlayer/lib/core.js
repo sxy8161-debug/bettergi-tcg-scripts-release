@@ -213,6 +213,30 @@ function handInstanceFacts(h) {
     return [h.currentCost ?? null, ...["empowered", "noTuning", "effectless", "reduction", "increase"]
       .map(k => h.attachments?.[k] ?? null)];
   }
+// Quotes and failed attempts belong to one observed board, not a whole round.
+// Card-fact probeKeys are independent and are never cleared here.
+function skillQuoteKey(a) { return [a.who,a.skill,a.technique ?? null].join("/"); }
+function skillQuote(s,m,a) {
+    return m.skillCosts?.key === boardKey(s) ? m.skillCosts.entries[skillQuoteKey(a)] : undefined;
+  }
+function skillProbeAttempted(s,m,a) { return skillQuote(s,m,a) !== undefined; }
+function recordSkillCost(s,m,a,n,source="native-skill-preview") {
+    const key=boardKey(s);
+    if(m.skillCosts?.key!==key)m.skillCosts={key,entries:{}};
+    m.skillCosts.entries[skillQuoteKey(a)]={n,source};
+  }
+function clearSkillCosts(m) { m.skillCosts=null; }
+function refreshSkillCosts(m,s) {
+    if(m?.skillCosts&&m.skillCosts.key!==boardKey(s))clearSkillCosts(m);
+  }
+function drawConsumptionProven(a,b,s) {
+    const r=s?.drawConsumption,h=b?.hand?.[a?.index];
+    return a?.type==="card"&&byId[a.id]?.type==="draw"&&s.phase==="board"&&s.turn==="user"&&
+      r?.kind==="native-paid-draw"&&r.beforeKey===boardKey(b)&&r.id===a.id&&r.index===a.index&&
+      r.target===(a.target??null)&&r.inputSent===true&&r.stableReads===2&&r.cost>0&&
+      h?.id===a.id&&r.sourceInstanceIds?.length>0&&JSON.stringify(r.sourceInstanceIds)===JSON.stringify(h.instanceIds)&&
+      r.diceKey===JSON.stringify(diceOrder.map(e=>s.dice?.[e]||0));
+  }
 // Positive native rejection proves that input did not mutate the hand. Only
 // that recovery may bind an unchanged complete ordered row directly. Else use
 // native cost/attachment distinctions; indistinguishable copies stay ambiguous.
@@ -418,13 +442,13 @@ function actionRefused(s, m, action) {
     if(skill==="T") {
       const equipped=m.techniques[who],def=techniques[equipped?.id];
       if(!def)return null;
-      const n=m.costEvidence;
-      if(s&&n?.key===boardKey(s)&&n.who===who&&n.technique===equipped.id&&known(n.n))return fee(def.cost,n.n);
+      const n=s&&skillQuote(s,m,{who,skill,technique:equipped.id});
+      if(n?.source==="native-technique-preview"&&known(n.n))return fee(def.cost,n.n);
       return equipped.id==="yumka"&&s.hand.length<=2?{aligned:1}:def.cost;
     }
     const base=skill==="NA"?{element:team[who].element,n:1,any:2}:{element:team[who].element,n:3};
-    const e=m.costEvidence;
-    if(s && e?.key===boardKey(s) && e.who===who && e.skill===skill && known(e.n))
+    const e=s&&skillQuote(s,m,{who,skill});
+    if(e?.source==="native-skill-preview"&&known(e.n))
       return skill==="NA"?{element:base.element,n:Math.min(1,e.n),any:Math.max(0,e.n-1)}:{element:base.element,n:e.n};
     return base;
   }
@@ -448,7 +472,7 @@ function actionRefused(s, m, action) {
     return {round:0,openingTarget:null,used:[0,0,0],defeated:[false,false,false],food:[false,false,false],
       weapons:[null,null,null],artifacts:[false,false,false],artifactKinds:[null,null,null],gamblerUsed:[0,0,0],
       techniques:[null,null,null],techniqueDiscount:0,
-      freeSwitch:false,fastSwitch:false,legendUsed:false,bloomResolved:false,uncertainActions:[],refusedActions:[],costEvidence:null,probeKeys:[],
+      freeSwitch:false,fastSwitch:false,legendUsed:false,bloomResolved:false,uncertainActions:[],refusedActions:[],skillCosts:null,probeKeys:[],
       sleepy:0,weaponDiscount:0,supports:[],canopyPoints:[],researchRemaining:0,played:[],
       seedboxRemaining:0,seedboxUsed:false,lensRemaining:0,lensUsed:false,seelieRemaining:0,
       lumenRemaining:0,lumenCards:0,lumenUsed:false,fanUsed:false,fanSwitch:false,foodDrawUsed:false,
@@ -468,7 +492,7 @@ function actionRefused(s, m, action) {
   function nextRound(m) {
     m.handTop=null; // Round draw consumes the known top; it may also burn at ten cards.
     m.round++;m.food=[false,false,false];m.sashimi=[false,false,false];m.uncertainActions=[];m.refusedActions=[];m.probeKeys=[];
-    m.costEvidence=null;m.weaponDiscount=0;m.seedboxUsed=false;m.lensUsed=false;
+    m.skillCosts=null;m.weaponDiscount=0;m.seedboxUsed=false;m.lensUsed=false;
     m.lumenCards=0;m.lumenUsed=false;m.fanUsed=false;m.foodDrawUsed=false;
     m.enhancedUsed=false;m.passiveUsed=false;m.overgrowUsed=false;m.kernelProduced=fact(0,"confirmed-round");
     if(m.frost||m.ripple){
@@ -623,8 +647,8 @@ function actionRefused(s, m, action) {
     }
     if(known(s.active))m.lastActive=s.active;
   }
-  function rejectAction(m,a,before) {blockAction(m,a,before);m.costEvidence=null;}
-  function deferUncertain(m,a,before){blockAction(m,a,before,true);m.costEvidence=null;if(countdownFamily.includes(a.id)||a.type==="skill"&&["qucu","yumka"].includes(a.technique))m.countdownStock=null;
+  function rejectAction(m,a,before) {blockAction(m,a,before);m.skillCosts=null;}
+  function deferUncertain(m,a,before){blockAction(m,a,before,true);m.skillCosts=null;if(countdownFamily.includes(a.id)||a.type==="skill"&&["qucu","yumka"].includes(a.technique))m.countdownStock=null;
     if(a.id==="seed"||a.type==="skill"&&a.technique==="yumka")m.kernelLedger=null;}
   function changedReduction(h){
     const {reductionPresent,increasePresent,...attachments}=h.attachments||{source:"unknown",empowered:null};
@@ -727,7 +751,7 @@ function actionRefused(s, m, action) {
       if(receipt.unresolved)return false;
       if(receipt.exited&&["meditation","sand","adventure"].includes(receipt.kind))return true;
     }
-    if(byId[a.id].type==="draw")return cardCountDecreased(b.hand,s.hand,a.id);
+    if(byId[a.id].type==="draw")return drawConsumptionProven(a,b,s) || cardCountDecreased(b.hand,s.hand,a.id);
     return (bag(b.hand)[a.id]||0)>(bag(s.hand)[a.id]||0);
   }
   const verifyResynchronized = verify;
@@ -757,7 +781,7 @@ function actionRefused(s, m, action) {
     }
   }
   function commit(m,a,b,s) {
-    m.costEvidence=null;
+    m.skillCosts=null;
     if(m.kernelLedger&&["card","tune"].includes(a.type)&&a.id==="seed")
       m.kernelLedger.unspent=Math.max(0,m.kernelLedger.unspent-1);
     if(a.type==="skill"&&a.technique==="yumka")m.kernelLedger=null;
@@ -948,6 +972,8 @@ function actionRefused(s, m, action) {
   }
   root.TCG={projectionBudget,team,cards,techniques,byId,initialNames,norm,identify,observedCard,handCardKnown,characterName,role,
     diceOrder,total,size,known,alive,enemyCount,bag,indexedHand,reconcileHand,actionRefused,blockAction,
+    skillQuote,skillProbeAttempted,recordSkillCost,clearSkillCosts,refreshSkillCosts,drawConsumptionProven,
+    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"&&cardTriggers(s.hand[a.index],m).total===0?cardInputCost(s,a,m):null,
     refusalCost:(s,m,a)=>a.type==="card"?cardCost(s,a,m):a.type==="skill"?skillCost(a.who,a.skill,m,s):null,
     removedOne,boardKey,actionKey,fact,payment,
     cardCost,cardInputCost,cardContextError,cardInputError,cardLegal,skillCost,skillLegal,legalState,freshMemory,nextRound,
@@ -960,8 +986,8 @@ function actionRefused(s, m, action) {
       "heal-dice":["请选择一个角色","对所选角色生效"],heal:["请选择一个角色","对所选角色生效"]}};
 })(globalThis);
 
-globalThis.TCG.version = "1.3.4";
-globalThis.TCG.sharedVersion = "1.5.4";
+globalThis.TCG.version = "1.3.5";
+globalThis.TCG.sharedVersion = "1.5.5";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

@@ -258,7 +258,6 @@
       if(d.coreConsumed)next.dendroCore={known:true,charges:0};
     }
     T.commit(mem,a,s,next);
-    if(a.type!=="probe")mem.costEvidence=null; // one-board evidence never predicts future reductions.
     const provenFinish=guaranteedCombat&&T.enemyCount(s)>0&&T.enemyCount(next)===0&&
       s.enemies.filter(T.alive).every(e=>e.defenseKnown===true&&e.auraKnown===true);
     return {state:next,memory:mem,benefit,combat,leaf,provenFinish,
@@ -385,7 +384,7 @@
     const skill=m.thundergrassSupport==="shatterbolt"?"Q":"E",who=s.active;
     if(s.characters[who].frozen || skill==="Q"&&s.characters[who].energy!==T.team[who].maxEnergy)return null;
     const key=T.boardKey(s)+":"+skill;
-    if((m.probeKeys||[]).includes(key) || m.costEvidence?.key===T.boardKey(s))return null;
+    if(T.skillProbeAttempted(s,m,{who,skill}))return null;
     const nominal=T.size(T.skillCost(who,skill,m)),minimum=nominal-(skill==="Q"?2:1);
     // Query at the meaningful window; not every decision or every hand read.
     if(T.total(s.dice)>=minimum && T.total(s.dice)<nominal)return {type:"probe",who,skill,key,
