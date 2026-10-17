@@ -64,9 +64,9 @@ jobs:
               const manifest = await response.json();
               if (manifest.sourceCommit === sha) {
                 const versions = Object.values(manifest.playerVersions || {});
-                if (versions.length !== 3 || !/^\d+\.\d+\.\d+$/.test(versions[0]) ||
-                    !versions.every(v => v === versions[0])) throw Error('Invalid published playerVersions');
-                const tag = 'v' + versions[0] + '-' + sha.slice(0, 12);
+                if (versions.length !== 3 || !versions.every(v => /^\d+\.\d+\.\d+$/.test(v)) ||
+                    !/^\d+\.\d+\.\d+$/.test(manifest.sharedVersion)) throw Error('Invalid published versions');
+                const tag = 'v' + manifest.sharedVersion + '-' + sha.slice(0, 12);
                 const release = await get('https://api.github.com/repos/' + repo + '/releases/tags/' + tag);
                 if (release.ok) published = true;
                 else if (release.status !== 404) throw Error('Release lookup failed: HTTP ' + release.status);
@@ -186,8 +186,8 @@ jobs:
           assert(manifest.playerVersions && typeof manifest.playerVersions === 'object');
           assert.deepEqual(Object.keys(manifest.playerVersions).sort(), Object.keys(players).sort());
           const versions = Object.values(manifest.playerVersions);
-          assert.match(versions[0], /^\d+\.\d+\.\d+$/);
-          assert(versions.every(version => version === versions[0]), 'One release tag requires one player version');
+          for (const version of versions) assert.match(version, /^\d+\.\d+\.\d+$/);
+          assert.match(manifest.sharedVersion, /^\d+\.\d+\.\d+$/);
           const listed = Object.keys(manifest.files);
           assert(!Object.hasOwn(manifest.files, 'release-manifest.json'), 'Manifest cannot hash itself');
           assert.deepEqual(actual.sort(), [...listed, 'release-manifest.json'].sort(), 'Unexpected/missing distribution files');
@@ -227,7 +227,7 @@ jobs:
             assert.match(archiveHashes[name], /^[a-f0-9]{64}$/);
             assert.equal(hash(fs.readFileSync(file)), archiveHashes[name], 'ZIP SHA mismatch: ' + name);
           }
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tag=v' + versions[0] + '-' + manifest.sourceCommit.slice(0, 12) + '\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tag=v' + manifest.sharedVersion + '-' + manifest.sourceCommit.slice(0, 12) + '\n');
           console.log('Verified ' + listed.length + ' hashed files and four ZIP archives; no artifact code executed.');
           NODE
       - name: Commit the release tree and create an immutable GitHub Release
