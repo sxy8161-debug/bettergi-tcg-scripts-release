@@ -124,9 +124,69 @@ const projectionBudget = (() => {
     const parsed = observedCard(h.name, h.index);
     return h.supported === false && parsed && parsed.supported === false && parsed.id === h.id;
   }
-  function indexedHand(hand) {
+  let handInstanceSerial = 0;
+function indexedHand(hand) {
     if (!Array.isArray(hand) || !hand.every(handCardKnown)) throw new Error("手牌缓存身份不完整");
-    return hand.map((h, index) => ({ ...h, index }));
+    return hand.map((h, index) => ({ ...h, index,
+      instanceIds: h.instanceIds?.length ? h.instanceIds.slice() : [++handInstanceSerial] }));
+  }
+function handInstanceFacts(h) {
+    return [h.currentCost ?? null, ...["empowered", "noTuning", "effectless", "reduction", "increase"]
+      .map(k => h.attachments?.[k] ?? null)];
+  }
+// Positive native rejection proves that input did not mutate the hand. Only
+// that recovery may bind an unchanged complete ordered row directly. Else use
+// native cost/attachment distinctions; indistinguishable copies stay ambiguous.
+function reconcileHand(previous, observed, unchanged = false, uncertainRecords = []) {
+    const next = indexedHand(observed), prior = previous || [],
+      continuous = unchanged && prior.length === next.length && prior.every((h, i) => h.id === next[i].id),
+      compatible = (a, b) => handInstanceFacts(a).every((v, i) => v === null || handInstanceFacts(b)[i] === null || v === handInstanceFacts(b)[i]);
+    return next.map((h, index) => {
+      if (continuous && prior[index].instanceIds?.length) return { ...h,
+        instanceIds: prior[index].instanceIds.slice(), ...(prior[index].instanceAmbiguous ? {instanceAmbiguous:true} : {}) };
+      const old = prior.filter(c => c.id === h.id && (compatible(c, h) ||
+        uncertainRecords.some(r => r.id === c.id && (!r.instanceIds || r.instanceIds.some(id => c.instanceIds?.includes(id)))))),
+        origins = [...new Set(old.flatMap(c => c.instanceIds || []))];
+      if (!origins.length || h.instanceIds.every(id => origins.includes(id))) return h;
+      if (old.length === 1 && next.filter(c => c.id === h.id && compatible(c, old[0])).length === 1)
+        return { ...h, instanceIds: origins, ...(old[0].instanceAmbiguous ? {instanceAmbiguous:true} : {}) };
+      return { ...h, instanceIds: [...new Set([...origins, ...h.instanceIds])], instanceAmbiguous: true };
+    });
+  }
+function refusalScope(s, action, m) {
+    const a = action.cardAction || action,
+      handAction = ["card", "tune"].includes(a.type) || a.type === "probe" && a.scope === "card",
+      card = handAction && s?.hand?.[a.index], actor = s?.characters?.[a.who ?? s.active],
+      target = s?.characters?.[a.target], cost = s && root.TCG.refusalCost?.(s,m,a);
+    return { type: a.type, id: a.id ?? null, target: a.target ?? null,
+      who: a.who ?? null, skill: a.skill ?? null, technique: a.technique ?? null,
+      element: a.type === "tune" ? a.element ?? team[s?.active]?.element ?? null : null,
+      active: a.type === "card" && a.target == null ? s?.active ?? null : null,
+      handAction, instanceIds: card?.id === a.id ? card.instanceIds?.slice() || null : null,
+      conditions: s ? JSON.stringify([cost ? Object.keys(cost).sort().map(k => [k,cost[k]]) : null,
+        diceOrder.map(e => s.dice?.[e] || 0), actor?.frozen, actor?.dead,
+        a.skill === "Q" ? actor?.energy : null, target && [target.hp,target.dead,target.frozen],
+        card ? handInstanceFacts(card) : null]) : null };
+  }
+function blockAction(m, action, before, uncertain = false) {
+    const key = actionKey(action), scope = refusalScope(before, action, m);
+    m.uncertainActions ||= [];
+    if (!m.uncertainActions.includes(key)) m.uncertainActions.push(key);
+    m.refusedActions ||= [];
+    const record = { key, round: m.round, uncertain, ...scope };
+    if (!m.refusedActions.some(r => JSON.stringify(r) === JSON.stringify(record))) m.refusedActions.push(record);
+  }
+function actionRefused(s, m, action) {
+    const key = actionKey(action);
+    const records = (m.refusedActions || []).filter(r => r.round === m.round && r.key === key);
+    // Old callers may still supply display-only blocks. New records are never
+    // interpreted as a name-wide ban through this compatibility path.
+    if (!records.length) return (m.uncertainActions || []).includes(key);
+    const scope = refusalScope(s, action, m);
+    return records.some(r => ["type", "id", "target", "who", "skill", "technique", "element", "active"]
+      .every(k => r[k] === scope[k] || ["active", "element"].includes(k) && (r[k] === null || scope[k] === null)) &&
+      (!r.handAction || !r.instanceIds || !scope.instanceIds || r.instanceIds.some(id => scope.instanceIds.includes(id))) &&
+      (r.uncertain || r.conditions === null || scope.conditions === null || r.conditions === scope.conditions));
   }
   const characterAliases={};
   function characterName(text) {
@@ -233,6 +293,7 @@ const projectionBudget = (() => {
       soupDamage: [0, 0, 0],
       extraMaxHp: [0, 0, 0],
       uncertainActions: [],
+      refusedActions: [],
       costEvidence: null,
       probeKeys: [],
       thundergrassSupport: null,
@@ -255,6 +316,7 @@ const projectionBudget = (() => {
     m.boar = 0;
     m.firstCard = true;
     m.uncertainActions = [];
+    m.refusedActions = [];
     m.costEvidence = null;
     m.probeKeys = [];
     m.talentDrawUsed=false;m.gildedDrawUsed=[0,0,0];
@@ -412,13 +474,18 @@ const projectionBudget = (() => {
     if (c.type === "support" && m.supportSlots >= 4) return false; // no blind support-overwrite choice
     if (
       c.type === "food" &&
-      (a.id === "sing" ? s.characters.some((x, i) => alive(x) && m.food[i]) : m.food[a.target])
+      (a.id === "sing" ? s.characters.some((x, i) => alive(x) && m.food[i] !== false) : m.food[a.target] !== false)
     )
       return false;
     if (a.id === "lost" && (m.defeatRound !== m.round || m.lostUsedRound === m.round)) return false;
     return !!payment(s.dice, cardCost(a.id, a.target, m, s), team[s.active].element);
   }
-  function cardRefund(a, m) {
+  function generateDice(dice, element, count) {
+    const added = Math.min(count, Math.max(0,16-total(dice)));
+    if (added) dice[element] = (dice[element] || 0) + added;
+    return added;
+  }
+  function cardRefund(a, m, before = null) {
     if (a.type !== "card" || !byId[a.id]) return {};
     const c = byId[a.id],
       refund = {};
@@ -431,7 +498,17 @@ const projectionBudget = (() => {
       (c.type === "weapon" ? m.weapons[a.target] : m.artifacts[a.target])
     )
       refund.Omni = (refund.Omni || 0) + 1;
-    return refund;
+    if (!before) return refund; // Nominal rule query; actual actions supply before.
+    const paid = payment(before.dice, cardCost(a.id,a.target,m,before), team[before.active].element);
+    if (!paid) return {};
+    const realised = {};
+    // Insertion order is effect order: Gilded's elemental generation precedes
+    // the equipment-replacement support's Omni generation.
+    for (const [element,count] of Object.entries(refund)) {
+      const n = generateDice(paid.remaining,element,count);
+      if (n) realised[element] = n;
+    }
+    return realised;
   }
   function enemyCount(s) {
     const es=s?.enemies;
@@ -737,10 +814,10 @@ const projectionBudget = (() => {
       }
       if (a.id === "lost") m.lostUsedRound = m.round;
       // Native selected soup effect is carried by the adapter, not random prediction.
-      if (a.id === "soup" && after?.selectedSoup) {
-        if (after.selectedSoup === "discount") m.soupDiscount[target] = 2;
-        if (after.selectedSoup === "fury") m.soupDamage[target] = 2;
-        if (after.selectedSoup === "maxhp") m.extraMaxHp[target]++;
+      if (a.id === "soup" && soupReceiptValid(a, b, after)) {
+        if (after.soupReceipt.effect === "discount") m.soupDiscount[target] = 2;
+        if (after.soupReceipt.effect === "fury") m.soupDamage[target] = 2;
+        if (after.soupReceipt.effect === "maxhp") m.extraMaxHp[target]++;
       }
       void cost;
     }
@@ -752,42 +829,70 @@ const projectionBudget = (() => {
     m.costEvidence = null;
   }
   const safeFood = (b) => b.characters.map((c) => alive(c));
-  function deferUncertain(m, a) {
-    const k = actionKey(a);
-    if (!m.uncertainActions.includes(k)) m.uncertainActions.push(k);
-    m.passiveHealEvidence = { status: "uncertain" };
-    if (a.type === "card") m.firstCard = false;
+  function deferUncertain(m, a, before) {
+    blockAction(m,a,before,true);
+    if (a.type === "card") m.firstCard = null;
     if (a.type === "card" && a.id === "garden") m.legendUsed = true;
     if (a.type === "card" && byId[a.id]?.type === "food") {
-      if (a.id === "sing") m.food = [true, true, true];
-      else m.food[a.target] = true;
+      if (a.id === "sing") m.food = [null, null, null];
+      else m.food[a.target] = null;
     }
-    // Unknown resolution must not authorize cost cuts / equipment recovery.
+    // Invalidate only effects this action can consume or establish. Null is
+    // unknown, not an observed absence; fee readers use the undiscounted upper
+    // bound unless a matching native fee quote is available.
     m.costEvidence = null;
-    m.moonRound = [-1, -1, -1];
-    m.troupe = [0, 0, 0];
-    m.soupDiscount = [0, 0, 0];
-    m.garden = false;
-    m.lyre = 0;
-    m.freeSwitch = false;
-    m.singCharges = 0;
-    m.manchai = 0;
-    m.kineticEstimate = 0;
-    m.nightsoulEstimate = 0;
-    if (a.type === "card" && ["weapon", "artifact", "recycle"].includes(byId[a.id]?.type)) {
-      m.weaponKinds[a.target] = null;
-      m.weapons[a.target] = false;
-      m.artifactKinds[a.target] = null;
-      m.artifacts[a.target] = false;
+    const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "skivingNewAndImproved" ? 2 : null;
+    if (a.type === "switch" || who !== null) {
+      m.passiveHealEvidence = { status: "uncertain" };
+      if(m.kineticEstimate>0)m.kineticEstimate = null;
+      if(m.nightsoulEstimate>0)m.nightsoulEstimate = null;
     }
+    if (a.type === "switch") {
+      if(m.freeSwitch)m.freeSwitch = null;
+      if(m.singCharges>0)m.singCharges = null;
+      if(m.fastCharges>0){m.fastCharges = null;m.fastSwitch = null;}
+      if (a.target === 1 && m.gamingReturn) { m.gamingReturn = null; m.soupDamage[1] = null; }
+    }
+    if (who !== null) {
+      if(m.soupDiscount[who]>0)m.soupDiscount[who] = null;
+      if(m.soupDamage[who]>0)m.soupDamage[who] = null;
+      if (a.skill === "E" || a.id === "skivingNewAndImproved") {
+        if(m.moonRound[who]===m.round)m.moonRound[who] = null;
+        if(m.troupe[who]>0)m.troupe[who] = null;
+        if (who === 0) { m.fastCharges = null; m.fastSwitch = null; m.nightsoulEstimate=null; }
+        if (who === 1) { m.gamingReturn = null; if(m.manchai>0)m.manchai = null; }
+      }
+      if (a.skill === "Q") {
+        if (who === 0) {m.iansanBurst = null;m.kineticEstimate=null;m.nightsoulEstimate=null;}
+        if (who === 1) m.manchai = null;
+        if (who === 2) m.sayuSummon = null;
+      }
+    }
+    if (a.type === "card" && ["weapon", "artifact", "recycle"].includes(byId[a.id]?.type)) {
+      const type = byId[a.id].type;
+      if(type!=="recycle"){
+        let fee=Math.max(0,size(byId[a.id].cost)-(m.garden?2:0)-(type==="artifact"?(m.lyre||0):0));
+        for(const h of m.houses)if(h.left>0&&h.round!==m.round&&fee>=3){h.left=null;fee--;}
+        if(m.garden)m.garden = null;
+        if(m.boar>0&&(type==="weapon"?m.weapons[a.target]:m.artifacts[a.target]))m.boar = null;
+      }
+      if (type === "weapon") { m.weaponKinds[a.target] = null; m.weapons[a.target] = null; m.moonRound[a.target] = null; }
+      else { m.artifactKinds[a.target] = null; m.artifacts[a.target] = null; m.troupe[a.target] = null;
+        if(type==="recycle"||m.lyre>0)m.lyre = null; }
+    }
+    if (a.type === "card" && a.id === "garden") m.garden = null;
+    if (a.type === "card" && a.id === "shift") m.freeSwitch = null;
+    if (a.type === "card" && a.id === "fast") { m.fastSwitch = null; m.fastCharges = null; }
+    if (a.type === "card" && a.id === "sing") m.singCharges = null;
+    if (a.type === "card" && a.id === "boar") m.boar = null;
+    if (a.type === "card" && a.id === "skivingNewAndImproved") m.talent = null;
   }
-  function rejectAction(m, a) {
+  function rejectAction(m, a, before) {
     // A positive rejection consumes no effect. Invalidate the transient fee
     // quote, not unrelated buffs already established by confirmed actions.
-    const k = actionKey(a);
-    if (!m.uncertainActions.includes(k)) m.uncertainActions.push(k);
+    blockAction(m,a,before);
     // A proven failed tune did not play a card, spend dice or consume any
-    // confirmed buffs. Skip this card name for the round; other cards may tune.
+    // confirmed buffs. Block only the owned instance/target/conditions.
     if (a.type === "tune") return;
     m.costEvidence = null;
   }
@@ -815,6 +920,15 @@ const projectionBudget = (() => {
       return { mode: "remove", hand: indexedHand(h.filter((_, i) => i !== a.index)) };
     }
     return { mode: "full", expectedCount: null };
+  }
+  function soupReceiptValid(a,b,c) {
+    const r=c?.soupReceipt;
+    return a.type === "card" && a.id === "soup" && r?.exited === true &&
+      r.origin === actionKey(a)+"/"+boardKey(b) && r.target === a.target &&
+      Object.values(soupOptions).includes(r.effect);
+  }
+  function confirmationReady(a,b,c) {
+    return a.type !== "card" || a.id !== "soup" || soupReceiptValid(a,b,c);
   }
   function verify(a, b, after, transition = false) {
     if (!a || !b || !after) return false;
@@ -849,9 +963,10 @@ const projectionBudget = (() => {
         (after.dice[a.element] || 0) === (b.dice[a.element] || 0) + 1
       );
     if (a.type !== "card" || !byId[a.id] || !after.hand) return false;
+    if (!confirmationReady(a, b, after)) return false;
     const consumed = (bag(b.hand)[a.id] || 0) > (bag(after.hand)[a.id] || 0);
     if (["draw", "revel", "sing"].includes(a.id))
-      return cardCountDecreased(b.hand, after.hand, a.id) && after.hand.length === Math.min(10, b.hand.length + 1);
+      return cardCountDecreased(b.hand, after.hand, a.id);
     if (a.id === "lyre") return consumed && after.hand.length === b.hand.length;
     if (a.id === "skivingNewAndImproved")
       return (
@@ -889,7 +1004,7 @@ const projectionBudget = (() => {
       JSON.stringify(c.characters) !== JSON.stringify(b.characters) ||
       JSON.stringify(c.enemies) !== JSON.stringify(b.enemies)
     ) return false;
-    const refund = cardRefund(a, m),
+    const refund = cardRefund(a, m, b),
       cost = cardCost(a.id, a.target, m, b);
     if (!total(refund) || diceOrder.every((e) => (b.dice[e] || 0) === (c.dice[e] || 0)))
       return false;
@@ -903,6 +1018,7 @@ const projectionBudget = (() => {
   }
   function emptyHandEffect(a, b, c, t) {
     if (b.hand.length !== 1 || c.turn !== "user") return false;
+    if (!confirmationReady(a,b,c)) return false;
     // Positive native empty-fan evidence is scoped to this exact single-card
     // input, not zero guessed from an OCR failure or unchanged net expense.
     const proof = c.handEvidence;
@@ -926,7 +1042,7 @@ const projectionBudget = (() => {
     if (a.type !== "card" || ["draw", "revel", "lyre", "sing", "skivingNewAndImproved"].includes(a.id))
       return false;
     // A visible expense or soup selection can prove zero; a zero-cost status cannot.
-    return total(c.dice) < total(b.dice) || (a.id === "soup" && !!c.selectedSoup);
+    return total(c.dice) < total(b.dice) || (a.id === "soup" && soupReceiptValid(a,b,c));
   }
   function openingContext(context = {}) {
     const observed = enemyCount({ enemies: context?.enemies }),
@@ -1057,6 +1173,11 @@ const projectionBudget = (() => {
     observedCard,
     handCardKnown,
     indexedHand,
+    reconcileHand,
+    actionRefused,
+    blockAction,
+    refusalCost: (s,m,a) => a.type === "card" ? cardCost(a.id,a.target,m,s) :
+      a.type === "skill" ? skillCost(a.who,a.skill,m,s) : a.type === "switch" ? switchCost(m) : {},
     characterName,
     diceOrder,
     openingSetting, known,
@@ -1077,6 +1198,9 @@ const projectionBudget = (() => {
     cardCost,
     cardLegal,
     cardRefund,
+    generateDice,
+    soupReceiptValid,
+    confirmationReady,
     weaponCompatible,
     enemyCount,
     elementReaction,
@@ -1103,8 +1227,8 @@ const projectionBudget = (() => {
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.4";
-globalThis.TCG.sharedVersion = "1.5.3";
+globalThis.TCG.version = "1.3.5";
+globalThis.TCG.sharedVersion = "1.5.4";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

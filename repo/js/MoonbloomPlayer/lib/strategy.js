@@ -7,13 +7,13 @@
   if(action.type!=="switch"||T.size(switchCost)===0)return null;
   for(const h of s.hand)if(h.id==="shift"){
     const a={type:"card",id:h.id,index:h.index,target:null},cost=costOf(a);
-    if(cost!==null&&T.size(cost)===0&&!m.uncertainActions.includes(T.actionKey(a))&&T.cardLegal(s,a,m))
+    if(cost!==null&&T.size(cost)===0&&!T.actionRefused(s,m,a)&&T.cardLegal(s,a,m))
       return a;
   }
   return null;
 }
   function card(s,h,target=null) {return {type:"card",id:h.id,index:h.index,target};}
-  function blocked(m,a) {return m.uncertainActions.includes(T.actionKey(a));}
+  function blocked(s,m,a) {return T.actionRefused(s,m,a);}
   function payableSeed(s,m) {
     return T.seeds(s).some(h=>T.payment(s.dice,T.cardCost(s,card(s,h),m),"Dendro"));
   }
@@ -92,7 +92,7 @@
     const equipped=m.techniques[who],id=equipped?.id,def=T.techniques[id];
     if(!def?.active||equipped.uses<=0)return 0;
     const a={type:"skill",who,skill:"T",technique:id};
-    if(!T.skillLegal(s,a,m)||blocked(m,a))return 0;
+    if(!T.skillLegal(s,a,m)||blocked(s,m,a))return 0;
     const cost=T.skillCost(who,"T",m,s),left=afterPayment(s,cost),hit=T.damageEstimate(s,m,who,"T");
     let value=hit.direct*10;
     if(hit.direct>0&&hit.target&&hit.direct>=hit.target.hp)value+=100;
@@ -123,7 +123,7 @@
     return names.map(name=>({...skill(s.active,name),...(name==="T"?{technique:equipped.id}:{}),
       score:T.skillLegal(s,{...skill(s.active,name),technique:equipped?.id},m)?
         hitScore(s,m,s.active,name)-(name==="T"?0:T.size(T.skillCost(s.active,name,m,s))*2):0}))
-      .filter(a=>a.score>0&&!blocked(m,a)).sort((a,b)=>b.score-a.score);
+      .filter(a=>a.score>0&&!blocked(s,m,a)).sort((a,b)=>b.score-a.score);
   }
   function techniquePlan(s,m,h,target,cost,projectedTriggerCost=null) {
     const left=afterPayment(s,cost);if(!left)return {value:0,reason:"装备后没有合法支付"};
@@ -163,7 +163,7 @@
         for(const h of s.hand.filter(h=>h.id!=="lumen"&&T.currentCost(h)!==null).sort((a,b)=>T.currentCost(a)-T.currentCost(b))){
           const target=T.byId[h.id]&&T.characterTarget(T.byId[h.id])?s.active:null;
           const action=card(s,h,target),p=T.payment(dice,T.cardCost(s,action,m));
-          if(p&&!blocked(m,action)&&T.cardContextError(s,action,m)===null&&
+          if(p&&!blocked({...s,dice},m,action)&&T.cardContextError(s,action,m)===null&&
             cardScore({...s,dice},m,action,axis(s,m))>0){dice=p.remaining;count++;}
         }
         use=count>=3&&drawUseful(s)?46:0;break;
@@ -281,13 +281,13 @@
     for(const who of pending){
       if(who!==next.active){
         const change={type:"switch",target:who};
-        if(blocked(m,change))return null;
+        if(blocked(next,m,change))return null;
         const pay=T.payment(next.dice,{any:free?0:1},T.team[who].element);
         if(!pay)return null;
         actions.push(change);next={...next,active:who,dice:pay.remaining};free=false;
       }
       const a=skill(who,"E");
-      if(!T.skillLegal(next,a,m)||blocked(m,a))return null;
+      if(!T.skillLegal(next,a,m)||blocked(next,m,a))return null;
       const pay=T.payment(next.dice,T.skillCost(who,"E",m,next),T.team[who].element);
       actions.push(a);next={...next,dice:pay.remaining};
     }
@@ -358,7 +358,8 @@
         value=drawUseful(s)&&left&&T.total(left.dice)>=3?42:T.total(left.dice)>=1&&T.seeds(s).length===0&&drawUseful(s)?20:0;break;
       case "adventure":value=s.hand.length<=8||s.characters.some((ch,i)=>T.alive(ch)&&ch.hp<T.team[i].maxHp)?32:0;break;
       case "sashimi": {
-        let kernelHits=0,follow=projection||T.projectResources(s,m,a);
+        const afterFood=projection||T.projectResources(s,m,a);
+        let kernelHits=0,follow=afterFood;
         // Consume each one-shot discount through the same sequential projection
         // as the route search; the second kernel cannot reuse the first quote.
         if(a.target===nefer&&follow&&!follow.boundary)for(let i=0;i<T.seeds(s).length;i++){
@@ -367,9 +368,10 @@
           if(!p)break;
           kernelHits++;follow=p;if(p.boundary)break;
         }
-        const enhanced=T.damageEstimate(s,m,a.target,"NA").enhancedReady;
+        const enhanced=afterFood&&!afterFood.boundary&&
+          T.damageEstimate(afterFood.state,afterFood.memory,a.target,"NA").enhancedReady;
         value=a.target===s.active&&(kernelHits>=2||enhanced)&&
-          (kernelHits||T.payment(left.dice,T.skillCost(a.target,"NA",m,left),T.team[a.target].element))?55:0;break;
+          (kernelHits||afterFood&&T.skillLegal(afterFood.state,skill(a.target,"NA"),afterFood.memory))?55:0;break;
       }
       case "tea":value=s.characters[a.target].hp<T.team[a.target].maxHp?26:0;break;
       case "overgrow":value=m.supports.includes("overgrow")?0:T.alive(s.characters[T.role("哥伦比娅")])?42:12;break;
@@ -440,7 +442,7 @@
     };
     for(const owner of s.hand.filter(h=>["research","cleaning","seedbox","lens"].includes(h.id))){
       const a=card(s,owner);
-      if(blocked(m,a)||m.probeKeys.includes(T.cardProbeKey(s,owner))||T.cardContextError(s,a,m)!==null||
+      if(blocked(s,m,a)||m.probeKeys.includes(T.cardProbeKey(s,owner))||T.cardContextError(s,a,m)!==null||
         owner.id==="research"&&m.researchRemaining!==0||owner.id==="cleaning"&&T.total(s.dice)>=16)continue;
       const remaining=s.hand.filter(h=>h.index!==owner.index);
       if(owner.id==="cleaning"&&T.knownAttachmentKinds(remaining)===0){
@@ -476,9 +478,14 @@
     }
     return probes;
   }
-  function candidates(s,m,currentAxis) {
-    const out=[],push=(a,score)=>{if(score>0&&!blocked(m,a))out.push({...a,score,axis:currentAxis});};
-    for(const a of attackCandidates(s,m,true))push(a,a.score);
+  function candidates(s,m,currentAxis,basic=false,cardValues=new Map()) {
+    const out=[],push=(a,score)=>{
+      if(basic&&a.type!=="card"&&a.type!=="probe")cardValues.set(T.actionKey(a),{action:a,score});
+      if(score>0&&!blocked(s,m,a))out.push({...a,score,axis:currentAxis});
+    };
+    const attacks=basic?attackCandidates(s,m,true):[...cardValues.values()].filter(v=>v.action?.type==="skill").map(v=>({...v.action,score:v.score}));
+    // Standalone callers still get the full ordinary assessment in one pass.
+    for(const a of !basic&&!cardValues.size?attackCandidates(s,m,true):attacks)push(a,a.score);
     for(const h of s.hand) {
       const c=T.byId[h.id];if(!c||m.probeKeys.includes(T.cardProbeKey(s,h)))continue;
       const targets=T.characterTarget(c)?
@@ -488,7 +495,13 @@
         if(T.currentCost(h)!==null&&T.cardLegal(s,a,m)){
           // A readable digit plus affordable ordinary-colour payment is enough
           // to select a card. Its normal pre-drag title read supplies details.
-          push(a,cardScore(s,m,a,currentAxis));
+          const key=JSON.stringify(a),cached=cardValues.get(key),projection=cached?.projection||T.projectResources(s,m,a);
+          // Establish every legal root transition before speculative card/setup
+          // payoffs or prefix search can spend the remaining decision budget.
+          const score=basic?projection?scoreRoute(s,m,extendRoute({sequence:[],ledger:[],damageValue:0,defeats:0,
+            paid:0,effort:0,refunds:0,turns:0,casts:0},projection,a,s,m)).score:0:
+            cached&&!T.projectionBudget.available()?cached.score:cardScore(s,m,a,currentAxis,undefined,projection);
+          cardValues.set(key,{projection,score});push(a,score);
         }else if(!T.cardFactsKnown(h)){
           if(T.cardContextError(s,a,m)!==null||m.probeKeys.includes(T.cardProbeKey(s,h)))continue;
           // This is an upper bound for the VALUE OF READING, never a payment or
@@ -496,7 +509,9 @@
           // A missing digit may still be zero. Re-evaluate after the actual read.
           const cost={any:T.currentCost(h)??0};
           if(!T.payment(s.dice,cost))continue;
-          const score=cardScore(s,m,a,currentAxis,cost);
+          const key=JSON.stringify(a),cached=cardValues.get(key),
+            score=basic?1:cached&&!T.projectionBudget.available()?cached.score:cardScore(s,m,a,currentAxis,cost);
+          cardValues.set(key,{score});
           push({type:"probe",scope:"card",id:h.id,index:h.index,target,key:T.cardProbeKey(s,h)},score);
         }
       }
@@ -514,9 +529,11 @@
     // same hypothetical hit plus a retreat reward after an extra combat turn.
     if(!directFinish&&T.total(s.dice)>=fee)for(let who=0;who<3;who++) {
       if(who===s.active || !T.alive(s.characters[who]) || s.characters[who].frozen)continue;
+      const change={type:"switch",target:who},cached=cardValues.get(T.actionKey(change));
+      if(!basic&&cached){push(change,cached.score);continue;}
       const p=T.payment(s.dice,{any:fee},T.team[who].element),next={...s,active:who,dice:p.remaining};
-      const attacks=attackCandidates(next,m).map(a=>({score:a.score,finish:finishRank(T.damageEstimate(next,m,who,a.skill))}));
-      if(T.team[who].name==="奈芙尔")for(const h of T.seeds(next))if(T.cardLegal(next,card(next,h),m)&&!blocked(m,card(next,h)))
+      const followHits=attackCandidates(next,m),attacks=followHits.map(a=>({score:a.score,finish:finishRank(T.damageEstimate(next,m,who,a.skill))}));
+      if(T.team[who].name==="奈芙尔")for(const h of T.seeds(next))if(T.cardLegal(next,card(next,h),m)&&!blocked(next,m,card(next,h)))
         attacks.push({score:hitScore(next,m,who,"NA",h)-T.size(T.cardCost(next,card(next,h),m))*2,finish:finishRank(T.damageEstimate(next,m,who,"NA",true))});
       const retreat=safest?.i===who&&(active.frozen||active.hp<=3&&safest.ch.hp>=active.hp+2);
       // Rank the payable next hit against current actions, not a difference of scores
@@ -529,21 +546,20 @@
       // active hit is available, so this does not reward switching back.
       const activeHit=out.some(a=>a.type==="skill"&&T.damageEstimate(s,m,s.active,a.skill).direct>0||
         a.type==="card"&&a.id==="seed");
-      if(!activeHit&&attacks.some(a=>a.score>0)&&attackCandidates(next,m).some(a=>T.damageEstimate(next,m,who,a.skill).direct>0))
+      if(!activeHit&&attacks.some(a=>a.score>0)&&followHits.some(a=>T.damageEstimate(next,m,who,a.skill).direct>0))
         score=Math.max(score,1);
       if(retreat&&!sameFinish)score+=28;
       if(attacks.length&&!sameFinish&&currentAxis==="relay"&&T.team[who].name==="哥伦比娅"&&T.damageEstimate(next,m,who,"NA").enhancedReady)score+=10;
-      push({type:"switch",target:who},score);
+      push(change,score);
     }
-    const setup=setupPlan(s,m);
+    const setup=basic?null:setupPlan(s,m);
     if(setup&&!directFinish){
       const first=setup.actions[0],existing=out.find(a=>T.actionKey(a)===T.actionKey(first));
       if(existing){existing.score=Math.max(existing.score,50);existing.reason="按已确认状态补齐草水铺垫，保留后续真实支付";}
     }
     return out.sort((a,b)=>b.score-a.score || T.actionKey(a).localeCompare(T.actionKey(b)));
   }
-  function tuning(s,m) {
-    if(!T.projectionBudget.available())return null;
+  function tuning(s,m,cardValues=null,basic=false,firstSteps=null) {
     const desired=T.team[s.active].element;
     if(s.characters[s.active].frozen||T.total(s.dice)===0)return null;
     const nefer=T.role("奈芙尔"),options=s.hand.flatMap(h=>{
@@ -552,29 +568,40 @@
         known&&h.canTune!==true||!known&&m.probeKeys.includes(key))return [];
       const element=known&&h.attachments.empowered?"Omni":desired,
         a={type:"tune",id:h.id,index:h.index,target:null,element};
-      if(blocked(m,a))return [];
+      if(blocked(s,m,a))return [];
       const target=T.characterTarget(c)?s.active:null,
-        play=card(s,h,target),playValue=T.cardLegal(s,play,m)?Math.max(0,cardScore(s,m,play,axis(s,m))):0,
+        play=card(s,h,target),playValue=T.cardLegal(s,play,m)?Math.max(0,cardValues?
+          cardValues.get(JSON.stringify(play))?.score||0:cardScore(s,m,play,axis(s,m))):0,
         reserve=h.id==="seed"&&T.alive(s.characters[nefer])?20:
           h.id==="fruit"&&!m.weapons.includes("fruit")?12:["calx","overgrow","meditation","show","countdown1"].includes(h.id)?8:0;
       return [{a,loss:h.id==="seed"&&!T.alive(s.characters[nefer])?0:Math.max(reserve,playValue/4,3),
         probe:known?null:{type:"probe",scope:"card",id:h.id,index:h.index,target:null,key,requirement:"tuning"}}];
-    }).sort((a,b)=>a.loss-b.loss).slice(0,5);
+    }).sort((a,b)=>a.loss-b.loss);
     let best=null;
+    // Reprice the already evaluated one-tune hits from this decision's completed
+    // card scores. No projection is needed to retain them after exhaustion.
+    if(!basic)for(const prior of firstSteps||[]){
+      const option=options.find(o=>o.a.index===prior.index);if(!option)continue;
+      const loss=option.loss+2,score=prior.score+prior.funding.discardCost-loss;
+      if(score>0&&(!best||score>best.score))best={...prior,score,funding:{...prior.funding,discardCost:loss}};
+    }
+    if(!basic)options.splice(5);
     const visit=(state,used,loss,first,probe)=>{
       if(!T.projectionBudget.available())return;
-      if(used.length){
+      if(used.length&&!(used.length===1&&!basic&&firstSteps)){
         const hits=attackCandidates(state,m);
-        if(state.active===nefer)for(const h of T.seeds(state))if(T.cardLegal(state,card(state,h),m)&&!blocked(m,card(state,h)))
+        if(state.active===nefer)for(const h of T.seeds(state))if(T.cardLegal(state,card(state,h),m)&&!blocked(state,m,card(state,h)))
           hits.push({...card(state,h),score:hitScore(state,m,nefer,"NA",h)-T.size(T.cardCost(state,card(state,h),m))*2});
         for(const hit of hits){
           const score=hit.score-loss;
-          if(score>0&&(!best||score>best.score))best={...(probe||first),score,axis:axis(s,m),
+          const candidate={...(probe||first),score,axis:axis(s,m),
             funding:{tunes:used.length,goal:T.actionKey(hit),discardCost:loss,qualificationPending:!!probe},
             reason:probe?"仅补读可改善输出的调和资格；确认后重新规划":"调和后技能与当前动作比较；每次确认真实骰色后重算"};
+          if(basic&&firstSteps)firstSteps.push(candidate);
+          if(score>0&&(!best||score>best.score))best=candidate;
         }
       }
-      if(used.length===3)return;
+      if(used.length===(basic?1:3))return;
       for(let i=used.length?used.at(-1)+1:0;i<options.length;i++){
         const o=options[i],source=T.diceOrder.find(e=>e!==desired&&e!=="Omni"&&(state.dice[e]||0)>0);
         if(!source)continue;
@@ -592,9 +619,9 @@
     // still pay and confirm every step; this only prevents greedy pruning.
     const hits=[],add=(hit,cost,refund=0)=>hits.push(Math.min(hit.direct,hit.target?.hp??hit.direct)*10+
       (hit.target&&hit.direct>=hit.target.hp&&hit.direct>0?100:0)-T.size(cost)*2+refund*4);
-    for(const name of ["Q","E","NA"])if(T.skillLegal(state,skill(state.active,name),m))
+    for(const name of ["Q","E","NA"])if(T.skillLegal(state,skill(state.active,name),m)&&!blocked(state,m,skill(state.active,name)))
       add(T.damageEstimate(state,m,state.active,name),T.skillCost(state.active,name,m,state));
-    if(state.active===T.role("奈芙尔"))for(const h of T.seeds(state))if(T.cardLegal(state,card(state,h),m))
+    if(state.active===T.role("奈芙尔"))for(const h of T.seeds(state))if(T.cardLegal(state,card(state,h),m)&&!blocked(state,m,card(state,h)))
       add(T.damageEstimate(state,m,state.active,"NA",true),T.cardCost(state,card(state,h),m),T.cardTriggers(h,m).total||0);
     return hits.sort((a,b)=>b-a).slice(0,Math.max(1,3-casts)).reduce((n,v)=>n+Math.max(0,v),0);
   }
@@ -633,6 +660,7 @@
         T.alive(local.characters[target])&&!local.characters[target].frozen)
         actions.push({type:"switch",target});
       for(const a of actions){
+        if(blocked(local,mem,a))continue;
         if(!T.projectionBudget.available())break search;
         expanded++;const p=T.projectResources(local,mem,a);if(!p)continue;
         if(a.type==="card"&&cardScore(local,mem,a,axis(local,mem),p.cost,p)<=0)continue;
@@ -659,7 +687,11 @@
   }
   function chooseAction(s,m) {
     if(!T.legalState(s))return {type:"stop",reason:"决策前牌桌基础字段不完整"};
-    const currentAxis=axis(s,m),ranked=candidates(s,m,currentAxis),routes=resourceRoutes(s,m),best=routes.best,
+    const currentAxis=axis(s,m),cardValues=new Map(),firstSteps=[];
+    candidates(s,m,currentAxis,true,cardValues);
+    tuning(s,m,cardValues,true,firstSteps);
+    const ranked=candidates(s,m,currentAxis,false,cardValues),tune=tuning(s,m,cardValues,false,firstSteps),
+      routes=resourceRoutes(s,m),best=routes.best,
       finishing=ranked.some(a=>{
         if(a.type!=="skill"&&!(a.type==="card"&&a.id==="seed"))return false;
         const hit=T.damageEstimate(s,m,s.active,a.skill||"NA",a.id==="seed");
@@ -676,8 +708,7 @@
       const purpose=a.type==="card"&&T.byId[a.id].type==="technique"?techniquePlan(s,m,s.hand[a.index],a.target,T.cardCost(s,a,m)).reason:
         a.skill==="T"?"按当前资源使用"+T.techniques[a.technique].name:null;
       chosen={...a,reason:a.reason||purpose||currentAxis+"：根据当前资源重新决策"};}
-    const tune=finishing?null:tuning(s,m);
-    if(tune&&tune.score>Math.max(ranked[0]?.score||0,best?.score||0)&&!best?.terminal){
+    if(!finishing&&tune&&tune.score>Math.max(ranked[0]?.score||0,best?.score||0)&&!best?.terminal){
       const {score,...action}=tune;chosen=action;
     }
     if(chosen){
@@ -687,7 +718,7 @@
     if(tune){const {score,...action}=tune;return action;}
     if(s.characters.filter(T.alive).length===1&&s.characters[s.active].hp<=3){
       const attacks=["E","NA","Q"].map(name=>skill(s.active,name))
-        .filter(a=>T.skillLegal(s,a,m)&&!blocked(m,a))
+        .filter(a=>T.skillLegal(s,a,m)&&!blocked(s,m,a))
         .map(a=>({a,hit:T.damageEstimate(s,m,s.active,a.skill).direct,paid:T.size(T.skillCost(s.active,a.skill,m,s))}))
         .filter(x=>x.hit>0).sort((a,b)=>b.hit-a.hit||a.paid-b.paid);
       if(attacks.length)return {...attacks[0].a,axis:currentAxis,reason:"最后一人仍有合法正伤害动作，不因低血评分空过"};

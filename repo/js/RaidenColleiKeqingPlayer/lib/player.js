@@ -505,7 +505,7 @@
     rejectUnchangedTune(action, before, after) {
       if (action.type !== "tune" || !T.legalState(after) || T.boardKey(before) !== T.boardKey(after))
         return false;
-      T.rejectAction(this.memory, action);
+      T.rejectAction(this.memory, action, before);
       this.host.trace("tuning-retry-alternative", { action, proof: "full-hand-and-board-unchanged" });
       const card = before.hand[action.index]?.name || "这张牌";
       this.notice("tune-rejected:" + action.id, `[调和] 「${card}」未调和成功，手牌与骰子未变，改用其他牌或行动。`);
@@ -517,15 +517,16 @@
       const host = this.host;
       this.readyState = null;
       Object.assign(host, previousBudget);
-      if (error.code === "TCG_INPUT_REJECTED") T.rejectAction(this.memory, action);
-      const after = await this.awaitObservation({ mode: "full" });
+      if (error.code === "TCG_INPUT_REJECTED") T.rejectAction(this.memory, action, state);
+      const after = await this.awaitObservation({ mode: "full",
+        ...(error.code === "TCG_INPUT_REJECTED" ? { rejectedHand: state.hand } : {}) });
       if (tune && error.code === "TCG_TUNE_UNCONFIRMED") {
         if (T.verifyResynchronized(action, state, after, false)) {
           T.commit(this.memory, action, state, after);
           host.trace("confirmed", { action, after, memory: this.memory, source: "tuning-recovery" });
           log.info("[调和] 已核实手牌消耗与元素骰变化，继续后续行动。");
         } else if (!this.rejectUnchangedTune(action, state, after)) {
-          T.deferUncertain(this.memory, action);
+          T.deferUncertain(this.memory, action, state);
           host.trace("action-uncertain", { action, after, memory: this.memory });
           log.warn("[调整] 调和结果未能确认，按实际牌面继续，不重复烧牌。");
         }
@@ -622,7 +623,7 @@
         T.commit(memory, action, state, after);
         host.trace("confirmed", { action, after, memory });
       } else if (!(after.handRead === "full" && this.rejectUnchangedTune(action, state, after))) {
-        T.deferUncertain(memory, action);
+        T.deferUncertain(memory, action, state);
         host.trace("action-uncertain", { action, after, memory });
         log.warn("动作效果未确认，已重新同步，不重复输入。");
       }

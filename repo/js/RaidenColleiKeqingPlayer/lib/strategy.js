@@ -19,7 +19,7 @@
   }
   function eligible(s,m){
     const out=[],a=s.active,c=s.characters[a],n=T.total(s.dice);
-    const add=x=>{if(!(m.uncertainActions||[]).includes(T.actionKey(x)) &&
+    const add=x=>{if(!T.actionRefused(s,m,x) &&
       (x.type!=="card" || T.cardLegal(s,x,m)))out.push(x);};
     for(const skill of ["Q","E","NA"])if(T.skillLegal(s,{who:a,skill},m))add({type:"skill",who:a,skill});
     for(let target=0;target<3;target++)if(target!==a && T.alive(s.characters[target]) &&
@@ -59,7 +59,7 @@
       } else if(h.id==="gambler" && !c.frozen && m.artifactKinds[a]!=="gambler") {
         const pay=T.payment(s.dice,def.cost,T.team[a].element),after={...s,dice:pay.remaining};
         if(["Q","E","NA"].some(skill=>T.skillLegal(after,{who:a,skill},m)&&
-          knownDefeats(after,m,a,skill)>0))add({...action,target:a});
+          defeatEstimates(after,damageEstimate(after,m,a,skill)).nominalDefeats>0))add({...action,target:a});
       }
       else if(def.type==="weapon" && def.weaponTarget===a && !m.weapons[a] && !c.frozen)add({...action,target:a});
       else if(h.id==="floralSidewinder" && a===1 && !m.talent && !c.frozen)add({...action,target:1});
@@ -138,17 +138,19 @@
       uncertainReaction:hit.uncertainReaction || extra?.uncertainReaction===true,target,
       auraAfter:extra?.auraAfter||hit.auraAfter,quickenAfter:extra?.quickenAfter||hit.quickenAfter,coreConsumed:core};
   }
-  function knownDefeats(s,m,who,skill,equips=false) {
-    if(T.enemyCount(s)===null)return 0;
-    const d=damageEstimate(s,m,who,skill,equips);if(!d.target)return 0;
-    if(d.uncertainReaction)return 0;
-    return (d.target.defenseKnown===true&&d.target.auraKnown===true&&d.target.hp<=d.direct?1:0)+
-      (d.splash?s.enemies.filter(e=>e!==d.target&&T.alive(e)&&e.defenseKnown===true&&e.hp<=d.perStandby).length:0);
+  function defeatEstimates(s,d) {
+    let nominalDefeats=0,guaranteedDefeats=0;
+    if(T.enemyCount(s)!==null && d.target)for(const e of s.enemies.filter(T.alive)) {
+      if(e.hp>(e===d.target?d.direct:d.perStandby))continue;
+      nominalDefeats++;
+      if(!d.uncertainReaction && e.defenseKnown===true && (e!==d.target || e.auraKnown===true))guaranteedDefeats++;
+    }
+    return {nominalDefeats,guaranteedDefeats};
   }
   function projected(s,m,a){
     if(!T.projectionBudget.take())return null;
     // Funding prefixes and the ordinary beam share the same rejection gate.
-    if((m.uncertainActions||[]).includes(T.actionKey(a)))return null;
+    if(T.actionRefused(s,m,a))return null;
     if(a.type==="skill"&&!T.skillLegal(s,a,m)||a.type==="card"&&!T.cardLegal(s,a,m)||
       a.type==="switch"&&(a.target===s.active||!T.alive(s.characters[a.target])||s.characters[a.target].frozen))return null;
     const next=copy(s),mem=copy(m),cost=actionCost(a,s,m),
@@ -226,8 +228,13 @@
       const finished=T.enemyCount(next)===0;
       if(d.uncertainReaction)leaf=true;
       if(m.artifactKinds[who]==="gambler") {
-        const triggers=Math.min(T.gamblerRemaining(m,who),knownDefeats(s,m,who,skill,a.type==="card"&&a.id==="floralSidewinder"));
-        next.dice.Omni=Math.min(16-T.total(next.dice)+(next.dice.Omni||0),(next.dice.Omni||0)+2*triggers);
+        const defeats=defeatEstimates(s,d),remaining=T.gamblerRemaining(m,who),capacity=16-T.total(next.dice),
+          guaranteedRefund=Math.min(capacity,2*Math.min(remaining,defeats.guaranteedDefeats)),
+          nominalRefund=Math.min(capacity,2*Math.min(remaining,defeats.nominalDefeats));
+        next.dice.Omni=(next.dice.Omni||0)+guaranteedRefund;
+        // Estimates rank equipment, but only proven refunds can fund actions.
+        // Count the uncredited portion once at settlement, with turn discount.
+        if(!finished)benefit+=(nominalRefund-guaranteedRefund)*(.16+.15);
       }
       if(who===0 && skill==="E")benefit+=m.eyeRound+2<m.round?3.8:.4;
       if(who===1 && skill==="Q")benefit+=m.dendroRound+1<m.round?2.1:.7;
@@ -342,10 +349,10 @@
       if(who===0&&skill==="Q"&&!child.leaf)for(const target of [1,2]){
         if(child.path.length+2>depth||!T.projectionBudget.available())break;
         const change={type:"switch",target},burst={type:"skill",who:target,skill:"Q"};
-        if((child.memory.uncertainActions||[]).some(k=>[T.actionKey(change),T.actionKey(burst)].includes(k))||
+        if(T.actionRefused(child.state,child.memory,change)||
           !T.alive(child.state.characters[target])||child.state.characters[target].frozen)continue;
         const handoff=advance(child,change,baseline);expanded++;if(!handoff)continue;
-        if(!T.skillLegal(handoff.state,burst,handoff.memory))continue;
+        if(T.actionRefused(handoff.state,handoff.memory,burst)||!T.skillLegal(handoff.state,burst,handoff.memory))continue;
         if(!T.projectionBudget.available())break;
         const done=advance(handoff,burst,baseline);expanded++;if(!done)continue;
         if(preparationUsed(done.path)&&betterPlan(done,best))best=done;

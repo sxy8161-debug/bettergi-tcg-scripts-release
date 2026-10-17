@@ -1126,7 +1126,10 @@
         ? 99
         : TCG.team[who].maxHp +
           (this.memory?.extraMaxHp?.[who] || 0) +
-          (this.selectedSoup === "maxhp" && this.currentAction?.target === who ? 1 : 0);
+          (this.soupReceipt?.effect === "maxhp" && this.soupReceipt.exited === true &&
+            this.soupReceipt.origin === this.confirmationSession?.key &&
+            this.confirmationSession?.plan?.action?.target === who &&
+            this.soupReceipt.target === who ? 1 : 0);
       const validHp = (value) => value !== null && value >= 1 && value <= maxHp;
       const raisedValid = validHp(raised),
         loweredValid = validHp(lowered);
@@ -1538,7 +1541,11 @@
       if (this.confirmationSession) this.confirmationSession.handObservation = null;
     }
     acceptHand(hand, reason) {
-      this.handCache = TCG.indexedHand(hand);
+      this.handCache = TCG.reconcileHand(this.handProvenance, hand, false,
+        (this.memory?.refusedActions || []).filter(r => r.uncertain && r.round === this.memory.round));
+      // Publish the same provenance into the observation returned to planning.
+      hand.forEach((card, index) => Object.assign(card, this.handCache[index]));
+      this.handProvenance = this.handCache;
       this.trace("hand-cache-updated", { reason, count: this.handCache.length });
     }
     handCostMarkersIn(f, roi) {
@@ -1917,7 +1924,9 @@
         scan.retainedVariantFamilies = plan.retainedVariantFamilies;
         scan.settling = true;
         this.invalidateHand("generated-drawn-or-replaced-card");
-        const hand = await this.readHand(plan.expectedCount ?? null, null, scan);
+        let hand = await this.readHand(plan.expectedCount ?? null, null, scan);
+        if (plan.rejectedHand && !this.autoRisk)
+          hand = TCG.reconcileHand(plan.rejectedHand, hand, true);
         if (session) session.handObservation = { hand: TCG.indexedHand(hand), revision: this.inputRevision };
         return hand;
       }
@@ -2114,7 +2123,7 @@
           TCG.emptyHandEffect(
             plan.action,
             plan.before,
-            { ...settled, selectedSoup: this.selectedSoup },
+            settled,
             plan.transitionPassed === true,
           )
         ) {
@@ -3087,6 +3096,7 @@
           this.actionSubmittedAt = null;
           this.consumptionReceipt = null;
           this.pendingHandEvidence = null;
+          this.soupReceipt = null;
         }
       }
     }
@@ -3125,9 +3135,9 @@
             this.trace("choice-deferred", { action, reason: e.message }); await waitForSample(300); continue; }
           // A verified payment/target exit is not a generated-card choice.
           // Keep simple removal only when this action owns the completed exit.
-          const receipt = this.choiceReceipt;
+          const receipt = this.soupReceipt || this.choiceReceipt;
           if (!(session.plan?.mode === "remove" && receipt?.origin === session.key &&
-              receipt.exited === true && ["payment", "target"].includes(receipt.kind)))
+              receipt.exited === true && (this.soupReceipt === receipt || ["payment", "target"].includes(receipt.kind))))
             session.plan = { mode: "full", action, before, expectedCount: this.handCountHint,
               retainedHand: session.plan?.retainedHand,retainedVariantFamilies:session.plan?.retainedVariantFamilies };
           continue;
@@ -3175,6 +3185,11 @@
             this.trace("confirmation-deferred", { action, phase: after.phase, turn: after.turn });
             await waitForSample(450); continue;
           }
+          // Consumed source can precede a late soup page. Keep its owner even
+          // after a complete resync; neither success nor uncertain exit closes it.
+          if (TCG.confirmationReady && !TCG.confirmationReady(action, before, after)) {
+            await waitForSample(250); continue;
+          }
           const verified = TCG.verify(action, before, after, session.transition);
           const budgetMatches = this.diceBudgetMatches(after);
           // Begin observing immediately after submission. A positive effect may
@@ -3213,6 +3228,9 @@
           }
           if (!TCG.legalState(after)) {
             await waitForSample(400); continue;
+          }
+          if (TCG.confirmationReady && !TCG.confirmationReady(action, before, after)) {
+            await waitForSample(250); continue;
           }
           const confirmed = TCG.verifyResynchronized(action, before, after, session.transition);
           this.adoptObservedState(after, "post-action-resync");
@@ -3303,7 +3321,7 @@
     class BetterGIHost extends root.TCGBetterGI.BetterGIHost {
 
     constructor(options){
-      super(options);this.memory=null;this.selectedSoup=null;
+      super(options);this.memory=null;this.soupReceipt=null;
       this.automaticBanners=["风风轮舞踢","踏云献瑞","准备技能","正在准备技能"];
     }
 
@@ -3347,6 +3365,7 @@
       };
     }
     async resolveChoice(before = null, memory = TCG.freshMemory()) {
+      const owner = this.confirmationSession, action = owner?.plan?.action;
       let stable = 0,
         key = "",
         last = null;
@@ -3369,7 +3388,8 @@
               const session = this.choiceSession;
               this.choiceSession = null;
               // Soup applies an effect immediately; it generates NO hand card.
-              this.selectedSoup = session.effect;
+              this.soupReceipt = { origin: session.origin, target: session.target,
+                effect: session.effect, exited: true };
               this.pendingChoiceCard = null;
               this.handFanReady = false;
               this.handNeedsReset = true;
@@ -3385,23 +3405,23 @@
             }
           }
         } else if (!this.choiceSession) {
-          if (last.choiceKind !== "soup" || !last.recognized || this.currentAction?.id !== "soup") {
+          if (last.choiceKind !== "soup" || !last.recognized || action?.id !== "soup" || action.type !== "card") {
             stable = 0;
             key = "";
           } else {
-            const basis = before || this.lastObservedState;
+            const basis = owner.plan.before;
             const paid =
               basis &&
               TCG.payment(
                 basis.dice,
-                TCG.cardCost("soup", this.currentAction.target, memory, basis),
+                TCG.cardCost("soup", action.target, memory, basis),
                 TCG.team[basis.active].element,
               );
             const choiceState = paid ? { ...basis, dice: paid.remaining } : basis;
             const target = TCG.soupChoice(
                 last.options,
                 choiceState,
-                this.currentAction.target,
+                action.target,
                 memory,
               ),
               id = target?.id;
@@ -3410,6 +3430,7 @@
             key = current;
             if (stable >= 2 && target) {
               this.choiceSession = {
+                origin: owner.key, target: action.target,
                 id,
                 effect: target.effect,
                 confirmed: false,
@@ -3554,7 +3575,7 @@
 
     initialObservationBoard() { return this.board(true); }
     prepareBoardObservation() { this.moveTo(1555, 545); }
-    boardExtrasIn(f,phase) { return {supportCounts:{opera:this.matches(f,"support/Opera",[225,550,390,345],0.9,false).length}}; }
+    boardExtrasIn(f,phase) { return {soupReceipt:this.soupReceipt,supportCounts:{opera:this.matches(f,"support/Opera",[225,550,390,345],0.9,false).length}}; }
 
     async proveEmptyHand(plan, settled) {
       const receipt = this.consumptionReceipt,
@@ -3937,7 +3958,7 @@
     async executeInput(action, before, memory) {
       if (action.type === "card" && !TCG.byId[action.id]) throw new Error("未支持的卡牌禁止出牌");
       this.memory = memory;
-      this.selectedSoup = null;
+      this.soupReceipt = null;
       if (action.type === "card" && !TCG.cardLegal(before, action, memory))
         throw new Error("卡牌目标、费用或前置条件不合法");
       await this.requireUnchangedBoard(before);
@@ -3955,7 +3976,7 @@
       this.expectedDice =
         action.type === "end"
           ? null
-          : TCG.total(before.dice) - cost + TCG.total(TCG.cardRefund(action, memory));
+          : TCG.total(before.dice) - cost + TCG.total(TCG.cardRefund(action, memory, before));
       const wearer =
         action.type === "switch"
           ? action.target
@@ -3997,9 +4018,7 @@
         (action.type === "skill" && action.who === 1 && action.skill === "E");
     }
 
-    confirmationExtras() {
-      const facts={selectedSoup:this.selectedSoup};this.selectedSoup=null;return facts;
-    }
+    confirmationExtras() { return {soupReceipt:this.soupReceipt}; }
 
 
   

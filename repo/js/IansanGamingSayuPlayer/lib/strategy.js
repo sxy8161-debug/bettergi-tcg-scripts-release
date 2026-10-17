@@ -8,7 +8,7 @@
   if(action.type!=="switch"||T.size(switchCost)===0)return null;
   for(const h of s.hand)if(h.id==="shift"){
     const a={type:"card",id:h.id,index:h.index,target:null},cost=costOf(a);
-    if(cost!==null&&T.size(cost)===0&&!m.uncertainActions.includes(T.actionKey(a))&&T.cardLegal(s,a,m))
+    if(cost!==null&&T.size(cost)===0&&!T.actionRefused(s,m,a)&&T.cardLegal(s,a,m))
       return a;
   }
   return null;
@@ -182,6 +182,10 @@
   }
   const DAMAGE_VALUE = 0.7, DEFEAT_VALUE = 1.8, DIE_VALUE = 0.18;
   const enemyHealth = s => (s.enemies || []).filter(T.alive).reduce((n, e) => n + e.hp, 0);
+  function combatTarget(s) {
+    const targets = (s.enemies || []).filter(e => T.alive(e) && e.active === true);
+    return targets.length === 1 ? targets[0] : null;
+  }
   function summonValue(s, m) {
     if (!m.sayuSummon || !T.enemyCount(s)) return 0;
     const injured = s.characters.flatMap((c, i) => T.alive(c) ? [{
@@ -202,6 +206,7 @@
       const r = reaction("Anemo", i === 0 && enemy(shadow)?.auraKnown ? enemy(shadow).aura : []),
         hit = applyDamage(shadow, { direct: 1 + r.bonus,
           reaction: r, element: "Anemo", elemental: true });
+      if (!hit) break;
       value += (hit.dealt * DAMAGE_VALUE + hit.kills * DEFEAT_VALUE +
         heal * (target?.confidence || 0) * 0.65) * (i === 0 ? 0.55 : 0.3);
       if (target) target.missing -= heal;
@@ -256,17 +261,18 @@
       c.hp > s.characters[s.active].hp && c.hp > pressureEstimate(m) ? [i] : []);
   }
   function followupReachable(s, m, g) {
-    if (!g || !T.alive(s.characters[g.who]) || s.characters[g.who].frozen ||
-        m.uncertainActions.includes(T.actionKey({ type: "skill", ...g }))) return false;
+    if (!g || !T.alive(s.characters[g.who]) || s.characters[g.who].frozen) return false;
     let dice = s.dice;
     if (g.who !== s.active) {
       // Use the same estimated switch payment as simulate. A different
       // preserved element can invent a followup that loses its only die.
+      if (T.actionRefused(s, m, { type: "switch", target: g.who })) return false;
       const p = T.payment(dice, T.switchCost(m), T.team[s.active].element);
       if (!p) return false;
       dice = p.remaining;
     }
     const local = { ...s, active: g.who, dice };
+    if (T.actionRefused(local, m, { type: "skill", ...g })) return false;
     return T.skillLegal(local, g, m) || !!tuningPlan(local, m, g);
   }
   function activeOutputReachable(s, m) {
@@ -301,7 +307,8 @@
       };
     return s.hand
       .filter(T.handCardKnown)
-      .filter((h) => !m.uncertainActions.includes(T.actionKey({ type: "tune", id: h.id })))
+      .filter((h) => !T.actionRefused(s, m,
+        { type: "tune", id: h.id, index: h.index, element: T.team[s.active].element }))
       .slice()
       .sort((a, b) => (values[a.id] ?? 15) - (values[b.id] ?? 15));
   }
@@ -375,8 +382,8 @@
     };
   }
   function applyDamage(next, d) {
-    const e = enemy(next);
-    if (!e) return { dealt: d.direct * 0.5, kills: 0 };
+    const e = combatTarget(next);
+    if (!e) return null;
     const targets=next.enemies.filter(T.alive),backgrounds=targets.filter(x=>x!==e);
     let dealt=0,complete=true;
     const hit=(x,amount,element,piercing=false)=>{
@@ -499,7 +506,7 @@
       .concat(endCoverTargets(s, m));
     return s.characters.flatMap((c, target) =>
       target !== s.active && T.alive(c) && !c.frozen &&
-      !m.uncertainActions.includes(T.actionKey({type:"switch",target})) &&
+      !T.actionRefused(s, m, { type: "switch", target }) &&
       T.payment(s.dice,T.switchCost(m),T.team[target].element) &&
       (["E","Q","NA"].some(skill => followupReachable(s,m,{who:target,skill})) ||
         target===1 && m.gamingReturn || covers.includes(target)) ? [target] : []);
@@ -512,7 +519,7 @@
       carry = outputRole(s, m),
       n = T.total(s.dice);
     const add = (x) => {
-      if (!m.uncertainActions.includes(T.actionKey(x))) out.push(x);
+      if (!T.actionRefused(s, m, x)) out.push(x);
     };
     for (const skill of ["E", "Q", "NA"])
       if (T.skillLegal(s, { who: a, skill }, m)) add({ type: "skill", who: a, skill });
@@ -607,6 +614,7 @@
   }
   function simulate(s, m, a) {
     if (!T.projectionBudget.take()) return null;
+    if (T.actionRefused(s, m, a)) return null;
     const next = copy(s),
       mem = copy(m),
       pay = T.payment(s.dice, actionCost(a, s, m), T.team[s.active].element);
@@ -652,28 +660,21 @@
       if (a.target === 1 && m.gamingReturn) {
         const d = damageEstimate(next, m, 1, "P");
         const hit = applyDamage(next, d);
+        if (!hit) return null;
         benefit += hit.dealt * 0.7 + hit.kills * 1.8;
         if(hit.guaranteedKills&&m.artifactKinds[1]==="gambler")
-          next.dice.Omni=(next.dice.Omni||0)+2*Math.min(hit.guaranteedKills,T.gamblerRemaining(m,1));
+          T.generateDice(next.dice, "Omni", 2 * Math.min(hit.guaranteedKills, T.gamblerRemaining(m, 1)));
         next.characters[1].energy = Math.min(3, next.characters[1].energy + 1);
         leaf = true; // Native automatic plunge owns the next combat timing.
       }
     }
     if (a.type === "card") {
-      const c = T.byId[a.id];
       next.hand = T.indexedHand(next.hand.filter((_, i) => i !== a.index));
       // Equipment is paid for and credited through realised subsequent damage,
       // payment or refund. Do not reward the same weapon once at entry and
       // again on every attack, nor credit moving a free Heart as engine profit.
-      if (a.id === "gilded")
-        next.dice[T.team[a.target].element] = (next.dice[T.team[a.target].element] || 0) + 2;
-      if (
-        ["weapon", "artifact"].includes(c.type) &&
-        m.boar > 0 &&
-        (c.type === "weapon" ? m.weapons[a.target] : m.artifacts[a.target])
-      ) {
-        next.dice.Omni = (next.dice.Omni || 0) + 1;
-      }
+      for (const [element, count] of Object.entries(T.cardRefund(a, m, s)))
+        T.generateDice(next.dice, element, count);
       if (a.id === "lyre") {
         const returned = T.byId[m.artifactKinds[a.target]];
         next.hand.push({
@@ -683,9 +684,7 @@
           supported: true,
         });
       }
-      if (a.id === "companion") next.dice.Omni = (next.dice.Omni || 0) + 2;
       if (a.id === "lost") {
-        next.dice.Omni = (next.dice.Omni || 0) + 1;
         active.energy = Math.min(T.team[s.active].maxEnergy, active.energy + 1);
         benefit = 0.5;
       }
@@ -723,38 +722,40 @@
             return r;
           }, {});
           const refund = (counts.weapon > 1 ? 1 : 0) + (counts.artifact > 1 ? 1 : 0);
-          next.dice.Omni = (next.dice.Omni || 0) + refund;
+          T.generateDice(next.dice, "Omni", refund);
         }
       }
     }
     if (a.type === "skill" || (a.type === "card" && a.id === "skivingNewAndImproved")) {
       const who = a.id === "skivingNewAndImproved" ? 2 : a.who,
         skill = a.id === "skivingNewAndImproved" ? "E" : a.skill,
-        d = damageEstimate(s, m, who, skill),
-        e = enemy(next);
+        d = damageEstimate(s, m, who, skill);
       const original = enemy(s),
         n = T.enemyCount(s),
         carry = outputRole(s, m);
       combat = true;
       const healing = who === 2 && skill === "E" ? passiveHealing(s, m, a) : 0;
-      const hit=applyDamage(next,d),{dealt,kills}=hit;
+      const hit = applyDamage(next, d);
+      if (!hit) return null;
+      const { dealt, kills } = hit;
       if(!hit.complete)leaf=true;
-      if (d.prepared && !hit.replacementRequired) {
-        const future = enemy(next),
+      if (d.prepared && !hit.replacementRequired && combatTarget(next)) {
+        const future = combatTarget(next),
           r = reaction(d.preparedElement, future?.auraKnown ? future.aura : []);
         // Opponent gets an action between hits. No instant prepared kill,
         // Gambler refund or subsequent free manual E in this projected node.
         const shadow = copy(next),
           weapon = m.weapons[who] ? (m.weaponKinds[who] === "wolf" && future?.hp <= 6 ? 3 : 1) : 0,
           direct = 2 + weapon + d.preparedBuff + (m.soupDamage[who] > 1 ? 1 : 0) + r.bonus,
-          hit = future ? applyDamage(shadow, { direct, reaction: r,
-            element: d.preparedElement, elemental: true }) : { dealt: 0, kills: 0 };
+          hit = applyDamage(shadow, { direct, reaction: r,
+            element: d.preparedElement, elemental: true });
+        if (!hit) return null;
         prepared = hit.dealt * DAMAGE_VALUE + hit.kills * DEFEAT_VALUE;
         boundary = { kind: "prepared", state: shadow };
         leaf = true;
       }
       if (hit.guaranteedKills && m.artifactKinds[who] === "gambler")
-        next.dice.Omni = (next.dice.Omni || 0) + 2 * Math.min(hit.guaranteedKills, T.gamblerRemaining(m, who));
+        T.generateDice(next.dice, "Omni", 2 * Math.min(hit.guaranteedKills, T.gamblerRemaining(m, who)));
       benefit =
         dealt * 0.7 +
         kills * 1.8 +
@@ -802,7 +803,11 @@
         next.characters[next.active].hp <= pressureEstimate(mem)) leaf = true;
     if (T.total(next.dice) > 16) return null;
     if (T.enemyCount(s) > 0 && T.enemyCount(next) === 0) leaf = true;
+    // Replacement belongs to the opponent. Keep this hit/draw's value, but
+    // do not invent its next active target across any valuation boundary.
+    if (!combatTarget(next)) { leaf = true; boundary = null; }
     if (!boundary && unknownDraw && T.enemyCount(next) > 0 &&
+        combatTarget(next) &&
         !(exposureRisk(next, mem) > 0 && next.characters[next.active].hp <= pressureEstimate(mem)))
       boundary = { kind: "unknown-draw", state: next };
     return { state: next, memory: mem, benefit, combat, leaf, payoff, boundary };
@@ -842,7 +847,6 @@
       !["E", "Q", "NA"].includes(g.skill) ||
       !T.alive(s.characters[g.who]) ||
       s.characters[g.who].frozen ||
-      m.uncertainActions.includes(T.actionKey({ type: "skill", ...g })) ||
       (g.skill === "Q" && s.characters[g.who].energy < T.team[g.who].maxEnergy)
     )
       return null;
@@ -851,9 +855,10 @@
       path = [],
       parts = [];
     const apply = (a) => {
+      if (T.actionRefused(local, mem, a)) return null;
       const p = step(local, mem, a);
       if (!p) return null;
-      path.push(a);
+      path.push(handInstanceAction(local, a));
       parts.push(p);
       local = p.state;
       mem = p.memory;
@@ -862,7 +867,7 @@
     if (g.who !== local.active) {
       const a = { type: "switch", target: g.who };
       if (
-        mem.uncertainActions.includes(T.actionKey(a)) ||
+        T.actionRefused(local, mem, a) ||
         !T.payment(local.dice, T.switchCost(mem))
       )
         return null;
@@ -892,15 +897,16 @@
     const skills = s.characters[0].energy === 1 ? ["E", "Q"] : ["E", "NA", "Q"],
       exposures = skills.length + (s.active !== 0 && !m.fastSwitch ? 1 : 0);
     if (s.characters[0].hp <= pressureEstimate(m) * exposures) return false;
-    const variants = [null], moon = s.hand.find((h) => h.id === "moon");
-    if (moon && !m.weapons[0]) variants.push({ type: "card", id: "moon", index: moon.index, target: 0 });
+    const variants = [null];
+    if (!m.weapons[0]) for (const moon of s.hand.filter(h => h.id === "moon"))
+      variants.push({ type: "card", id: "moon", index: moon.index, target: 0 });
     // A late investment may still be good, but must reach the actual burst
     // with existing resources and withstand the whole relay/E(A)Q chain.
     // This small certificate cannot borrow a next-round die or unknown draw.
     for (const gear of variants) {
       let local = s, mem = m;
       if (gear) {
-        if (!T.cardLegal(local, gear, mem) || mem.uncertainActions.includes("card:moon")) continue;
+        if (!T.cardLegal(local, gear, mem) || T.actionRefused(local, mem, gear)) continue;
         const p = simulate(local, mem, gear);
         if (!p) continue;
         local = p.state; mem = p.memory;
@@ -918,11 +924,10 @@
   function discountPreparation(s, m, a) {
     if (a.type !== "card" || !["weapon", "artifact"].includes(T.byId[a.id]?.type)) return null;
     const original = T.size(T.cardCost(a.id, a.target, m, s));
-    for (const id of ["garden", "house"]) {
-      const h = s.hand.find((x) => x.id === id);
-      if (!h || m.uncertainActions.includes("card:" + id)) continue;
+    for (const id of ["garden", "house"]) for (const h of s.hand.filter(x => x.id === id)) {
       const setup = { type: "card", id, index: h.index, target: null };
       if (
+        T.actionRefused(s, m, setup) ||
         !T.cardLegal(s, setup, m) ||
         (id === "garden" && m.garden) ||
         (id === "house" && m.houses.length >= 2)
@@ -930,18 +935,21 @@
         continue;
       const p = simulate(s, m, setup);
       if (!p) continue;
-      const lowered = T.size(T.cardCost(a.id, a.target, p.memory, p.state));
+      const lowered = T.size(T.cardCost(a.id, a.target, p.memory, p.state)),
+        after = { ...a, index: a.index - (h.index < a.index ? 1 : 0) };
       if (
         lowered < original &&
-        T.cardLegal(
-          p.state,
-          { ...a, index: p.state.hand.findIndex((x) => x.id === a.id) },
-          p.memory,
-        )
+        !T.actionRefused(p.state, p.memory, after) &&
+        T.cardLegal(p.state, after, p.memory)
       )
         return setup;
     }
     return null;
+  }
+  function handInstanceAction(s, a) {
+    if (!["card", "tune"].includes(a.type)) return a;
+    const origins=s.hand[a.index]?.instanceIds;
+    return origins?.length ? { ...a, instanceIds: origins.slice() } : a;
   }
   function replaySequence(s, m, sequence) {
     let local = copy(s),
@@ -950,9 +958,17 @@
       parts = [];
     for (const input of sequence) {
       const a = { ...input };
-      // Same-name copies are interchangeable, but numeric indices are NOT:
-      // an inserted/removed preparation card shifts every subsequent slot.
-      if (["card", "tune"].includes(a.type)) a.index = local.hand.findIndex((h) => h.id === a.id);
+      // A preparation can shift slots, but never authorizes another same-name
+      // copy. Planned actions carry exact origins from their own pre-action hand.
+      if (["card", "tune"].includes(a.type)) {
+        if (a.instanceIds?.length) {
+          const matches = local.hand.filter(h => h.id === a.id &&
+            h.instanceIds?.length === a.instanceIds.length &&
+            a.instanceIds.every(id => h.instanceIds.includes(id)));
+          if (matches.length !== 1) return null;
+          a.index = matches[0].index;
+        } else if (local.hand[a.index]?.id !== a.id) return null;
+      }
       if (
         (["card", "tune"].includes(a.type) && a.index < 0) ||
         (a.type === "switch" &&
@@ -963,14 +979,14 @@
       )
         return null;
       if (
-        mem.uncertainActions.includes(T.actionKey(a)) ||
+        T.actionRefused(local, mem, a) ||
         (a.type === "card" && !T.cardLegal(local, a, mem)) ||
         (a.type === "skill" && !T.skillLegal(local, a, mem))
       )
         return null;
       const p = simulate(local, mem, a);
       if (!p) return null;
-      path.push(a);
+      path.push(handInstanceAction(local, a));
       parts.push(p);
       local = p.state;
       mem = p.memory;
@@ -989,9 +1005,9 @@
       m.openingRevel || (m.openingDraws || 0) >= openingDrawLimit(m)
     )
       return null;
-    const sing = s.hand.find((h) => h.id === "sing"),
-      draw = s.hand.find((h) => h.id === "draw"),
-      revel = s.hand.find((h) => h.id === "revel");
+    const usable = id => s.hand.find(h => h.id === id &&
+      !T.actionRefused(s, m, { type: "card", id, index: h.index, target: null })),
+      sing = usable("sing"), draw = usable("draw"), revel = usable("revel");
     const entering = !!sing && m.singCharges === 0 && (m.openingDraws || 0) === 0,
       continuing = m.singCharges === 2 && [1, 2].includes(m.openingDraws);
     if (!entering && !continuing) return null;
@@ -1009,7 +1025,7 @@
     for (const h of candidates) {
       if (!h || s.hand.length > (h.id === "sing" ? 7 : 9)) continue;
       const a = { type: "card", id: h.id, index: h.index, target: null };
-      if (!T.cardLegal(s, a, m) || m.uncertainActions.includes(T.actionKey(a))) continue;
+      if (!T.cardLegal(s, a, m) || T.actionRefused(s, m, a)) continue;
       const p = simulate(s, m, a);
       // Only this ONE draw is chosen. Pay first, then reserve a known-funded
       // Iansan E. Never borrow identities/refunds from its unknown new cards.
@@ -1034,7 +1050,7 @@
     // Retain an ordinary legal root candidate before helpers can spend the
     // scope. This is not another simulator or a queued future action.
     const currentSkill = ["Q", "E", "NA"].map(skill => ({ type: "skill", who: s.active, skill }))
-      .find(a => T.skillLegal(s, a, m) && !m.uncertainActions.includes(T.actionKey(a)));
+      .find(a => T.skillLegal(s, a, m) && !T.actionRefused(s, m, a));
     const direct = terminalChecked ? null : terminalFinisher(s, m);
     if (direct)
       return {
@@ -1204,7 +1220,7 @@
       const child = {
         state: p.state,
         memory: p.memory,
-        path: node.path.concat(a),
+        path: node.path.concat(handInstanceAction(node.state, a)),
         score: node.score + benefit * 0.91 ** node.combat,
         combat: node.combat + (p.combat ? 1 : 0) + (prepared ? 1 : 0),
         risk: (node.risk || 0) + risk,
@@ -1221,6 +1237,7 @@
     function valueBoundary(node, boundary) {
       // Value-only continuation, never an executable sequence across a draw or
       // automatic skill. Only existing cards/dice can pay; no delayed refunds.
+      if (!combatTarget(boundary.state)) return;
       const local = copy(boundary.state), mem = copy(node.memory),
         prior = Math.max(0, node.exposures[local.active] - 1),
         confidence = preparedReliability(local, mem, prior),
@@ -1299,7 +1316,7 @@
             done.combat < window && !q.parts[q.parts.length - 1].leaf &&
             done.state.active === 0 &&
             T.skillLegal(done.state, { who: 0, skill: "Q" }, done.memory) &&
-            !done.memory.uncertainActions.includes("skill:0:Q")
+            !T.actionRefused(done.state, done.memory, { type: "skill", who: 0, skill: "Q" })
           ) {
             const a = { type: "skill", who: 0, skill: "Q" },
               hit = equipmentStep(done.state, done.memory, a);
@@ -1351,7 +1368,7 @@
     if (
       m.used[0] === 0 &&
       T.skillLegal(s, { who: 0, skill: "E" }, m) &&
-      !m.uncertainActions.includes("skill:0:E")
+      !T.actionRefused(s, m, { type: "skill", who: 0, skill: "E" })
     ) {
       const a = { type: "skill", who: 0, skill: "E" },
         p = equipmentStep(s, m, a);
@@ -1438,7 +1455,7 @@
               child.state.active === 0 &&
               !child.memory.iansanBurst &&
               T.skillLegal(child.state, { who: 0, skill: "Q" }, child.memory) &&
-              !child.memory.uncertainActions.includes("skill:0:Q") &&
+              !T.actionRefused(child.state, child.memory, { type: "skill", who: 0, skill: "Q" }) &&
               T.projectionBudget.available()
             ) {
               expanded++;
@@ -1473,6 +1490,19 @@
   function chooseAction(s, m) {
     if (!T.legalState(s))
       return { type: "stop", reason: "行动页的回合、手牌、血量、状态或充能未读清" };
+    // An unresolved action invalidates only its own discounts. Read a native
+    // quote once per skill/round instead of treating an unknown cut as zero or
+    // repeatedly opening the same preview. A failed read leaves the safe,
+    // undiscounted cost bound in place; it never authorizes a cast.
+    const who=s.active;
+    if(!s.characters[who].frozen)for(const skill of ["E","Q"]){
+      const unknown=m.soupDiscount[who]===null || skill==="E"&&
+        (m.moonRound[who]===null||m.troupe[who]===null||who===1&&m.manchai===null),
+        key="uncertain-fee/"+m.round+"/"+who+"/"+skill;
+      if(unknown&&!m.probeKeys.includes(key)&&T.total(s.dice)>0&&
+        (skill!=="Q"||s.characters[who].energy>=T.team[who].maxEnergy))
+        return {type:"probe",who,skill,key,reason:"未决动作后局部核实当前技能费用，不提交技能"};
+    }
     m.route = route(s, m);
     if (m.relayTask && !pendingRelay(s, m)) m.relayTask = null;
     const direct = terminalFinisher(s, m);
