@@ -32,8 +32,8 @@
         {
           "name": "native-61a1bf4b4c-f1",
           "patches": [
-            "assets/opening/白垩之术-v02-p01.png",
-            "assets/opening/白垩之术-v02-p02.png"
+            "assets/opening/白垩之术-v01-p01.png",
+            "assets/opening/白垩之术-v01-p02.png"
           ]
         }
       ],
@@ -177,8 +177,8 @@
         {
           "name": "native-3123c4864d-f1",
           "patches": [
-            "assets/opening/星天之兆-v02-p01.png",
-            "assets/opening/星天之兆-v02-p02.png"
+            "assets/opening/星天之兆-v01-p01.png",
+            "assets/opening/星天之兆-v01-p02.png"
           ]
         }
       ]

@@ -986,8 +986,8 @@ function actionRefused(s, m, action) {
       "heal-dice":["请选择一个角色","对所选角色生效"],heal:["请选择一个角色","对所选角色生效"]}};
 })(globalThis);
 
-globalThis.TCG.version = "1.3.5";
-globalThis.TCG.sharedVersion = "1.5.5";
+globalThis.TCG.version = "1.3.6";
+globalThis.TCG.sharedVersion = "1.5.6";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

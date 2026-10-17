@@ -1251,8 +1251,8 @@ function actionRefused(s, m, action) {
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.6";
-globalThis.TCG.sharedVersion = "1.5.5";
+globalThis.TCG.version = "1.3.7";
+globalThis.TCG.sharedVersion = "1.5.6";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
