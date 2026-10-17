@@ -184,7 +184,7 @@
       ]
     },
     {
-      "id": "talent",
+      "id": "floralSidewinder",
       "name": "飞叶迴斜",
       "views": [
         {
@@ -222,7 +222,7 @@
       ]
     },
     {
-      "id": "woven",
+      "id": "wovenThunder",
       "name": "元素共鸣：交织之雷",
       "patches": [
         "assets/opening/元素共鸣-交织之雷-v01-p01.png",

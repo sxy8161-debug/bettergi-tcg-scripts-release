@@ -7,7 +7,7 @@
   function cardSkill(a,s){
     if(a.type==="skill")return a;
     if(a.type!=="card")return null; // Burning a combat card is not casting it.
-    return a.id==="talent"?{who:1,skill:"E"}:
+    return a.id==="floralSidewinder"?{who:1,skill:"E"}:
       ["penance","wedge"].includes(a.id)?{who:2,skill:"E"}:null;
   }
   function actionCost(a,s,m){return a.type==="skill"?T.skillCost(a.who,a.skill,m,s):
@@ -29,7 +29,7 @@
     for(const h of s.hand){
       const def=T.byId[h.id];if(!def || !T.payment(s.dice,def.cost,T.team[a].element))continue;
       const action={type:"card",id:h.id,index:h.index,target:null};
-      if(h.id==="woven" && n<16)add(action);
+      if(h.id==="wovenThunder" && n<16)add(action);
       else if(h.id==="companion"){
         const goal=T.actionRerollGoal(s,m),pay=T.payment(s.dice,def.cost,T.team[a].element);
         // Repair the intended skill's elemental shortfall (including switch
@@ -56,13 +56,13 @@
           add({...action,target:a});
       } else if(h.id==="exile"){
         if(m.artifactKinds[a]!=="exile" && !c.frozen && exileSetup(s,m))add({...action,target:a});
-      } else if(h.id==="gambler" && !c.frozen && m.artifactKinds[a]!=="gambler" && T.gamblerRemaining(m,a)>0) {
+      } else if(h.id==="gambler" && !c.frozen && m.artifactKinds[a]!=="gambler") {
         const pay=T.payment(s.dice,def.cost,T.team[a].element),after={...s,dice:pay.remaining};
         if(["Q","E","NA"].some(skill=>T.skillLegal(after,{who:a,skill},m)&&
           knownDefeats(after,m,a,skill)>0))add({...action,target:a});
       }
       else if(def.type==="weapon" && def.weaponTarget===a && !m.weapons[a] && !c.frozen)add({...action,target:a});
-      else if(h.id==="talent" && a===1 && !m.talent && !c.frozen)add({...action,target:1});
+      else if(h.id==="floralSidewinder" && a===1 && !m.talent && !c.frozen)add({...action,target:1});
       else if(h.id==="penance" && a===2 && !m.penance && !c.frozen)add({...action,target:2});
       else if(h.id==="wedge" && T.alive(s.characters[2]) && !s.characters[2].frozen && a!==2)add({...action,target:2});
       else if(h.id==="draw" && s.hand.length<=9)add(action);
@@ -125,11 +125,15 @@
       sproutTriggered=T.sproutAvailable(m,who,skill,equips) && T.dendroReaction(s,m,who,skill)===true;
     // Sprout resolves AFTER the skill. Never attach it to an already defeated
     // target or invent the opponent's forced replacement choice.
-    const extra=sproutTriggered && target && target.hp>hit.direct?
+    const actualElement=elemental?element:"Physical",firstDamage=T.damageAgainst(target,hit.direct,actualElement),
+      afterShield=target?{...target,...(T.known(target.shield)?{shield:target.shield-firstDamage.shieldSpent}:{})}:null;
+    const extra=sproutTriggered && target && target.hp>firstDamage.direct?
       hitEstimate(1,"Dendro",hit.auraAfter,hit.quickenAfter):null;
+    const extraDamage=extra?T.damageAgainst(afterShield,extra.direct,"Dendro"):null;
     const perStandby=(who===2&&skill==="Q"?3:0)+hit.piercing;
     const splash=perStandby*enemies.filter(e=>T.alive(e)&&e!==target).length;
-    return {direct:hit.direct+(extra?.direct||0),skillDirect:hit.direct,sproutDamage:extra?.direct||0,
+    return {direct:firstDamage.direct+(extraDamage?.direct||0),skillDirect:firstDamage.direct,sproutDamage:extraDamage?.direct||0,
+      shieldSpent:firstDamage.shieldSpent+(extraDamage?.shieldSpent||0),
       sproutTriggered,splash,perStandby,reaction:hit.reaction,elemental,element,consumed:hit.consumed,
       uncertainReaction:hit.uncertainReaction || extra?.uncertainReaction===true,target,
       auraAfter:extra?.auraAfter||hit.auraAfter,quickenAfter:extra?.quickenAfter||hit.quickenAfter,coreConsumed:core};
@@ -137,13 +141,20 @@
   function knownDefeats(s,m,who,skill,equips=false) {
     if(T.enemyCount(s)===null)return 0;
     const d=damageEstimate(s,m,who,skill,equips);if(!d.target)return 0;
-    return (d.target.hp<=d.direct?1:0)+(d.splash?s.enemies.filter(e=>e!==d.target&&T.alive(e)&&e.hp<=d.perStandby).length:0);
+    if(d.uncertainReaction)return 0;
+    return (d.target.defenseKnown===true&&d.target.auraKnown===true&&d.target.hp<=d.direct?1:0)+
+      (d.splash?s.enemies.filter(e=>e!==d.target&&T.alive(e)&&e.defenseKnown===true&&e.hp<=d.perStandby).length:0);
   }
   function projected(s,m,a){
+    if(!T.projectionBudget.take())return null;
+    // Funding prefixes and the ordinary beam share the same rejection gate.
+    if((m.uncertainActions||[]).includes(T.actionKey(a)))return null;
+    if(a.type==="skill"&&!T.skillLegal(s,a,m)||a.type==="card"&&!T.cardLegal(s,a,m)||
+      a.type==="switch"&&(a.target===s.active||!T.alive(s.characters[a.target])||s.characters[a.target].frozen))return null;
     const next=copy(s),mem=copy(m),cost=actionCost(a,s,m),
       pay=T.payment(s.dice,cost,T.team[a.type==="switch"?a.target:s.active].element);
     if(!pay)return null;
-    next.dice=pay.remaining;let benefit=0,combat=false,leaf=false;
+    next.dice=pay.remaining;let benefit=0,combat=false,leaf=false,guaranteedCombat=true;
     const active=next.characters[s.active];
     function gain(who,amount){const x=next.characters[who];if(T.alive(x))x.energy=Math.min(T.team[who].maxEnergy,x.energy+amount);}
     if(a.type==="switch") {
@@ -156,10 +167,10 @@
     else if(a.type==="tune") {
       const bad=T.diceOrder.find(e=>e!==a.element&&e!=="Omni"&&(next.dice[e]||0)>0);if(!bad)return null;
       next.dice[bad]--;next.dice[a.element]=(next.dice[a.element]||0)+1;
-      const value={woven:1.9,voltage:1.4,edict:1.3,exile:1.1,penance:1.2,wedge:.8,shatterbolt:1.8,sharpkernel:1.5};
+      const value={wovenThunder:1.9,voltage:1.4,edict:1.3,exile:1.1,penance:1.2,wedge:.8,shatterbolt:1.8,sharpkernel:1.5};
       benefit-=.3+(value[a.id]||.35);
     } else if(a.type==="card") {
-      if(a.id==="woven")next.dice.Electro=(next.dice.Electro||0)+1;
+      if(a.id==="wovenThunder")next.dice.Electro=(next.dice.Electro||0)+1;
       else if(a.id==="companion")next.dice.Omni=(next.dice.Omni||0)+2;
       else if(a.id==="voltage") {gain(s.active,1);const target=next.characters.findIndex((x,i)=>i!==s.active&&T.alive(x)&&x.energy<T.team[i].maxEnergy);if(target>=0)gain(target,1);}
       else if(a.id==="stars")gain(s.active,1);
@@ -176,7 +187,7 @@
       else if(a.id==="draw"){benefit+=s.hand.length<=2?2.1:1.1;leaf=true;}
       else if(a.id==="toss"){
         const goal=T.actionRerollGoal(s,m),bad=goal?.bad||0,needed=goal?.needed||0;
-        const scarce=T.burnableHand(s,m).filter(h=>!["toss","lost","woven"].includes(h.id)).length<2;
+        const scarce=T.burnableHand(s,m).filter(h=>!["toss","lost","wovenThunder"].includes(h.id)).length<2;
         // Only colors needed for the payable goal have immediate value. Two
         // rerolls keep successes, p=7/16; extra lucky dice are not extra skills.
         const chance=7/16;let usable=0,probability=Math.pow(1-chance,bad);
@@ -191,7 +202,8 @@
     const cast=cardSkill(a,s);
     if(cast){
       combat=true;const who=cast.who,skill=cast.skill;next.active=who;
-      const d=damageEstimate(s,m,who,skill,a.type==="card"&&a.id==="talent");
+      const d=damageEstimate(s,m,who,skill,a.type==="card"&&a.id==="floralSidewinder");
+      guaranteedCombat=!d.uncertainReaction;
       // Credit HP actually removed, not overkill. Unknown enemy replies and
       // replacement choices end this branch instead of inventing a new target.
       benefit+=(d.target?Math.min(d.target.hp,d.direct):d.direct*.5)*.95;
@@ -199,6 +211,7 @@
       if(skill==="Q")benefit+=1.4; // Convert stored energy into pressure, not hoard it indefinitely.
       if(d.target){
         const target=next.enemies[s.enemies.indexOf(d.target)];
+        if(T.known(target.shield))target.shield-=d.shieldSpent;
         if(d.direct>=target.hp){benefit+=3;target.hp=0;target.dead=true;target.active=false;leaf=true;}
         else target.hp-=d.direct;
         if(d.splash)for(let i=0;i<next.enemies.length;i++)if(next.enemies[i]!==target&&T.alive(next.enemies[i])){
@@ -213,7 +226,7 @@
       const finished=T.enemyCount(next)===0;
       if(d.uncertainReaction)leaf=true;
       if(m.artifactKinds[who]==="gambler") {
-        const triggers=Math.min(T.gamblerRemaining(m,who),knownDefeats(s,m,who,skill,a.type==="card"&&a.id==="talent"));
+        const triggers=Math.min(T.gamblerRemaining(m,who),knownDefeats(s,m,who,skill,a.type==="card"&&a.id==="floralSidewinder"));
         next.dice.Omni=Math.min(16-T.total(next.dice)+(next.dice.Omni||0),(next.dice.Omni||0)+2*triggers);
       }
       if(who===0 && skill==="E")benefit+=m.eyeRound+2<m.round?3.8:.4;
@@ -239,7 +252,9 @@
     }
     T.commit(mem,a,s,next);
     if(a.type!=="probe")mem.costEvidence=null; // one-board evidence never predicts future reductions.
-    return {state:next,memory:mem,benefit,combat,leaf,
+    const provenFinish=guaranteedCombat&&T.enemyCount(s)>0&&T.enemyCount(next)===0&&
+      s.enemies.filter(T.alive).every(e=>e.defenseKnown===true&&e.auraKnown===true);
+    return {state:next,memory:mem,benefit,combat,leaf,provenFinish,
       passesTurn:combat || a.type==="switch"&&!m.fastSwitch};
   }
   function evaluation(s,m,baseline){
@@ -259,7 +274,7 @@
   }
   function betterPlan(candidate,best) {
     if(!best)return true;
-    const finish= T.enemyCount(candidate.state)===0,previousFinish=T.enemyCount(best.state)===0;
+    const finish=candidate.provenFinish===true,previousFinish=best.provenFinish===true;
     if(finish!==previousFinish)return finish;
     // Score estimates may reward healing or setup earlier in the path. A
     // known finish has no such future; choose fewer real inputs before value.
@@ -286,7 +301,10 @@
     return child;
   }
   function plan(s,m,options={}){
-    const depth=options.depth||6,width=options.width||20,budget=1500;
+    return T.projectionBudget.run(1500,()=>searchPlan(s,m,options));
+  }
+  function searchPlan(s,m,options){
+    const depth=options.depth||6,width=options.width||20;
     const baseline=evaluation(s,m,0),start={state:s,memory:m,score:0,path:[],casts:0,turns:0};
     let frontier=[start],best=null,expanded=0;
     // Compare complete tune->...->skill funding before beam pruning. Intermediate
@@ -295,39 +313,40 @@
     // Give legal conversion/charge/switch cards the same complete funding
     // comparison as pure tuning, so negative intermediate setup is not pruned.
     const starts=[start];
-    for(const a of eligible(s,m))if(a.type==="card"&&["woven","companion","voltage","stars","calx","shift","fast"].includes(a.id)){
+    for(const a of eligible(s,m))if(a.type==="card"&&["wovenThunder","companion","voltage","stars","calx","shift","fast"].includes(a.id)){
+      if(!T.projectionBudget.available())break;
       const child=advance(start,a,baseline);expanded++;if(child)starts.push(child);
     }
     funding: for(const seed of starts)for(const who of [s.active,...[0,1,2].filter(i=>i!==s.active)])for(const skill of ["Q","E","NA"]) {
       const goal={who,skill};if(!T.followupReachable(seed.state,seed.memory,goal))continue;
       let node=seed,valid=true;
       if(who!==node.state.active){
-        if(expanded>=budget)break funding;
+        if(!T.projectionBudget.available())break funding;
         const child=advance(node,{type:"switch",target:who},baseline);expanded++;
         if(!child)continue;node=child;
       }
       for(let i=0;i<4&&!T.skillLegal(node.state,goal,node.memory);i++) {
         const funding=T.tuningPlan(node.state,node.memory,goal);if(!funding){valid=false;break;}
         const a={type:"tune",id:funding.card.id,index:funding.card.index,element:T.team[goal.who].element};
-        if(expanded>=budget)break funding;
+        if(!T.projectionBudget.available())break funding;
         const child=advance(node,a,baseline);expanded++;if(!child){valid=false;break;}
         node=child;
       }
       if(!valid||node.path.length>=depth||!T.skillLegal(node.state,goal,node.memory))continue;
-      if(expanded>=budget)break funding;
+      if(!T.projectionBudget.available())break funding;
       const child=advance(node,{type:"skill",...goal},baseline);expanded++;if(!child)continue;
       if(preparationUsed(child.path)&&betterPlan(child,best))best=child;
       if(!child.leaf&&child.path.length<depth)frontier.push(child);
       // Retain the whole Q -> actual switch -> teammate Q prefix before beam
       // pruning. Same rule projection/value and the SAME 1500-node budget.
       if(who===0&&skill==="Q"&&!child.leaf)for(const target of [1,2]){
-        if(child.path.length+2>depth||expanded>=budget)break;
+        if(child.path.length+2>depth||!T.projectionBudget.available())break;
         const change={type:"switch",target},burst={type:"skill",who:target,skill:"Q"};
         if((child.memory.uncertainActions||[]).some(k=>[T.actionKey(change),T.actionKey(burst)].includes(k))||
           !T.alive(child.state.characters[target])||child.state.characters[target].frozen)continue;
         const handoff=advance(child,change,baseline);expanded++;if(!handoff)continue;
         if(!T.skillLegal(handoff.state,burst,handoff.memory))continue;
-        if(expanded>=budget)break;
+        if(!T.projectionBudget.available())break;
         const done=advance(handoff,burst,baseline);expanded++;if(!done)continue;
         if(preparationUsed(done.path)&&betterPlan(done,best))best=done;
         if(!done.leaf&&done.path.length<depth)frontier.push(done);
@@ -339,8 +358,8 @@
         if(node.path.length>=depth)continue;
         // No bounce cycle, repeated useless protection, or future unknown draw.
         if(a.type==="switch" && node.path[node.path.length-1]?.type==="switch")continue;
-        if(expanded>=budget)break search;
-        const child=advance(node,a,baseline);if(!child)continue;expanded++;
+        if(!T.projectionBudget.available())break search;
+        expanded++;const child=advance(node,a,baseline);if(!child)continue;
         const signature=T.boardKey(child.state)+JSON.stringify([child.memory.freeSwitch,child.memory.fastSwitch,
           child.memory.thundergrassSupport,child.memory.artifactKinds,child.memory.gamblerUsed,child.memory.exileUsedRound,
           child.memory.weapons,child.memory.penance,child.memory.keqingInfusion,child.memory.resolve,child.memory.food,child.memory.talent,
@@ -352,7 +371,7 @@
       frontier=next.filter(x=>!x.leaf).slice(0,width);if(!frontier.length)break;
     }
     if(!best || best.value<=.08 && T.enemyCount(best.state)!==0)return {action:null,expanded};
-    return {action:best.path[0],sequence:best.path,value:best.value,expanded,terminal:T.enemyCount(best.state)===0};
+    return {action:best.path[0],sequence:best.path,value:best.value,expanded,terminal:best.provenFinish===true};
   }
   function needProbe(s,m){
     if(!["shatterbolt","sharpkernel"].includes(m.thundergrassSupport) || s.quicken?.known)return null;
@@ -368,6 +387,9 @@
   }
   T.strategyEligible=eligible;T.projectedAction=projected;T.plan=plan;T.actionCost=actionCost;T.damageEstimate=damageEstimate;
   T.choose=function(s,m){
+    return T.projectionBudget.run(1500,()=>choose(s,m));
+  };
+  function choose(s,m){
     if(!T.legalState(s))return legacyChoose(s,m);
     const probe=needProbe(s,m);if(probe)return probe;
     const p=plan(s,m);
@@ -375,7 +397,7 @@
       value:Number(p.value.toFixed(3)),sequence:p.sequence.map(a=>T.actionKey(a)),terminal:p.terminal===true},
       reason:"比较出牌/调和/切人/技能组合，选择当前可核实收益最高的首步"};
     return legacyChoose(s,m);
-  };
+  }
   T.blessingChoice=function(s,m){
     if(!s || !Array.isArray(s.characters))return "shatterbolt";
     const living=s.characters.map((c,i)=>T.alive(c)?i:-1).filter(i=>i>=0);

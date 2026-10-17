@@ -33,6 +33,7 @@
     if(name==="T")return techniqueScore(s,m,who);
     const a=kernel?card(s,kernel===true?T.seeds(s)[0]:kernel):skill(who,name),p=projection||T.projectResources(s,m,a);
     if(!p){
+      if(!T.projectionBudget.available())return 0;
       // The caller may be valuing a LOCAL READ of an unaffordable/unknown
       // card. This is information value, never authorization to pay it.
       const hit=T.damageEstimate(s,m,who,name,!!kernel),defeats=hit.target&&hit.direct>=hit.target.hp;
@@ -292,8 +293,8 @@
     }
     return {actions,remaining:next.dice};
   }
-  function cardResources(s,m,a,cost) {
-    if(a.id==="woven")return T.projectResources(s,m,a)?.state||null;
+  function cardResources(s,m,a,cost,projection) {
+    if(a.id==="wovenWeeds")return (projection||T.projectResources(s,m,a))?.state||null;
     const next=afterPayment(s,cost);if(!next)return null;
     // Only deterministic conversion enters a budget. Draws, random refunds and
     // attachment targets remain unknown until the submitted action is confirmed.
@@ -301,7 +302,7 @@
     return next;
   }
   function cardScore(s,m,a,currentAxis,cost=T.cardCost(s,a,m),projection=null) {
-    const h=s.hand[a.index],c=T.byId[a.id],paid=T.size(cost),left=cardResources(s,m,a,cost);
+    const h=s.hand[a.index],c=T.byId[a.id],paid=T.size(cost),left=cardResources(s,m,a,cost,projection);
     const triggers=T.cardTriggers(h,m),refund=(triggers.total||0)+
       (a.id==="cleaning"?T.knownAttachmentKinds(s.hand.filter(x=>x.index!==a.index)):a.id==="toy"?2:0),nefer=T.role("奈芙尔");
     let value=-1000;
@@ -309,7 +310,7 @@
       case "seed":
         value=hitScore(s,m,s.active,"NA",h,projection);
         break;
-      case "woven":value=T.total(s.dice)<16&&s.characters.some((ch,i)=>T.alive(ch)&&T.team[i].element==="Dendro")?60:0;break;
+      case "wovenWeeds":value=T.total(s.dice)<16&&s.characters.some((ch,i)=>T.alive(ch)&&T.team[i].element==="Dendro")?60:0;break;
       case "gleam":value=s.hand.some(x=>T.currentCost(x)>0)?38:0;break;
       case "upgrade":value=s.hand.length<=8 && s.hand.some(x=>T.currentCost(x)>=2)?42:0;break;
       case "cleaning": {
@@ -357,9 +358,14 @@
         value=drawUseful(s)&&left&&T.total(left.dice)>=3?42:T.total(left.dice)>=1&&T.seeds(s).length===0&&drawUseful(s)?20:0;break;
       case "adventure":value=s.hand.length<=8||s.characters.some((ch,i)=>T.alive(ch)&&ch.hp<T.team[i].maxHp)?32:0;break;
       case "sashimi": {
-        let kernelHits=0,dice=left.dice;
-        if(a.target===nefer)for(const h of T.seeds(s)){
-          const p=T.payment(dice,T.cardCost(s,card(s,h),m),"Dendro");if(p){kernelHits++;dice=p.remaining;}
+        let kernelHits=0,follow=projection||T.projectResources(s,m,a);
+        // Consume each one-shot discount through the same sequential projection
+        // as the route search; the second kernel cannot reuse the first quote.
+        if(a.target===nefer&&follow&&!follow.boundary)for(let i=0;i<T.seeds(s).length;i++){
+          const h=T.seeds(follow.state)[0];if(!h)break;
+          const p=T.projectResources(follow.state,follow.memory,card(follow.state,h));
+          if(!p)break;
+          kernelHits++;follow=p;if(p.boundary)break;
         }
         const enhanced=T.damageEstimate(s,m,a.target,"NA").enhancedReady;
         value=a.target===s.active&&(kernelHits>=2||enhanced)&&
@@ -537,6 +543,7 @@
     return out.sort((a,b)=>b.score-a.score || T.actionKey(a).localeCompare(T.actionKey(b)));
   }
   function tuning(s,m) {
+    if(!T.projectionBudget.available())return null;
     const desired=T.team[s.active].element;
     if(s.characters[s.active].frozen||T.total(s.dice)===0)return null;
     const nefer=T.role("奈芙尔"),options=s.hand.flatMap(h=>{
@@ -555,6 +562,7 @@
     }).sort((a,b)=>a.loss-b.loss).slice(0,5);
     let best=null;
     const visit=(state,used,loss,first,probe)=>{
+      if(!T.projectionBudget.available())return;
       if(used.length){
         const hits=attackCandidates(state,m);
         if(state.active===nefer)for(const h of T.seeds(state))if(T.cardLegal(state,card(state,h),m)&&!blocked(m,card(state,h)))
@@ -591,6 +599,9 @@
     return hits.sort((a,b)=>b-a).slice(0,Math.max(1,3-casts)).reduce((n,v)=>n+Math.max(0,v),0);
   }
   function resourceRoutes(s,m) {
+    return T.projectionBudget.run(240,()=>searchRoutes(s,m));
+  }
+  function searchRoutes(s,m) {
     // A small prefix search over existing resources, not a new duel simulator.
     // Complete prefixes compete on the same hit scale as ordinary candidates.
     const limits={depth:6,width:12,nodes:240},routes=[],start={state:s,memory:m,sequence:[],ledger:[],score:0,
@@ -622,7 +633,7 @@
         T.alive(local.characters[target])&&!local.characters[target].frozen)
         actions.push({type:"switch",target});
       for(const a of actions){
-        if(expanded>=limits.nodes)break search;
+        if(!T.projectionBudget.available())break search;
         expanded++;const p=T.projectResources(local,mem,a);if(!p)continue;
         if(a.type==="card"&&cardScore(local,mem,a,axis(local,mem),p.cost,p)<=0)continue;
         const child=scoreRoute(s,m,extendRoute(node,p,a,local,mem));
@@ -641,9 +652,12 @@
       frontier=frontier.filter(n=>{const depth=n.sequence.length;depths[depth]=(depths[depth]||0)+1;return depths[depth]<=limits.width;});
     }
     routes.sort((a,b)=>Number(b.terminal)-Number(a.terminal)||b.score-a.score||a.sequence.length-b.sequence.length);
-    return {best:routes[0]||null,expanded,limits,truncated:expanded===limits.nodes};
+    return {best:routes[0]||null,expanded,limits,truncated:!T.projectionBudget.available()};
   }
   function choose(s,m) {
+    return T.projectionBudget.run(240,()=>chooseAction(s,m));
+  }
+  function chooseAction(s,m) {
     if(!T.legalState(s))return {type:"stop",reason:"决策前牌桌基础字段不完整"};
     const currentAxis=axis(s,m),ranked=candidates(s,m,currentAxis),routes=resourceRoutes(s,m),best=routes.best,
       finishing=ranked.some(a=>{

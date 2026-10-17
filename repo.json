@@ -1,5 +1,5 @@
 {
-  "time": "20261017004846",
+  "time": "20261017141956",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -10,7 +10,7 @@
         {
           "name": "RaidenColleiKeqingPlayer",
           "type": "directory",
-          "version": "1.3.0",
+          "version": "1.3.3",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -21,14 +21,14 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.3.0"
+            "1.3.3"
           ],
-          "lastUpdated": "2026-10-17 00:48:46"
+          "lastUpdated": "2026-10-17 14:19:56"
         },
         {
           "name": "IansanGamingSayuPlayer",
           "type": "directory",
-          "version": "1.3.0",
+          "version": "1.3.4",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -39,14 +39,14 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.3.0"
+            "1.3.4"
           ],
-          "lastUpdated": "2026-10-17 00:48:46"
+          "lastUpdated": "2026-10-17 14:19:56"
         },
         {
           "name": "MoonbloomPlayer",
           "type": "directory",
-          "version": "1.3.0",
+          "version": "1.3.3",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -57,9 +57,9 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.3.0"
+            "1.3.3"
           ],
-          "lastUpdated": "2026-10-17 00:48:46"
+          "lastUpdated": "2026-10-17 14:19:56"
         }
       ]
     }

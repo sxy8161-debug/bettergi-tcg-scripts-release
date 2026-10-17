@@ -4,6 +4,27 @@
  * Projected resources/damage are search estimates; never publish them as observations. */
 (function (root) {
   "use strict";
+  // One synchronous decision, including nested helpers and failed projections.
+// No cross-decision cache; exhaustion is not evidence of action illegality.
+const projectionBudget = (() => {
+  let current = null;
+  return {
+    run(limit, decide) {
+      if (current) return decide();
+      current = { used: 0, limit };
+      try {
+        const result = decide();
+        return { ...result, projections: { ...current, exhausted: current.used >= current.limit } };
+      } finally { current = null; }
+    },
+    available() { return !current || current.used < current.limit; },
+    take() {
+      if (!current) return true; // Standalone rule projection, not a decision.
+      if (current.used >= current.limit) return false;
+      current.used++; return true;
+    },
+  };
+})();
   // Opening knowledge is required for the deck's route-sensitive first pick.
   function openingSetting(value) {
     if (value && !["全部保留", "优先装备与启动牌"].includes(value)) throw new Error("设置值无效");
@@ -36,7 +57,7 @@
     },
   ];
   const cards = [
-    ["talent", "偷懒的新方法", { element: "Anemo", n: 3 }, "talent", 2],
+    ["skivingNewAndImproved", "偷懒的新方法", { element: "Anemo", n: 3 }, "talent", 2],
     ["wolf", "狼的末路", { aligned: 3 }, "weapon", 2],
     ["moon", "贯月矢", { aligned: 3 }, "weapon", 2],
     ["gambler", "赌徒的耳环", { aligned: 1 }, "artifact", 2],
@@ -118,30 +139,42 @@
   const total = dice => Object.values(dice || {}).reduce((sum, n) => sum + n, 0);
   const size = cost => (cost.n || 0) + (cost.any || 0) + (cost.aligned || 0);
   function payment(dice, cost, preserve = "Electro") {
-    const list = Object.entries(dice || {}).flatMap(([e, n]) => Array(n).fill(e)),
-      need = size(cost);
-    if (need > list.length || list.length > 16) return null;
-    if (!need) return { indices: [], remaining: { ...dice }, weight: 0 };
-    let best = null;
-    function visit(start, ids) {
-      if (ids.length === need) {
-        const selected = ids.map((i) => list[i]);
-        if (cost.n && selected.filter((e) => e === cost.element || e === "Omni").length < cost.n)
-          return;
-        if (cost.aligned && new Set(selected.filter((e) => e !== "Omni")).size > 1) return;
-        const weight = selected.reduce(
-          (v, e) => v + (e === "Omni" ? 10 : e === preserve ? 6 : 1),
-          0,
-        );
-        if (best && best.weight <= weight) return;
+    const secondaryPaymentWeights = {}, emptyPaymentWeight = { weight: 0 };
+        const groups = Object.entries(dice || {}), need = size(cost),
+      count = groups.reduce((n, [, amount]) => n + amount, 0);
+    if (need > count || count > 16) return null;
+    if (!need) return { indices: [], remaining: { ...dice }, ...emptyPaymentWeight };
+    const counts = Array(groups.length).fill(0), offsets = [];
+    let offset = 0, best = null;
+    for (const [, amount] of groups) { offsets.push(offset); offset += amount; }
+    function visit(at, left, weight, matching, aligned) {
+      if (best && weight > best.weight) return;
+      if (left === 0) {
+        if (cost.n && matching < cost.n) return;
+        const indices = counts.flatMap((n, i) => Array.from({ length: n }, (_, j) => offsets[i] + j));
+        // Original subset enumeration chose the earliest slot list on equal
+        // weight. Count enumeration preserves that tie without identical dice subsets.
+        if (best && weight === best.weight) {
+          const different = indices.findIndex((n, i) => n !== best.indices[i]);
+          if (different < 0 || indices[different] > best.indices[different]) return;
+        }
         const remaining = { ...dice };
-        for (const e of selected) remaining[e]--;
-        best = { indices: ids.slice(), remaining, weight };
-        return;
+        groups.forEach(([element], i) => { remaining[element] -= counts[i]; });
+        best = { indices, remaining, weight }; return;
       }
-      for (let i = start; i <= list.length - need + ids.length; i++) visit(i + 1, ids.concat(i));
+      if (at === groups.length) return;
+      const [element, amount] = groups[at],
+        fee = element === "Omni" ? 10 : element === preserve ? 6 : secondaryPaymentWeights[element] || 1;
+      for (let n = 0; n <= Math.min(amount, left); n++) {
+        if (n && cost.aligned && element !== "Omni" && aligned && aligned !== element) continue;
+        counts[at] = n;
+        visit(at + 1, left - n, weight + n * fee,
+          matching + (element === cost.element || element === "Omni" ? n : 0),
+          n && element !== "Omni" ? element : aligned);
+      }
+      counts[at] = 0;
     }
-    visit(0, []);
+    visit(0, need, 0, 0, null);
     return best;
   }
   function boardKey(s) {
@@ -347,7 +380,7 @@
         : false;
   }
   function cardCost(id, target, m, s) {
-    if (id === "talent") return skillCost(2, "E", m, s);
+    if (id === "skivingNewAndImproved") return skillCost(2, "E", m, s);
     const c = byId[id],
       base = { ...c.cost };
     let n = size(base),
@@ -368,7 +401,7 @@
     if (a.target !== null && (!known(a.target) || a.target > 2 || !alive(s.characters[a.target])))
       return false;
     if (c.type === "weapon" && !weaponCompatible(a.id, a.target)) return false;
-    if (a.id === "talent" && (a.target !== 2 || s.active !== 2 || s.characters[2].frozen))
+    if (a.id === "skivingNewAndImproved" && (a.target !== 2 || s.active !== 2 || s.characters[2].frozen))
       return false;
     if (a.id === "lyre" && !m.artifactKinds[a.target]) return false;
     if (
@@ -443,7 +476,8 @@
       known:true};
   }
   const gamblerRemaining = (m, who) => Math.max(0, 3 - (m.gamblerUsed[who] || 0));
-  function noteBoard(m, s) {
+  const effectiveMaxHp = (m, who) => team[who].maxHp + (m.extraMaxHp[who] || 0);
+  function noteBoard(m, s, damageOwner = m.enemyLastActive) {
     if (!Array.isArray(s?.characters)) return;
     s.characters.forEach((c, i) => {
       if (c.dead === true && !m.defeated[i]) {
@@ -460,7 +494,7 @@
       }
     });
     const n = enemyCount(s),
-      owner = m.enemyLastActive;
+      owner = damageOwner;
     if (n !== null) {
       const lost = m.enemyAliveCount === null ? 0 : Math.max(0, m.enemyAliveCount - n);
       if (lost && m.artifactKinds[owner] === "gambler")
@@ -479,7 +513,7 @@
     const trigger =
       a?.type === "switch" ||
       (a?.type === "skill" && a.who === 2 && a.skill === "E") ||
-      (a?.type === "card" && a.id === "talent");
+      (a?.type === "card" && a.id === "skivingNewAndImproved");
     const none = { amount: 0, target: null, confidence: 0 };
     if (
       !trigger ||
@@ -489,7 +523,7 @@
     )
       return none;
     const injured = s.characters
-      .map((c, i) => ({ c, i, missing: team[i].maxHp + (m.extraMaxHp[i] || 0) - c.hp }))
+      .map((c, i) => ({ c, i, missing: effectiveMaxHp(m, i) - c.hp }))
       .filter((x) => alive(x.c) && x.missing > 0)
       .sort((a, b) => b.missing - a.missing)[0];
     if (!injured) return none;
@@ -513,7 +547,7 @@
       !Array.isArray(after?.characters) ||
       after.characters.length !== 3 ||
       !after.characters.every(
-        (c, j) => c.dead === true || (alive(c) && c.hp <= team[j].maxHp + (m.extraMaxHp[j] || 0)),
+        (c, j) => c.dead === true || (alive(c) && c.hp <= effectiveMaxHp(m, j)),
       )
     )
       return;
@@ -535,7 +569,7 @@
       // Search projections must never manufacture this observation.
       const readable = (board) => board?.characters?.length === 3 &&
         board.characters.every((c, i) => c.dead === true ||
-          (alive(c) && c.hp <= team[i].maxHp + (m.extraMaxHp[i] || 0)));
+          (alive(c) && c.hp <= effectiveMaxHp(m, i)));
       if (readable(b) && readable(after)) {
         const loss = Math.max(0, ...b.characters.map((c, i) => {
           const later = after.characters[i];
@@ -552,10 +586,10 @@
     // A card ID alone never authorizes its effect: tuning the talent is NOT
     // playing it and must not advance Sayu's skill/passive/buff accounting.
     const target = a.target,
-      who = a.type === "skill" ? a.who : a.type === "card" && a.id === "talent" ? 2 : null;
+      who = a.type === "skill" ? a.who : a.type === "card" && a.id === "skivingNewAndImproved" ? 2 : null;
     const damageOwner=who!==null?who:a.type==="switch"&&target===1&&m.gamingReturn?1:null;
     if(damageOwner!==null){
-      const draws=reactionDraws(m,b,damageOwner,a.skill||"P",a.id==="talent");
+      const draws=reactionDraws(m,b,damageOwner,a.skill||"P",a.id==="skivingNewAndImproved");
       if(draws.talent)m.talentDrawUsed=true;
       if(draws.gilded)m.gildedDrawUsed[damageOwner]++;
       if(!draws.known){
@@ -596,7 +630,7 @@
       }
     }
     if (who !== null) {
-      const skill = a.id === "talent" ? "E" : a.skill;
+      const skill = a.id === "skivingNewAndImproved" ? "E" : a.skill;
       // Only the reduction still payable after other known discounts is spent.
       // These counters remain estimates; native payment is independently read.
       const other =
@@ -670,7 +704,7 @@
           m.gildedDrawUsed[target]=0;
         }
       }
-      if (a.id === "talent") m.talent = true;
+      if (a.id === "skivingNewAndImproved") m.talent = true;
       if (a.id === "house") {
         m.houses.push({ left: 2, round: -1 });
         m.supportSlots++;
@@ -713,7 +747,7 @@
     // Automatic combat can add draws, dice or switch again. Trust the reread.
     if (after?.characters) {
       if (who === 1 && a.skill === "E" && after.active === 1) m.gamingReturn = false;
-      noteBoard(m, after);
+      noteBoard(m, after, damageOwner ?? m.enemyLastActive);
     }
     m.costEvidence = null;
   }
@@ -748,23 +782,14 @@
     }
   }
   function rejectAction(m, a) {
-    // Unlike an unknown outcome, a positive native rejection does not consume
-    // food or remove an already confirmed equipment. Drop unproven fee cuts.
+    // A positive rejection consumes no effect. Invalidate the transient fee
+    // quote, not unrelated buffs already established by confirmed actions.
     const k = actionKey(a);
     if (!m.uncertainActions.includes(k)) m.uncertainActions.push(k);
     // A proven failed tune did not play a card, spend dice or consume any
     // confirmed buffs. Skip this card name for the round; other cards may tune.
     if (a.type === "tune") return;
-    m.passiveHealEvidence = { status: "uncertain" };
     m.costEvidence = null;
-    m.moonRound = [-1, -1, -1];
-    m.troupe = [0, 0, 0];
-    m.soupDiscount = [0, 0, 0];
-    m.garden = false;
-    m.lyre = 0;
-    m.freeSwitch = false;
-    m.singCharges = 0;
-    m.manchai = 0;
   }
   function bag(hand) {
     const out = {};
@@ -783,7 +808,7 @@
   function handPlan(a, b) {
     const h = indexedHand(b.hand);
     if (["switch", "skill", "probe"].includes(a.type)) return { mode: "unchanged", hand: h };
-    if (a.type === "card" && ["draw", "revel", "sing", "lyre", "talent"].includes(a.id))
+    if (a.type === "card" && ["draw", "revel", "sing", "lyre", "skivingNewAndImproved"].includes(a.id))
       return { mode: "full", expectedCount: null };
     if (a.type === "card" || a.type === "tune") {
       if (h[a.index]?.id !== a.id) throw new Error("手牌增量计划的目标索引/身份不一致");
@@ -828,7 +853,7 @@
     if (["draw", "revel", "sing"].includes(a.id))
       return cardCountDecreased(b.hand, after.hand, a.id) && after.hand.length === Math.min(10, b.hand.length + 1);
     if (a.id === "lyre") return consumed && after.hand.length === b.hand.length;
-    if (a.id === "talent")
+    if (a.id === "skivingNewAndImproved")
       return (
         consumed &&
         (transition ||
@@ -898,7 +923,7 @@
     )
       return true;
     if (removalEffect(a, b, c)) return true;
-    if (a.type !== "card" || ["draw", "revel", "lyre", "sing", "talent"].includes(a.id))
+    if (a.type !== "card" || ["draw", "revel", "lyre", "sing", "skivingNewAndImproved"].includes(a.id))
       return false;
     // A visible expense or soup selection can prove zero; a zero-cost status cannot.
     return total(c.dice) < total(b.dice) || (a.id === "soup" && !!c.selectedSoup);
@@ -927,13 +952,13 @@
     if (
       index !== null &&
       (byId[id]?.type === "weapon" ||
-        ["talent", "troupe", "heart", "opera", "garden", "sing", "revel"].includes(id)) &&
+        ["skivingNewAndImproved", "troupe", "heart", "opera", "garden", "sing", "revel"].includes(id)) &&
       Math.min(...hand.filter((h) => h.id === id).map((h) => h.index)) !== index
     )
       return false;
     const n = openingContext(context).enemyCount;
-    if (id === "talent" && n !== null && n <= 2) return false;
-    if (["wolf", "moon", "talent", "troupe", "heart", "garden", "draw", "opera"].includes(id))
+    if (id === "skivingNewAndImproved" && n !== null && n <= 2) return false;
+    if (["wolf", "moon", "skivingNewAndImproved", "troupe", "heart", "garden", "draw", "opera"].includes(id))
       return true;
     if (id === "house") return ids.some((x) => ["wolf", "moon", "gilded"].includes(x));
     if (id === "lyre") return ids.some((x) => ["troupe", "gilded"].includes(x));
@@ -1022,6 +1047,7 @@
     return values.length===1?values[0]:null;
   }
   root.TCG = {
+    projectionBudget,
     team,
     cards,
     byId,
@@ -1057,6 +1083,7 @@
     damageAgainst,
     reactionDraws,
     gamblerRemaining,
+    effectiveMaxHp,
     noteBoard,
     commit,
     passiveHealingEstimate,
@@ -1076,8 +1103,8 @@
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.0";
-globalThis.TCG.sharedVersion = "1.5.0";
+globalThis.TCG.version = "1.3.4";
+globalThis.TCG.sharedVersion = "1.5.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

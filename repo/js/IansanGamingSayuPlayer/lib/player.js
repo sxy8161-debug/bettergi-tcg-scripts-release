@@ -109,7 +109,7 @@
     const next = boundary < 0 ? sequence : sequence.slice(0, boundary);
     const skill =
       next.find((a) => a.type === "skill" && a.who === action.target) ||
-      (action.target === 2 && next.some((a) => a.type === "card" && a.id === "talent")
+      (action.target === 2 && next.some((a) => a.type === "card" && a.id === "skivingNewAndImproved")
         ? { who: 2, skill: "E" }
         : null);
     if (skill) {
@@ -172,7 +172,7 @@
         return `${fragile}准备切换${target}，${preserve}${switchPurpose(action, state, memory)}${finish}。`;
       }
       case "card":
-        if (action.id === "talent")
+        if (action.id === "skivingNewAndImproved")
           return `准备打出「${card}」，装备早柚天赋并发动战技，${attackPurpose(state, memory, 2, "E")}${finish}。`;
         if (action.id === "lyre")
           return `准备使用「${card}」，回收${target}的圣遗物，为下张圣遗物减费${finish}。`;
@@ -214,6 +214,7 @@
       if(T.openingContext)this.memory.openingContext=T.openingContext({});
       host.memory=this.memory;
       this.deadline = Date.now() + options.maxMinutes * 60000;
+      host.matchDeadline = this.deadline;
       this.actions = 0;
       this.lastProgress = Date.now();
       this.readyState = null;
@@ -473,6 +474,7 @@
       return true;
     }
     async awaitConfirmation(action, before, memory = this.memory) {
+      this.host.matchDeadline = this.deadline;
       while (Date.now() < this.deadline) {
         try { return await this.host.confirm(action, before, memory); }
         catch (e) {
@@ -480,7 +482,8 @@
           this.notice("pending:" + T.actionKey(action), "[等待恢复] 动作已经提交，继续核对结果，不重复输入。");
           this.host.trace("confirmation-pending", { action, code: e.code, missing: e.missing,
             phase: e.phase?.phase, turn: e.phase?.turn, elapsedMs: e.elapsedMs, reason: e.message });
-          await sleep(400);
+          const remaining = this.deadline - Date.now();
+          if (remaining > 0) await sleep(Math.min(400, remaining));
         }
       }
       throw new Error("达到单局时间上限，待确认动作未能安全恢复");

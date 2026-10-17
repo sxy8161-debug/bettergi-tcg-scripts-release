@@ -196,8 +196,10 @@
       this.options = options;
       this.templates = new Map();
       this.roCache = new Map();
-      // BetterGI LimitedFile accepts .log but rejects .jsonl. Contents remain one JSON object per line.
-      this.path = "logs/run-" + new Date().toISOString().replace(/[:.]/g, "-") + ".log";
+      // Ten reusable slots: LimitedFile can overwrite, but has no delete API.
+      // Select a slot lazily on the first event, not merely on construction.
+      this.path = "logs/run-slot-01.log";
+      this.logAppend = null;
       this.emptyHandProven = false;
       this.expectedDice = null;
       this.gamblerBudget = null;
@@ -227,8 +229,16 @@
       this.pendingHandEvidence = null;
       file.createDirectory("logs");
     }
+    requireMatchTime() {
+      if (Date.now() >= (this.matchDeadline ?? Infinity)) {
+        const error = new Error("达到单局时间上限，不再开始观察或发送输入");
+        error.code = "TCG_MATCH_TIMEOUT";
+        throw error;
+      }
+    }
     clickAt(x, y) {
       const point = mousePoint(x, y);
+      this.requireMatchTime();
       this.boardReady = false;
       click(point[0], point[1]);
       this.inputRevision++;
@@ -237,15 +247,36 @@
     }
     moveTo(x, y) {
       const point = mousePoint(x, y);
+      this.requireMatchTime();
       moveMouseTo(point[0], point[1]);
       return point;
     }
     trace(event, data) {
       const text = JSON.stringify({ at: new Date().toISOString(), event, data });
-      if (!file.writeTextSync(this.path, text + "\n", true))
+      if (this.logAppend === null) {
+        const indexPath = "logs/tcg-log-index.json";
+        let next = 0;
+        if (file.isExists(indexPath)) {
+          try {
+            const index = JSON.parse(file.readTextSync(indexPath));
+            if (Number.isInteger(index?.next) && index.next >= 0 && index.next < 10) next = index.next;
+            else log.warn("日志轮转索引无效，从第一个日志槽继续。");
+          } catch (e) {
+            if (!(e instanceof SyntaxError)) throw e;
+            log.warn("日志轮转索引损坏，从第一个日志槽继续。");
+          }
+        }
+        this.path = "logs/run-slot-" + String(next + 1).padStart(2, "0") + ".log";
+        if (!file.writeTextSync(indexPath, JSON.stringify({ next: (next + 1) % 10 }), false))
+          throw new Error("无法写入日志轮转索引：" + indexPath);
+        this.logAppend = false;
+      }
+      if (!file.writeTextSync(this.path, text + "\n", this.logAppend))
         throw new Error("无法写入对局日志：" + this.path);
+      this.logAppend = true;
     }
     frame(fn) {
+      this.requireMatchTime();
       const started = Date.now(),
         previousMemo = this.frameMemo;
       const f = captureGameRegion();
@@ -255,7 +286,10 @@
       this.frameMemo = new WeakMap();
       try {
         requireCaptureSize(captureSize(f));
-        return fn(f);
+        this.requireMatchTime();
+        const result = fn(f);
+        this.requireMatchTime();
+        return result;
       } finally {
         this.metrics.frameWorkMs += Date.now() - captured;
         this.frameMemo = previousMemo;
@@ -2660,6 +2694,7 @@
       const start = mousePoint(x, y), end = mousePoint(toX, toY);
       this.moveTo(start[0], start[1]);
       await sleep(60);
+      this.requireMatchTime();
       leftButtonDown();
       this.inputRevision++;
       this.handPositionProof = null;
@@ -2708,7 +2743,9 @@
       // An intervening click starts a new animation boundary: keep the full
       // old post-input wait rather than charging pre-input OCR against it.
       const remaining = revision === this.inputRevision ? interval - (Date.now() - sampledAt) : interval;
-      if (remaining > 0) await sleep(remaining);
+      const wait = Math.min(remaining, (this.matchDeadline ?? Infinity) - Date.now());
+      if (wait > 0) await sleep(wait);
+      this.requireMatchTime();
     }
     cardTargetPreviewIn(f) {
       return {
@@ -2724,6 +2761,22 @@
         controls: this.cardPaymentControlsIn(f),
         phase: this.phaseIn(f), warning: this.warnings(f),
       };
+    }
+    async requireStableCardPayment(action, central, sampledAt) {
+      const banner = TCG.norm(central.banner), b = central.targets[0];
+      let stable = 1;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        await this.waitForSample(sampledAt, 250); sampledAt = Date.now();
+        const current = this.frame(f => this.cardPaymentPreviewIn(f));
+        await this.requireNoWarning(current.warning);
+        const c = current.controls[0], matched = current.banner === banner && current.controls.length === 1 &&
+          current.phase.phase === "unknown" && current.phase.turn === "none" &&
+          Math.abs(c.x + c.w / 2 - b.x - b.w / 2) <= 3 && Math.abs(c.y + c.h / 2 - b.y - b.h / 2) <= 3;
+        stable = matched ? stable + 1 : 0;
+        this.trace("card-payment-preview", { id: action.id, attempt, matched, stable, ...current });
+        if (stable >= 2) return;
+        if (attempt === 5) throw new Error("中央出牌确认控件未连续核实");
+      }
     }
     async requireNoWarning(warning = this.warnings()) {
       if (warning.lack || /无法|不足|不能|充能未满/.test(warning.text)) {
@@ -3044,17 +3097,17 @@
       const session = this.confirmationSession || { key, transition: false, submittedAt: this.actionSubmittedAt ?? null,
         plan: action.type === "end" ? null : { ...TCG.handPlan(action, before, memory), action, before } };
       this.confirmationSession = session;
-      const deadline = Date.now() + 45000;
+      const deadline = Math.min(Date.now() + 45000, this.matchDeadline ?? Infinity);
       let lastPhase = null;
       let sampledAt = 0;
       // Polling intervals include this cycle's OCR/observation work. This does
       // not shorten the input helpers' animation waits or replay an input.
       const waitForSample = async interval => {
-        const remaining = interval - (Date.now() - sampledAt);
+        const remaining = Math.min(interval - (Date.now() - sampledAt), deadline - Date.now());
         if (remaining > 0) await sleep(remaining);
       };
       const combat = ["skill", "switch", "end"].includes(action.type) ||
-        action.type === "card" && ["talent", "wedge", "penance"].includes(action.id);
+        action.type === "card" && ["floralSidewinder", "skivingNewAndImproved", "wedge", "penance"].includes(action.id);
       // The existing combat flag also owns switch/end recovery. This new
       // refresh policy is only for casts, not ordinary fast/manual switches.
       const effectAction = combat && !["switch", "end"].includes(action.type);

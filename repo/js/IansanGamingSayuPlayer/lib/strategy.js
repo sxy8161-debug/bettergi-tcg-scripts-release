@@ -185,7 +185,7 @@
   function summonValue(s, m) {
     if (!m.sayuSummon || !T.enemyCount(s)) return 0;
     const injured = s.characters.flatMap((c, i) => T.alive(c) ? [{
-      missing: Math.max(0, T.team[i].maxHp + (m.extraMaxHp[i] || 0) - c.hp),
+      missing: Math.max(0, T.effectiveMaxHp(m, i) - c.hp),
       // A threatened active role may not reach the end phase. A healthy
       // injured teammate still benefits; no hypothetical switch is required.
       confidence: i === s.active && c.hp <= pressureEstimate(m) ? 0.25 : 1,
@@ -283,7 +283,7 @@
       values = {
         wolf: m.weaponKinds[carry] === "wolf" ? 15 : 95,
         moon: m.weaponKinds[0] ? 25 : 85,
-        talent: m.talent ? 35 : 90,
+        skivingNewAndImproved: m.talent ? 35 : 90,
         gambler: 70,
         gilded: 60,
         troupe: 45,
@@ -427,7 +427,8 @@
         survivor.active = true;
       }
     }
-    return { dealt, kills, complete, replacementRequired };
+    return { dealt, kills, guaranteedKills:targets.every(x=>x.defenseKnown===true&&x.auraKnown===true)?kills:0,
+      complete, replacementRequired };
   }
   function passiveHealing(s, m, a) {
     const potential = T.passiveHealingEstimate(s, m, a);
@@ -570,12 +571,12 @@
         if (h.id === "house" && (m.houses.length >= 2 || !setupEquipmentReachable(s, m, "house")))
           continue;
         if (
-          (h.id === "sweet" && c.hp >= T.team[a].maxHp) ||
-          (h.id === "hashbrown" && c.hp > T.team[a].maxHp - 2) ||
+          (h.id === "sweet" && c.hp >= T.effectiveMaxHp(m, a)) ||
+          (h.id === "hashbrown" && c.hp > T.effectiveMaxHp(m, a) - 2) ||
           (h.id === "lotus" && c.hp > 5)
         )
           continue;
-        if (h.id === "soup" && c.hp > T.team[a].maxHp - 2) {
+        if (h.id === "soup" && c.hp > T.effectiveMaxHp(m, a) - 2) {
           const p = T.payment(s.dice, T.cardCost("soup", a, m, s), T.team[a].element);
           if (!p || !soupDiscountReachable({ ...s, dice: p.remaining }, m, a)) continue;
         }
@@ -605,6 +606,7 @@
     return out;
   }
   function simulate(s, m, a) {
+    if (!T.projectionBudget.take()) return null;
     const next = copy(s),
       mem = copy(m),
       pay = T.payment(s.dice, actionCost(a, s, m), T.team[s.active].element);
@@ -651,8 +653,8 @@
         const d = damageEstimate(next, m, 1, "P");
         const hit = applyDamage(next, d);
         benefit += hit.dealt * 0.7 + hit.kills * 1.8;
-        if(hit.kills&&m.artifactKinds[1]==="gambler")
-          next.dice.Omni=(next.dice.Omni||0)+2*Math.min(hit.kills,T.gamblerRemaining(m,1));
+        if(hit.guaranteedKills&&m.artifactKinds[1]==="gambler")
+          next.dice.Omni=(next.dice.Omni||0)+2*Math.min(hit.guaranteedKills,T.gamblerRemaining(m,1));
         next.characters[1].energy = Math.min(3, next.characters[1].energy + 1);
         leaf = true; // Native automatic plunge owns the next combat timing.
       }
@@ -693,7 +695,7 @@
       }
       if (a.id === "sweet" || a.id === "hashbrown") {
         const heal = Math.min(
-          T.team[a.target].maxHp - next.characters[a.target].hp,
+          Math.max(0, T.effectiveMaxHp(m, a.target) - next.characters[a.target].hp),
           a.id === "sweet" ? 1 : 2,
         );
         next.characters[a.target].hp += heal;
@@ -725,9 +727,9 @@
         }
       }
     }
-    if (a.type === "skill" || (a.type === "card" && a.id === "talent")) {
-      const who = a.id === "talent" ? 2 : a.who,
-        skill = a.id === "talent" ? "E" : a.skill,
+    if (a.type === "skill" || (a.type === "card" && a.id === "skivingNewAndImproved")) {
+      const who = a.id === "skivingNewAndImproved" ? 2 : a.who,
+        skill = a.id === "skivingNewAndImproved" ? "E" : a.skill,
         d = damageEstimate(s, m, who, skill),
         e = enemy(next);
       const original = enemy(s),
@@ -751,15 +753,15 @@
         boundary = { kind: "prepared", state: shadow };
         leaf = true;
       }
-      if (kills && m.artifactKinds[who] === "gambler")
-        next.dice.Omni = (next.dice.Omni || 0) + 2 * Math.min(kills, T.gamblerRemaining(m, who));
+      if (hit.guaranteedKills && m.artifactKinds[who] === "gambler")
+        next.dice.Omni = (next.dice.Omni || 0) + 2 * Math.min(hit.guaranteedKills, T.gamblerRemaining(m, who));
       benefit =
         dealt * 0.7 +
         kills * 1.8 +
         healing * 0.65 +
         (who === carry && skill === "E" ? 0.4 : 0);
-      if (a.id === "talent") benefit += m.talent ? 0.25 : 1.1;
-      const draws=T.reactionDraws(m,s,who,skill,a.id==="talent");
+      if (a.id === "skivingNewAndImproved") benefit += m.talent ? 0.25 : 1.1;
+      const draws=T.reactionDraws(m,s,who,skill,a.id==="skivingNewAndImproved");
       if (draws.talent || draws.gilded) {
         // Unknown draw identities must not become future playable cards.
         leaf = true;
@@ -807,27 +809,22 @@
   }
   function terminalFinisher(s, m) {
     if (!T.legalState(s) || !(T.enemyCount(s) > 0)) return null;
+    if (!s.enemies.filter(T.alive).every(e => e.defenseKnown === true && e.auraKnown === true)) return null;
     // Only currently legal immediate damage, including the native return
     // after a paid/fast Gaming switch. Prepared/end-phase estimates cannot
     // prove a terminal state; simulate never applies those delayed hits.
+    const order = (a) => (a.type === "skill" ? ["NA", "E", "Q"].indexOf(a.skill) : 3);
     const candidates = enumerate(s, m).filter(
         (a) => a.type === "skill" || (a.type === "switch" && a.target === 1 && m.gamingReturn),
-      ),
-      hits = [];
+      ).sort((a, b) => order(a) - order(b));
+    // All manual skill projections are combat; there is only one Gaming
+    // return candidate. This is the same active NA/E/Q-before-return order
+    // as sorting successful hits, without calculating lower-priority hits.
     for (const a of candidates) {
       const p = simulate(s, m, a);
-      if (p && T.enemyCount(p.state) === 0) hits.push({ action: a, projection: p });
+      if (p && T.enemyCount(p.state) === 0) return { action: a, projection: p };
     }
-    const order = (a) => (a.type === "skill" ? ["NA", "E", "Q"].indexOf(a.skill) : 3);
-    hits.sort(
-      (a, b) =>
-        // Once the game ends, unused dice have no value. Prefer a ready
-        // active-role hit over another character's native return animation.
-        Number(a.action.type !== "skill") - Number(b.action.type !== "skill") ||
-        Number(a.projection.combat) - Number(b.projection.combat) ||
-        order(a.action) - order(b.action),
-    );
-    return hits[0] || null;
+    return null;
   }
   function evaluation(s, m, exposures) {
     // Exposure is charged at the combat opportunity in simulate, not again
@@ -1031,7 +1028,14 @@
     return null;
   }
   function plan(s, m, options = {}) {
-    const direct = terminalFinisher(s, m);
+    return T.projectionBudget.run(SEARCH_LIMITS.nodes, () => searchPlan(s, m, options));
+  }
+  function searchPlan(s, m, options, terminalChecked = false) {
+    // Retain an ordinary legal root candidate before helpers can spend the
+    // scope. This is not another simulator or a queued future action.
+    const currentSkill = ["Q", "E", "NA"].map(skill => ({ type: "skill", who: s.active, skill }))
+      .find(a => T.skillLegal(s, a, m) && !m.uncertainActions.includes(T.actionKey(a)));
+    const direct = terminalChecked ? null : terminalFinisher(s, m);
     if (direct)
       return {
         action: direct.action,
@@ -1043,8 +1047,7 @@
         equipmentNodes: 0,
       };
     const depth = options.depth || SEARCH_LIMITS.depth,
-      width = options.width || SEARCH_LIMITS.width,
-      maxNodes = SEARCH_LIMITS.nodes;
+      width = options.width || SEARCH_LIMITS.width;
     let frontier = [{ state: s, memory: m, path: [], score: 0, combat: 0,
         relay: pendingRelay(s, m), exposures: [0, 0, 0], risk: 0 }],
       best = null,
@@ -1062,7 +1065,7 @@
       if (objective.phase !== "output" || s.active !== objective.carry) return 0;
       const first = path.findIndex((a) =>
         (a.type === "skill" && a.who === objective.carry) ||
-        (a.type === "card" && a.id === "talent" && objective.carry === 2) ||
+        (a.type === "card" && a.id === "skivingNewAndImproved" && objective.carry === 2) ||
         (a.type === "switch" && a.target === 1 && m.gamingReturn));
       // Once the carry is already working, credit a detour only AFTER its
       // entire restart overhead. Native confirmed inputs take roughly 9-16s;
@@ -1081,11 +1084,12 @@
         Math.max(
           0,
           node.path.findIndex(
-            (a) => a.type === "skill" || (a.type === "card" && a.id === "talent"),
+            (a) => a.type === "skill" || (a.type === "card" && a.id === "skivingNewAndImproved"),
           ),
         );
     const consider = (node) => {
-      const terminal = T.enemyCount(s) > 0 && T.enemyCount(node.state) === 0;
+      const terminal = T.enemyCount(s) > 0 && T.enemyCount(node.state) === 0 &&
+        s.enemies.filter(T.alive).every(e => e.defenseKnown === true && e.auraKnown === true);
       // Keep unfinished relay prefixes in the beam, but never select them as
       // payoff. Bare NA must actually reach E/Q, finish a target, add damage,
       // or unlock output that the former active role could not afford.
@@ -1146,7 +1150,7 @@
             (!activeOutputReachable(s, m) && endCoverTargets(node.state, node.memory).includes(a.target)),
           allowNA: !activeOutputReachable(node.state, node.memory),
         };
-      const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "talent" ? 2 : null;
+      const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "skivingNewAndImproved" ? 2 : null;
       if (relay && who === relay.target) {
         const d = damageEstimate(node.state, node.memory, who, a.skill || "E");
         if (a.skill !== "NA" || relay.allowNA || d.weapon + d.buff + d.soup > 0 ||
@@ -1233,7 +1237,7 @@
       let bestValue = 0, sequence = [];
       for (const skill of ["NA", "E", "Q"]) {
         const p = fundedSkill(local, mem, { who: local.active, skill }, (s, m, a) => {
-          if (boundaryNodes >= SEARCH_LIMITS.boundary || expanded >= maxNodes) return null;
+          if (boundaryNodes >= SEARCH_LIMITS.boundary || !T.projectionBudget.available()) return null;
           boundaryNodes++; expanded++;
           return simulate(s, m, a);
         });
@@ -1257,7 +1261,7 @@
       boundaryCache.set(key, node.boundaryPayoff);
     }
     const equipmentStep = (local, mem, a) => {
-      if (equipmentNodes >= SEARCH_LIMITS.equipment || expanded >= maxNodes) return null;
+      if (equipmentNodes >= SEARCH_LIMITS.equipment || !T.projectionBudget.available()) return null;
       equipmentNodes++;
       expanded++;
       return simulate(local, mem, a);
@@ -1372,7 +1376,7 @@
         ];
         for (const g of uniqueGoals(goals)) {
           const p = fundedSkill(node.state, node.memory, g, (local, mem, a) => {
-            if (completionNodes >= SEARCH_LIMITS.funding || expanded >= maxNodes) return null;
+            if (completionNodes >= SEARCH_LIMITS.funding || !T.projectionBudget.available()) return null;
             completionNodes++;
             expanded++;
             return simulate(local, mem, a);
@@ -1406,7 +1410,7 @@
             !(a.target === 1 && node.memory.gamingReturn)
           )
             continue;
-          if (expanded >= maxNodes) break;
+          if (!T.projectionBudget.available()) break;
           expanded++;
           const p = simulate(node.state, node.memory, a);
           if (!p) continue;
@@ -1435,7 +1439,7 @@
               !child.memory.iansanBurst &&
               T.skillLegal(child.state, { who: 0, skill: "Q" }, child.memory) &&
               !child.memory.uncertainActions.includes("skill:0:Q") &&
-              expanded < maxNodes
+              T.projectionBudget.available()
             ) {
               expanded++;
               const q = { type: "skill", who: 0, skill: "Q" },
@@ -1445,10 +1449,13 @@
             if (child.path.length < depth) next.push({ ...child, value: priority });
           }
         }
-      if (expanded >= maxNodes) break;
+      if (!T.projectionBudget.available()) break;
       next.sort((a, b) => b.value - a.value);
       frontier = next.slice(0, width);
     }
+    if (!best && currentSkill && !T.projectionBudget.available())
+      return { action: currentSkill, sequence: [currentSkill], value: 0,
+        expanded, completionNodes, equipmentNodes, budgetExhausted: true };
     return best
       ? { ...best, expanded, completionNodes, equipmentNodes }
       : {
@@ -1461,6 +1468,9 @@
         };
   }
   function choose(s, m) {
+    return T.projectionBudget.run(SEARCH_LIMITS.nodes, () => chooseAction(s, m));
+  }
+  function chooseAction(s, m) {
     if (!T.legalState(s))
       return { type: "stop", reason: "行动页的回合、手牌、血量、状态或充能未读清" };
     m.route = route(s, m);
@@ -1475,7 +1485,9 @@
       };
     const opening = singOpening(s, m);
     if (opening) return opening;
-    const p = plan(s, m),
+    // The failed direct check above is still valid: opening only projects
+    // clones, and neither the observed board nor confirmed memory changed.
+    const p = searchPlan(s, m, {}, true),
       setup = p.terminal ? null : discountPreparation(s, m, p.action),
       prepared = setup ? replaySequence(s, m, [setup, ...p.sequence]) : null,
       sequence = prepared ? prepared.path : p.sequence,
@@ -1488,26 +1500,26 @@
       retreat = a.type === "switch" && (retreatNeeded(s, m, a.target) || endCover),
       objective = battleObjective(s, m),
       followup = a.type === "switch" ? sequence.slice(1).find((x) =>
-        x.type === "skill" || x.type === "switch" || (x.type === "card" && x.id === "talent")) : null,
+        x.type === "skill" || x.type === "switch" || (x.type === "card" && x.id === "skivingNewAndImproved")) : null,
       // Retreat can also hand off a funded skill. Keep that realised intention,
       // but do not invent one for bare cover or a branch ending in random draws.
       relayTask = a.type === "switch" && !(a.target === 1 && m.gamingReturn) &&
         ((followup?.type === "skill" && followup.who === a.target) ||
-          (followup?.id === "talent" && a.target === 2))
+          (followup?.id === "skivingNewAndImproved" && a.target === 2))
         ? { target: a.target, origin: s.active, round: m.round,
             allowNA: !activeOutputReachable(s, m),
             goal: followup.skill || "E" }
         : null;
     if (a.type === "tune") {
       const next = sequence.find((x) => x.type === "skill" || x.type === "switch" ||
-        (x.type === "card" && x.id === "talent"));
+        (x.type === "card" && x.id === "skivingNewAndImproved"));
       if (next?.type === "skill" && next.who === s.active) a.goal = next.skill;
-      if (next?.id === "talent" && s.active === 2) a.goal = "E";
+      if (next?.id === "skivingNewAndImproved" && s.active === 2) a.goal = "E";
     }
     return {
       ...a,
       route: m.route,
-      reason: prepared
+      reason: p.budgetExhausted ? "搜索额度已用尽，保留当前可支付技能；确认后重算" : prepared
         ? "同一已选装备先兑现可验证的零费减费；全段索引和支付已重算"
         : endCover ? "本回合已无可支付输出，回合末交接保护站场输出位；下轮按真实骰子重算"
           : m.relayTask ? "优先兑现已确认交接的输出任务；后续仍按真实牌面重算"
@@ -1549,7 +1561,7 @@
     }
     const task = m.relayTask;
     if (!task) return;
-    const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "talent" ? 2 : null;
+    const who = a.type === "skill" ? a.who : a.type === "card" && a.id === "skivingNewAndImproved" ? 2 : null;
     const d = who === task.target ? damageEstimate(before, m, who, a.skill || "E") : null;
     if (a.type === "end" || after?.active !== task.target ||
         (d && (a.skill !== "NA" || task.allowNA || d.weapon + d.buff + d.soup > 0 ||
@@ -1603,7 +1615,7 @@
               maxhp: 30,
             };
     if (!soupDiscountReachable(s, m, target)) rank.discount = -1;
-    if (c && c.hp >= T.team[target].maxHp + (m.extraMaxHp[target] || 0)) rank.healing = 0;
+    if (c && c.hp >= T.effectiveMaxHp(m, target)) rank.healing = 0;
     return options.slice().sort((a, b) => (rank[b.effect] || 0) - (rank[a.effect] || 0))[0] || null;
   }
   Object.assign(T, {

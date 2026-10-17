@@ -2,6 +2,27 @@
 /* Local rules, not an omniscient simulator. No host API, network, or LLM here. */
 (function (root) {
   "use strict";
+  // One synchronous decision, including nested helpers and failed projections.
+// No cross-decision cache; exhaustion is not evidence of action illegality.
+const projectionBudget = (() => {
+  let current = null;
+  return {
+    run(limit, decide) {
+      if (current) return decide();
+      current = { used: 0, limit };
+      try {
+        const result = decide();
+        return { ...result, projections: { ...current, exhausted: current.used >= current.limit } };
+      } finally { current = null; }
+    },
+    available() { return !current || current.used < current.limit; },
+    take() {
+      if (!current) return true; // Standalone rule projection, not a decision.
+      if (current.used >= current.limit) return false;
+      current.used++; return true;
+    },
+  };
+})();
   function openingSetting(value) { return !value || value === "优先充能与调骰" ? "全部保留" : value; }
   const team = [
     { name: "雷电将军", element: "Electro", maxEnergy: 2, maxHp: 10, skills:{NA:"源流",E:"神变·恶曜开眼",Q:"奥义·梦想真说"} },
@@ -9,7 +30,7 @@
     { name: "刻晴", element: "Electro", maxEnergy: 3, maxHp: 10, skills:{NA:"云来剑法",E:"星斗归位",Q:"天街巡游"} }
   ];
   const cards = [
-    ["woven", "元素共鸣：交织之雷", {}, "dice"],
+    ["wovenThunder", "元素共鸣：交织之雷", {}, "dice"],
     ["voltage", "元素共鸣：强能之雷", { element: "Electro", n: 1 }, "energy"],
     ["shift", "换班时间", {}, "switch"],
     ["fast", "交给我吧！", {}, "switch"],
@@ -23,7 +44,7 @@
     ["smoked", "北地烟熏鸡", {}, "food"],
     ["mint", "兽肉薄荷卷", { aligned: 1 }, "food"],
     ["gambler", "赌徒的耳环", { aligned: 1 }, "artifact"],
-    ["talent", "飞叶迴斜", { element: "Dendro", n: 3 }, "talent"],
+    ["floralSidewinder", "飞叶迴斜", { element: "Dendro", n: 3 }, "talent"],
     ["wedge", "雷楔", { element: "Electro", n: 3 }, "wedge"],
     ["tassel", "白缨枪", { aligned: 2 }, "weapon", 0],
     ["raven", "鸦羽弓", { aligned: 2 }, "weapon", 1],
@@ -73,7 +94,7 @@
     if(a.id==="lost" && (m.defeatRound!==m.round || m.lostUsedRound===m.round))
       return "本大爷需要本轮阵亡且本轮尚未使用";
     if(a.id==="edict" && m.legendUsed)return "秘传牌本局已使用";
-    if(["penance","talent"].includes(a.id) && (a.target!==(a.id==="penance"?2:1) ||
+    if(["penance","floralSidewinder"].includes(a.id) && (a.target!==(a.id==="penance"?2:1) ||
         s.active!==a.target || s.characters[a.target]?.frozen))return "天赋出战角色/技能可用性不符";
     if(a.id==="wedge" && (a.target!==2 || s.characters[2]?.frozen))
       return "雷楔目标/技能可用性不符";
@@ -189,29 +210,42 @@
   // Payment feasibility includes Omni exactly once; energy is a separate resource.
   // The host uses the game's default legal auto-payment, not these suggested indices.
   function payment(dice, cost, preserve = "Electro") {
-    const list = Object.entries(dice || {}).flatMap(([e, n]) => Array(n).fill(e));
-    const need = size(cost);
-    if (need > list.length || list.length > 16) return null;
-    if (!need) return { indices: [], remaining: { ...dice } };
-    let best = null;
-    function visit(start, selected) {
-      if (selected.length === need) {
-        const chosen = selected.map(i => list[i]);
-        if (cost.n && chosen.filter(e => e === cost.element || e === "Omni").length < cost.n) return;
-        if (cost.aligned) {
-          const unique = [...new Set(chosen.filter(e => e !== "Omni"))];
-          if (unique.length > 1) return;
+    const secondaryPaymentWeights = { Dendro: 3 }, emptyPaymentWeight = {};
+        const groups = Object.entries(dice || {}), need = size(cost),
+      count = groups.reduce((n, [, amount]) => n + amount, 0);
+    if (need > count || count > 16) return null;
+    if (!need) return { indices: [], remaining: { ...dice }, ...emptyPaymentWeight };
+    const counts = Array(groups.length).fill(0), offsets = [];
+    let offset = 0, best = null;
+    for (const [, amount] of groups) { offsets.push(offset); offset += amount; }
+    function visit(at, left, weight, matching, aligned) {
+      if (best && weight > best.weight) return;
+      if (left === 0) {
+        if (cost.n && matching < cost.n) return;
+        const indices = counts.flatMap((n, i) => Array.from({ length: n }, (_, j) => offsets[i] + j));
+        // Original subset enumeration chose the earliest slot list on equal
+        // weight. Count enumeration preserves that tie without identical dice subsets.
+        if (best && weight === best.weight) {
+          const different = indices.findIndex((n, i) => n !== best.indices[i]);
+          if (different < 0 || indices[different] > best.indices[different]) return;
         }
-        const weight = chosen.reduce((v, e) => v + (e === "Omni" ? 10 : e === preserve ? 6 : e === "Dendro" ? 3 : 1), 0);
-        if (best && best.weight <= weight) return;
         const remaining = { ...dice };
-        for (const e of chosen) remaining[e]--;
-        best = { indices: selected.slice(), remaining, weight };
-        return;
+        groups.forEach(([element], i) => { remaining[element] -= counts[i]; });
+        best = { indices, remaining, weight }; return;
       }
-      for (let i = start; i <= list.length - need + selected.length; i++) visit(i + 1, selected.concat(i));
+      if (at === groups.length) return;
+      const [element, amount] = groups[at],
+        fee = element === "Omni" ? 10 : element === preserve ? 6 : secondaryPaymentWeights[element] || 1;
+      for (let n = 0; n <= Math.min(amount, left); n++) {
+        if (n && cost.aligned && element !== "Omni" && aligned && aligned !== element) continue;
+        counts[at] = n;
+        visit(at + 1, left - n, weight + n * fee,
+          matching + (element === cost.element || element === "Omni" ? n : 0),
+          n && element !== "Omni" ? element : aligned);
+      }
+      counts[at] = 0;
     }
-    visit(0, []);
+    visit(0, need, 0, 0, null);
     return best;
   }
   function boardKey(s) {
@@ -271,12 +305,12 @@
   function sproutCast(action) {
     if(action.type==="skill")return action;
     if(action.type!=="card")return null;
-    return action.id==="talent"?{who:1,skill:"E"}:
+    return action.id==="floralSidewinder"?{who:1,skill:"E"}:
       ["wedge","penance"].includes(action.id)?{who:2,skill:"E"}:null;
   }
   function commitSprout(m,action,before) {
     const cast=sproutCast(action);if(!cast)return;
-    const equips=action.type==="card" && action.id==="talent",
+    const equips=action.type==="card" && action.id==="floralSidewinder",
       available=sproutAvailable(m,cast.who,cast.skill,equips);
     // Equipment persists; Sprout and its creation guard last only this round.
     // Repeated E never restores a used or outcome-unknown trigger.
@@ -360,9 +394,9 @@
   }
   function burnableHand(s,m) {
     const a=s.active,active=s.characters[a];
-    const values={woven:100,voltage:95,shift:20,fast:30,companion:60,draw:55,stars:40,calx:35,
+    const values={wovenThunder:100,voltage:95,shift:20,fast:30,companion:60,draw:55,stars:40,calx:35,
       lotus:active?.hp<=4?90:25,hashbrown:active?.hp<=5?80:20,sweet:25,smoked:15,
-      mint:20,gambler:30,talent:alive(s.characters[1])&&!m.talent?75:0,wedge:alive(s.characters[2])?80:0,tassel:25,raven:25,sword:25,
+      mint:20,gambler:30,floralSidewinder:alive(s.characters[1])&&!m.talent?75:0,wedge:alive(s.characters[2])?80:0,tassel:25,raven:25,sword:25,
       thundergrass:75,shatterbolt:93,sharpkernel:85,edict:m.legendUsed?0:70,
       exile:45,penance:alive(s.characters[2])&&!m.penance?75:0,
       lost:m.defeatRound===m.round&&m.lostUsedRound!==m.round?95:25,toss:30};
@@ -491,7 +525,7 @@
       // These zero-cost statuses have no independent visible resource effect.
       // Keep a final copy until the next draw, instead of pretending failed count OCR proves zero cards.
       if (s.hand.length === 1 && ["shift", "fast", "smoked"].includes(c.id)) continue;
-      if (c.id === "woven" && diceCount < 16) offer(action, 100, "零费雷骰，扩充本轮行动资源");
+      if (c.id === "wovenThunder" && diceCount < 16) offer(action, 100, "零费雷骰，扩充本轮行动资源");
       if (c.id === "voltage" && known(active.energy) && active.energy < team[a].maxEnergy &&
           !wantSwitch && active.frozen === false && remaining >= 3) offer(action, 94, "优先充能；不假设只能给一人充能");
       if (c.id === "shift" && wantSwitch && !m.freeSwitch) offer(action, 96, "下一次切换减一骰");
@@ -519,7 +553,7 @@
         if (c.id === "smoked" && !wantSwitch && skill === "NA" && diceCount >= 2) offer(action, 91, "即将普攻，先减一无色骰");
         if (c.id === "mint" && !wantSwitch && skill === "NA" && a === 2 && activeKeqingInfusion(m) && remaining >= 4) offer(action, 80, "预计连续两次附魔普攻，薄荷卷才划算");
       }
-      if (c.id === "gambler" && a === 2 && gamblerRemaining(m,a)>0 && !wantSwitch && !m.artifacts[a] &&
+      if (c.id === "gambler" && a === 2 && !wantSwitch && !m.artifacts[a] &&
           remaining >= reserve && s.enemies.some(e => alive(e) && e.hp <= 4)) {
         offer({ ...action, target: a }, 82, "可能击倒敌人前装备赌徒，不空耗启动骰");
       }
@@ -528,7 +562,7 @@
           payment(pay.remaining, desiredCost, team[a].element)) {
         offer({ ...action, target: a }, 66, "仅给适配的出战角色装备基础武器，且保留下一技能的元素骰");
       }
-      if (c.id === "talent" && a === 1 && !wantSwitch && skill === "E" && !m.talent && active.frozen === false) {
+      if (c.id === "floralSidewinder" && a === 1 && !wantSwitch && skill === "E" && !m.talent && active.frozen === false) {
         offer({ ...action, target: 1 }, 84, "三草骰天赋直接释放战技，而不是额外四费");
       }
       if (c.id === "wedge" && alive(s.characters[2]) && s.characters[2].frozen === false && wanted && wanted.who === 2 &&
@@ -595,7 +629,7 @@
       return { mode: "unchanged", hand };
     }
     if (action.type === "tune" || action.type === "card" && byId[action.id] &&
-        !["draw", "talent", "wedge","penance"].includes(action.id)) {
+        !["draw", "floralSidewinder", "wedge","penance"].includes(action.id)) {
       if (!Number.isInteger(action.index) || hand[action.index]?.id !== action.id) throw new Error("手牌增量计划的目标索引/身份不一致");
       return { mode: "remove", hand: indexedHand(hand.filter((_, i) => i !== action.index)) };
     }
@@ -605,7 +639,7 @@
       Math.min(10, hand.length + (hand.some(c => c.id === "wedge") ? -1 : 1)) :
       action.type === "card" && action.id === "draw" ? Math.min(10, hand.length + 1) :
       action.type === "card" && action.id === "penance" ? Math.max(0,Math.min(10,hand.length-(hand.some(h=>h.id==="wedge")?2:0))) :
-      action.type === "card" && ["talent", "wedge"].includes(action.id) ? Math.max(0, hand.length - 1) : null;
+      action.type === "card" && ["floralSidewinder", "wedge"].includes(action.id) ? Math.max(0, hand.length - 1) : null;
     return { mode: "full", hand: null, expectedCount };
   }
   function verify(action, before, after, transition = false) {
@@ -629,12 +663,12 @@
         after.hand.length === Math.min(10, before.hand.length + 1);
       // Combat cards may generate/discard another card: require the selected card's count drop,
       // and a real combat effect, rather than assuming a drag succeeded.
-      if (["talent","wedge","penance"].includes(action.id)) {
+      if (["floralSidewinder","wedge","penance"].includes(action.id)) {
         return (bag(before.hand)[action.id] || 0) > (bag(after.hand)[action.id] || 0) &&
           (transition || total(after.dice) < total(before.dice));
       }
       if (!removedOne(before.hand, after.hand, action.id)) return false;
-      if (action.id === "woven") return total(after.dice) === total(before.dice) + 1;
+      if (action.id === "wovenThunder") return total(after.dice) === total(before.dice) + 1;
       if (action.id === "companion") return total(after.dice) === total(before.dice) && (after.dice.Omni || 0) > (before.dice.Omni || 0);
       if (action.id==="voltage")return after.characters.some((c,i)=>known(c.energy) && c.energy>before.characters[i].energy);
       if (["stars", "calx"].includes(action.id)) return after.characters[before.active].energy > before.characters[before.active].energy;
@@ -661,9 +695,9 @@
     if (["stars", "calx"].includes(action.id)) return after.characters[before.active].energy > before.characters[before.active].energy;
     if(action.id==="lost" || action.id==="toss")return verify(action,before,after,transition);
     if (["sweet", "hashbrown"].includes(action.id)) return after.characters[action.target]?.hp > before.characters[action.target]?.hp;
-    if (action.id === "woven") return (after.dice.Electro || 0) > (before.dice.Electro || 0);
+    if (action.id === "wovenThunder") return (after.dice.Electro || 0) > (before.dice.Electro || 0);
     if (action.id === "companion") return (after.dice.Omni || 0) > (before.dice.Omni || 0);
-    if (["talent", "wedge","penance"].includes(action.id)) return transition || total(after.dice) < total(before.dice);
+    if (["floralSidewinder", "wedge","penance"].includes(action.id)) return transition || total(after.dice) < total(before.dice);
     // Other supported cards have no independent visible status indicator.
     // Exact selected-card consumption is their proof, not a predicted dice cost.
     return true;
@@ -671,6 +705,13 @@
   function actionKey(action) {
     return action.type + ":" + (action.id || (["skill","probe"].includes(action.type) ? action.who + ":" + action.skill : action.target));
   }
+  function damageAgainst(target,amount,element,piercing=false) {
+  if(!target)return {direct:amount,shieldSpent:0,guaranteed:null};
+  const immune=!piercing&&target.immuneElements?.includes(element),
+    shieldSpent=!piercing&&!immune&&known(target.shield)?Math.min(target.shield,amount):0,
+    direct=immune?0:Math.max(0,amount-shieldSpent);
+  return {direct,shieldSpent,guaranteed:target.defenseKnown===true?direct:null};
+}
   function deferUncertain(m, action) {
     // Do not replay an outcome-unknown action in the same round. A food might
     // already have resolved, so conservatively reserve that target's food slot.
@@ -680,7 +721,7 @@
     if (action.type === "card" && byId[action.id]?.type === "food") m.food[action.target] = true;
     if(action.type==="skill"&&action.skill==="Q")m.resolve=null;
     const cast=sproutCast(action);
-    if(cast && sproutAvailable(m,cast.who,cast.skill,action.type==="card"&&action.id==="talent") &&
+    if(cast && sproutAvailable(m,cast.who,cast.skill,action.type==="card"&&action.id==="floralSidewinder") &&
         skillElement(m,cast.who,cast.skill))m.sproutUncertainRound=m.round;
   }
   function commit(m, action, before, after=null) {
@@ -716,9 +757,10 @@
     if (["gambler","exile"].includes(action.id)) {
       m.artifacts[action.target]=action.id==="gambler";
       m.artifactKinds[action.target]=action.id;
+      if(action.id==="gambler")m.gamblerUsed[action.target]=0;
     }
     if (byId[action.id].type === "weapon") m.weapons[action.target] = true;
-    if (action.id === "talent") { m.talent = true; m.dendroRound = m.round; m.used[a]++; }
+    if (action.id === "floralSidewinder") { m.talent = true; m.dendroRound = m.round; m.used[a]++; }
     if(action.id==="penance"){m.penance=true;m.used[2]++;if(before.hand.some(h=>h.id==="wedge"))createKeqingInfusion(m);}
     if(action.id==="edict"){m.legendUsed=true;m.immuneUntil[action.target]=m.round+1;}
     if(action.id==="lost")m.lostUsedRound=m.round;
@@ -737,7 +779,7 @@
     if (["stars", "calx"].includes(action.id)) return after.characters[before.active].energy > before.characters[before.active].energy;
     if(action.id==="lost")return verify(action,before,{...after,hand:indexedHand(before.hand.filter(h=>h.index!==action.index))});
     if (["sweet", "hashbrown","edict"].includes(action.id)) return after.characters[action.target]?.hp > before.characters[action.target]?.hp;
-    if (action.id === "woven") return total(after.dice) === total(before.dice) + 1 &&
+    if (action.id === "wovenThunder") return total(after.dice) === total(before.dice) + 1 &&
       (after.dice.Electro || 0) === (before.dice.Electro || 0) + 1;
     if (action.id === "companion") return total(after.dice) === total(before.dice) && (after.dice.Omni || 0) > (before.dice.Omni || 0);
     return false;
@@ -753,7 +795,7 @@
     if (action.type !== "card" || !byId[action.id] || action.id === "draw" || ["shift", "fast", "smoked"].includes(action.id)) return false;
     if (["voltage", "stars", "calx"].includes(action.id)) return after.characters[before.active].energy > before.characters[before.active].energy;
     if (["sweet", "hashbrown"].includes(action.id)) return after.characters[action.target].hp > before.characters[action.target].hp;
-    if (action.id === "woven") return total(after.dice) === total(before.dice) + 1;
+    if (action.id === "wovenThunder") return total(after.dice) === total(before.dice) + 1;
     if (action.id === "companion") return total(after.dice) === total(before.dice) && (after.dice.Omni || 0) > (before.dice.Omni || 0);
     return transition || total(after.dice) < total(before.dice);
   }
@@ -779,19 +821,19 @@
     // This fixed Electro/Dendro team auto-plays the mother blessing from hand
     // or pile. Mulligan it to keep an ordinary opening card instead of losing
     // that card slot when the blessing enters the support zone.
-    const useful=new Set(["woven","voltage","draw","stars","talent","gambler","tassel","raven","sword"]);
+    const useful=new Set(["wovenThunder","voltage","draw","stars","floralSidewinder","gambler","tassel","raven","sword"]);
     const seen=new Set();
     const replace=cards.map(c=>!useful.has(c.id) || (["weapon","artifact","talent","support"].includes(byId[c.id]?.type) && seen.has(c.id)) || !seen.add(c.id));
     return {keep:cards.filter((c,i)=>!replace[i]),replace,duplicateWeapons:[]};
   }
-  root.TCG = { openingContext, openingPlan, team, cards, byId, norm, identify, observedCard, handCardKnown, characterName, total, size, payment, rerollPlan,
+  root.TCG = { projectionBudget, openingContext, openingPlan, team, cards, byId, norm, identify, observedCard, handCardKnown, characterName, total, size, payment, rerollPlan,
     openingSetting, known, alive, freshMemory, nextRound, OpeningFlow, freshActionBoard, skillCost, skillLegal, cardLegal, cardInputError, intent, survivorIntent, followupReachable, switchPreparationReachable, replacement, noteBoard, tuningPlan, legalState, choose, verify, commit, emptyHandEffect, diceOrder,
     indexedHand, handPlan, verifyResynchronized, actionKey, rejectAction, deferUncertain, removalEffect, blessingChoice,boardKey,burnableHand,
-    actionRerollGoal,rerollCounter,enemyCount,gamblerRemaining,skillElement,dendroReaction,sproutAvailable,activeKeqingInfusion };
+    actionRerollGoal,rerollCounter,enemyCount,gamblerRemaining,skillElement,dendroReaction,sproutAvailable,activeKeqingInfusion,damageAgainst };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.0";
-globalThis.TCG.sharedVersion = "1.5.0";
+globalThis.TCG.version = "1.3.3";
+globalThis.TCG.sharedVersion = "1.5.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

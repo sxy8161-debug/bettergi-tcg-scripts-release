@@ -13,7 +13,7 @@
     ["canopy","「悬木人」",{},"support",2],
     ["sand","「沙中遗事」",{},"legend",1],
     ["bloom","元素幻变：绽放祝佑",{aligned:2},"support",1],
-    ["woven","元素共鸣：交织之草",{},"dice",2],
+    ["wovenWeeds","元素共鸣：交织之草",{},"dice",2],
     ["gleam","月兆·满辉",{},"attachment",2],
     ["shift","换班时间",{},"switch",1],
     ["draw","运筹帷幄",{aligned:1},"draw",2],
@@ -83,6 +83,27 @@
 // Generated from 牌手共享. Edit layered source, not this standalone output.
 (function (root) {
   "use strict";
+  // One synchronous decision, including nested helpers and failed projections.
+// No cross-decision cache; exhaustion is not evidence of action illegality.
+const projectionBudget = (() => {
+  let current = null;
+  return {
+    run(limit, decide) {
+      if (current) return decide();
+      current = { used: 0, limit };
+      try {
+        const result = decide();
+        return { ...result, projections: { ...current, exhausted: current.used >= current.limit } };
+      } finally { current = null; }
+    },
+    available() { return !current || current.used < current.limit; },
+    take() {
+      if (!current) return true; // Standalone rule projection, not a decision.
+      if (current.used >= current.limit) return false;
+      current.used++; return true;
+    },
+  };
+})();
   const {roster:team,cards,techniques}=root.TCGMoonCatalog;
   const byId=Object.fromEntries(cards.map(c=>[c.id,c]));
   const initialNames=new Set(cards.filter(c=>c.copies>0).map(c=>c.name));
@@ -420,7 +441,7 @@
       domain=name==="哥伦比娅"&&skill==="Q"?3:known(m.domain?.value)?m.domain.value:0,
       unknownReaction=!!state&&state.auraKnown!==true&&element!=="Physical",replacementRequired=false,
       handReactionUnknown=unknownReaction;
-    if(base)queue.push({base,element,owner:skill==="T"?null:who,normal,source:kernel?"kernel":"skill"});
+    if(base&&state)queue.push({base,element,owner:skill==="T"?null:who,normal,source:kernel?"kernel":"skill"});
     const drain=()=>{
       while(queue.length){
         const hit=queue.shift();
@@ -437,6 +458,7 @@
         events.push({...hit,reaction:r.name,direct:damage.direct,lunar:r.lunar===true});
         if(state){
           state.hp=Math.max(0,state.hp-damage.direct);
+          if(state.hp===0&&enemyCount(s)>1){replacementRequired=true;handReactionUnknown=true;}
           if(known(state.shield))state.shield-=damage.shieldSpent;
           if(shatter)state.frozen=false;if(r.freeze)state.frozen=true;
           if(r.consumed)state.aura=state.aura.filter(a=>a!==r.consumed);
@@ -460,7 +482,7 @@
     if(enhancedReady){queue.push({base:1,element:"Dendro",owner:who,normal:true,source:"enhanced"});drain();}
     // Ordinary NA is charged when the pre-action dice count is even. A kernel
     // invokes a hidden skill after card payment; do not assume that parity here.
-    if(skill==="NA"&&!kernel&&m.holyBlade?.[who]&&total(s.dice)%2===0){
+    if(state&&skill==="NA"&&!kernel&&m.holyBlade?.[who]&&total(s.dice)%2===0){
       queue.push({base:5,element:team[who].element,owner:null,normal:false,source:"holy-blade"});drain();
     }
     const first=events[0],reacts=unknownReaction&&!lunarReactions?null:lunarReactions>0,
@@ -777,7 +799,7 @@
   function removalEffect(a,b,s) {
     if(a.type==="tune")return (s.dice[a.element]||0)===(b.dice[a.element]||0)+1;
     if(a.type!=="card")return false;
-    if(a.id==="woven")return (s.dice.Dendro||0)>(b.dice.Dendro||0);
+    if(a.id==="wovenWeeds")return (s.dice.Dendro||0)>(b.dice.Dendro||0);
     if(a.id==="calx")return s.characters[b.active].energy>b.characters[b.active].energy;
     return false;
   }
@@ -807,6 +829,7 @@
   // Restricted resource projection, never a native observation. Both route and
   // ordinary candidates use the same cost, hand-impact and commit rules.
   function projectResources(s,m,a) {
+    if(!projectionBudget.take())return null;
     const cost=a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(s,a,m):
       a.type==="switch"?{any:m.freeSwitch||m.fanSwitch?0:1}:null;
     if(m.uncertainActions.includes(actionKey(a)))return null;
@@ -821,7 +844,7 @@
     if(a.type==="switch")next.active=a.target;
     if(a.type==="card"){
       next.hand=indexedHand(next.hand.filter((_,i)=>i!==a.index));
-      if(a.id==="woven")next.dice.Dendro=Math.min(16-total(next.dice)+(next.dice.Dendro||0),(next.dice.Dendro||0)+1);
+      if(a.id==="wovenWeeds")next.dice.Dendro=Math.min(16-total(next.dice)+(next.dice.Dendro||0),(next.dice.Dendro||0)+1);
       if(a.id==="calx")for(let i=0;i<3;i++)if(i!==s.active&&alive(next.characters[i])&&next.characters[i].energy>0){
         next.characters[i].energy--;next.characters[s.active].energy=Math.min(team[s.active].maxEnergy,next.characters[s.active].energy+1);
       }
@@ -857,13 +880,13 @@
     const randomDice=a.id==="cleaning"?knownAttachmentKinds(next.hand):a.id==="toy"?2:0;
     return {state:next,memory:mem,cost,paid:size(cost),hit,combat,
       refund:triggers?.total===null?randomDice:randomDice+(triggers?.total||0),
-      boundary:impact.mode==="full"?"hand-change":a.id==="seed"&&!seedDiscountKnown(s.hand[a.index],m)?"temporary-discount-unknown":
-        hit?.unknownReaction?"reaction":hit?.replacementRequired?"replacement":
+      boundary:hit?.replacementRequired?"replacement":impact.mode==="full"?"hand-change":a.id==="seed"&&!seedDiscountKnown(s.hand[a.index],m)?"temporary-discount-unknown":
+        hit?.unknownReaction?"reaction":
         ["gleam","overgrow","amrita"].includes(a.id)&&impact.hand?.some(h=>h.currentCost===null)?"attachment-change":
         randomDice>0?"random-refund":
         triggers&&(m.canopyPoints.length||m.researchRemaining!==0)&&(!triggers.known||triggers.total>0)?"random-refund":null};
   }
-  root.TCG={team,cards,techniques,byId,initialNames,norm,identify,observedCard,handCardKnown,characterName,role,
+  root.TCG={projectionBudget,team,cards,techniques,byId,initialNames,norm,identify,observedCard,handCardKnown,characterName,role,
     diceOrder,total,size,known,alive,enemyCount,bag,indexedHand,removedOne,boardKey,actionKey,fact,payment,
     cardCost,cardInputCost,cardContextError,cardInputError,cardLegal,skillCost,skillLegal,legalState,freshMemory,nextRound,
     seeds,nonInitial,currentCost,attachedCost,attachedCostAtLeast,cardFactsKnown,cardProbeKey,hasReduction,realAction,characterTarget,cardTriggers,attachmentKinds,knownAttachmentKinds,reaction,damageEstimate,openingSetting,openingContext,
@@ -875,8 +898,8 @@
       "heal-dice":["请选择一个角色","对所选角色生效"],heal:["请选择一个角色","对所选角色生效"]}};
 })(globalThis);
 
-globalThis.TCG.version = "1.3.0";
-globalThis.TCG.sharedVersion = "1.5.0";
+globalThis.TCG.version = "1.3.3";
+globalThis.TCG.sharedVersion = "1.5.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
