@@ -42,7 +42,14 @@
       visibleMask:[[0,0,46,22],[0,26,46,22]]
     }))};
   }
-  function locate(width,height,matches) {
+  function locate(width,height,matches,transform=null) {
+    if(transform&&width===1920&&height===1200){
+      const {scale,dx,dy}=transform;
+      const read=locateRow(matches.map(m=>({...m,x:(m.x-dx)/scale,y:(m.y-dy)/scale})));
+      return {...read,slots:read.slots.map(s=>({...s,
+        marker:{x:s.marker.x*scale+dx,y:s.marker.y*scale+dy},
+        rect:[s.rect[0]*scale+dx,s.rect[1]*scale+dy,s.rect[2]*scale,s.rect[3]*scale]}))};
+    }
     if(width!==1920||height!==1080)return {status:"unavailable",reason:"capture-size",count:null,slots:[]};
     return locateRow(matches);
   }

@@ -1,0 +1,14 @@
+{
+  "manifest_version": 1,
+  "name": "[我不是牌神]莫娜早柚迪卢克",
+  "version": "0.1.1",
+  "description": "莫娜挂水与快速切换，早柚扩散对群，迪卢克连斩和元素爆发收尾；结合装备减费、返骰与过牌，逐步观察并重新决策。",
+  "authors": [
+    {
+      "name": "巨鲸也是咸鱼"
+    }
+  ],
+  "bgi_version": "0.66.0",
+  "settings_ui": "settings.json",
+  "main": "main.js"
+}

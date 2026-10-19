@@ -26,7 +26,7 @@ const projectionBudget = (() => {
   function openingSetting(value) { return !value || value === "优先充能与调骰" ? "全部保留" : value; }
   const team = [
     { name: "雷电将军", element: "Electro", maxEnergy: 2, maxHp: 10, skills:{NA:"源流",E:"神变·恶曜开眼",Q:"奥义·梦想真说"} },
-    { name: "柯莱", element: "Dendro", maxEnergy: 2, maxHp: 11, skills:{NA:"祈颂射艺",E:"拂花偈叶",Q:"猫猫秘宝"} },
+    { name: "柯莱", element: "Dendro", maxEnergy: 2, maxHp: 11, skills:{NA:"祈颂射艺",E:"拂花偈叶",Q:"猫猫秘宝"}, skillAliases:{E:["拂花偶叶"]} },
     { name: "刻晴", element: "Electro", maxEnergy: 3, maxHp: 10, skills:{NA:"云来剑法",E:"星斗归位",Q:"天街巡游"} }
   ];
   const cards = [
@@ -921,8 +921,8 @@ function actionRefused(s, m, action) {
     actionRerollGoal,rerollCounter,enemyCount,gamblerRemaining,skillElement,dendroReaction,sproutAvailable,activeKeqingInfusion,damageAgainst };
 })(globalThis);
 
-globalThis.TCG.version = "1.3.6";
-globalThis.TCG.sharedVersion = "1.5.6";
+globalThis.TCG.version = "1.4.1";
+globalThis.TCG.sharedVersion = "1.6.1";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

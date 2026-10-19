@@ -24,12 +24,12 @@
   }
   async function read(host,bank,env,score){
     if(!bank)return null;
-    const clean=f=>Number(f.width??f.Width)===1920&&Number(f.height??f.Height)===1080&&
-      host.phaseIn(f).phase==="opening"&&!env.TCG.norm(host.ocr(f,[58,112,339,53]))&&
-      xs.every(x=>!env.TCG.norm(host.ocr(f,[x-100,730,200,60])));
+    const clean=f=>host.phaseIn(f).phase==="opening"&&!env.TCG.norm(host.ocr(f,host.roi("details", [58,112,339,53])))&&
+      xs.every(x=>!env.TCG.norm(host.ocr(f,host.roi("opening", [x-100,730,200,60]))));
     const sample=()=>host.frame(f=>{
       if(!clean(f))return null;
-      return rank(bank,(x,p,file)=>score(host,env,f,x+p[0],p[1],p[2],p[3],file,3));
+      return rank(bank,(x,p,file)=>score(host,env,f,x+p[0],p[1],p[2],p[3],file,3,
+        host.roi("opening",[x+p[0],p[1],p[2],p[3]])));
     });
     const sampledAt=Date.now(),first=sample();if(!first)return null;
     if(first.every(slot=>slot.id))return first.map(slot=>slot.id);
@@ -57,7 +57,7 @@
     };
     const toggle=async(index,purpose)=>{
       if(host.phase().phase!=="opening")throw Error("起手置换前页面已改变");
-      host.clickAt(xs[index]+70,540);await sleep(350);await verify(index,purpose);
+      host.clickAt(...host.point("opening",xs[index]+70,540));await sleep(350);await verify(index,purpose);
     };
     try{
       for(let i=0;i<cards.length;i++)if(!cards[i]){

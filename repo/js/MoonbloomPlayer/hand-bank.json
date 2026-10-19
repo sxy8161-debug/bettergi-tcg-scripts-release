@@ -1066,6 +1066,13 @@
               "assets/expanded/赌徒的耳环-v01-p01.png",
               "assets/expanded/赌徒的耳环-v01-p02.png"
             ]
+          },
+          {
+            "name": "runtime-576200ab98",
+            "patches": [
+              "assets/expanded/赌徒的耳环-v02-p01.png",
+              "assets/expanded/赌徒的耳环-v02-p02.png"
+            ]
           }
         ]
       },

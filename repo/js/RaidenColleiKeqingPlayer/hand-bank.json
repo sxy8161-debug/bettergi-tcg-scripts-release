@@ -14,7 +14,7 @@
       22
     ]
   ],
-  "scoreFloor": 0.95,
+  "scoreFloor": 0.9,
   "runnerUpGap": 0.2,
   "entries": [
     {
@@ -43,7 +43,7 @@
           ]
         }
       ],
-      "scoreFloor": 0.93
+      "scoreFloor": 0.83
     },
     {
       "id": "companion",
@@ -137,8 +137,7 @@
             "assets/hand/流放者头冠-v03-p02.png"
           ]
         }
-      ],
-      "scoreFloor": 0.93
+      ]
     },
     {
       "id": "fast",
@@ -261,7 +260,6 @@
     {
       "id": "smoked",
       "name": "北地烟熏鸡",
-      "scoreFloor": 0.93,
       "views": [
         {
           "name": "native",
@@ -275,7 +273,6 @@
     {
       "id": "stars",
       "name": "星天之兆",
-      "scoreFloor": 0.94,
       "views": [
         {
           "name": "sampler-20261013",
@@ -326,7 +323,6 @@
           ]
         }
       ],
-      "scoreFloor": 0.92,
       "animated": true
     },
     {
@@ -345,7 +341,6 @@
     {
       "id": "voltage",
       "name": "元素共鸣：强能之雷",
-      "scoreFloor": 0.93,
       "views": [
         {
           "name": "native",
@@ -562,6 +557,13 @@
               "assets/expanded/一掷乾坤-v02-p01.png",
               "assets/expanded/一掷乾坤-v02-p02.png"
             ]
+          },
+          {
+            "name": "runtime-26039ab165",
+            "patches": [
+              "assets/expanded/一掷乾坤-v03-p01.png",
+              "assets/expanded/一掷乾坤-v03-p02.png"
+            ]
           }
         ]
       },
@@ -594,6 +596,34 @@
             "patches": [
               "assets/expanded/飞叶迴斜-v01-p01.png",
               "assets/expanded/飞叶迴斜-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-cc27a1f3b4",
+            "patches": [
+              "assets/expanded/飞叶迴斜-v02-p01.png",
+              "assets/expanded/飞叶迴斜-v02-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-26039ab165",
+            "patches": [
+              "assets/expanded/飞叶迴斜-v03-p01.png",
+              "assets/expanded/飞叶迴斜-v03-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-a10b6a54d5",
+            "patches": [
+              "assets/expanded/飞叶迴斜-v04-p01.png",
+              "assets/expanded/飞叶迴斜-v04-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-576200ab98",
+            "patches": [
+              "assets/expanded/飞叶迴斜-v05-p01.png",
+              "assets/expanded/飞叶迴斜-v05-p02.png"
             ]
           }
         ]
@@ -659,6 +689,59 @@
             "patches": [
               "assets/expanded/雷楔-v01-p01.png",
               "assets/expanded/雷楔-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-a10b6a54d5",
+            "patches": [
+              "assets/expanded/雷楔-v02-p01.png",
+              "assets/expanded/雷楔-v02-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-576200ab98",
+            "patches": [
+              "assets/expanded/雷楔-v03-p01.png",
+              "assets/expanded/雷楔-v03-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stars",
+        "name": "星天之兆",
+        "views": [
+          {
+            "name": "runtime-cc27a1f3b4",
+            "patches": [
+              "assets/expanded/星天之兆-v01-p01.png",
+              "assets/expanded/星天之兆-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "smoked",
+        "name": "北地烟熏鸡",
+        "views": [
+          {
+            "name": "runtime-cc27a1f3b4",
+            "patches": [
+              "assets/expanded/北地烟熏鸡-v01-p01.png",
+              "assets/expanded/北地烟熏鸡-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "gambler",
+        "name": "赌徒的耳环",
+        "views": [
+          {
+            "name": "runtime-576200ab98",
+            "patches": [
+              "assets/expanded/赌徒的耳环-v01-p01.png",
+              "assets/expanded/赌徒的耳环-v01-p02.png"
             ]
           }
         ]

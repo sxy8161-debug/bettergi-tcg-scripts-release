@@ -17,21 +17,13 @@
       if(input)input.Dispose();
     }
   }
-  function score(host,env,f,x,y,w,h,filename,pad){
-    if(!host.templates.has(filename)){
-      const mat=env.file.readImageMatSync(filename);
-      if(mat.empty()){mat.dispose();throw Error("缺少牌面模板："+filename);}
-      host.templates.set(filename,mat);
-    }
-    let crop=null;
-    try{
-      const src=f.srcMat??f.SrcMat;
-      crop=src.SubMat(y-pad,Math.min(1080,y+h+pad),x-pad,x+w+pad);
-      return peak(crop,host.templates.get(filename),env.OpenCvSharp.OpenCvSharp);
-    }finally{if(crop)crop.dispose();}
+  function score(host,env,f,x,y,w,h,filename,pad,area=host.observedRoi("handFolded",[x,y,w,h])){
+    return host.artworkScore(f,area,filename,pad,
+      (search,template)=>peak(search,template,env.OpenCvSharp.OpenCvSharp));
   }
   function checkedBank(T,bank){
-    if(!bank||bank.scoreFloor!==.95||bank.runnerUpGap!==.20||!Array.isArray(bank.entries))
+    if(!bank||!Number.isFinite(bank.scoreFloor)||bank.scoreFloor<=0||bank.scoreFloor>1||
+      bank.runnerUpGap!==.20||!Array.isArray(bank.entries))
       throw Error("手牌识别库格式不正确");
     for(const entry of bank.entries){
       if(!entry.name||!T.byId[entry.id]||T.norm(entry.name)!==T.norm(T.byId[entry.id].name))
@@ -78,11 +70,12 @@
       collapsedLayoutIn(f){
         return this.memoFrame(f,"collapsed/layout",()=>C.locate(
           Number(f.width??f.Width),Number(f.height??f.Height),
-          this.handCostMarkersIn(f,C.ROI)));
+          this.handCostMarkersIn(f,this.roi("handFolded", C.ROI),
+            this.captureGeometry?.actualSize.width===2560),this.panelTransform("handFolded")));
       }
       raisedHandIn(f){
         const roi=[450,750,1310,200];
-        return !!env.TCGBetterGI.costMarkerLayout(this.handCostMarkersIn(f,roi));
+        return !!env.TCGBetterGI.costMarkerLayout(this.handCostMarkersIn(f,this.roi("handExpanded", roi)),null,this.panelTransform("handExpanded"));
       }
       collapsedIn(f){
         return this.memoFrame(f,"collapsed/identities",()=>{
@@ -118,12 +111,13 @@
         if(native!==null&&native!==count){
           const error=Error("展开手牌数量已变化");error.code="TCG_HAND_RETRY";throw error;
         }
-        const roi=[450,750,1310,200],marks=this.handCostMarkersIn(f,roi);
-        const layout=env.TCGBetterGI.costMarkerLayout(marks,count);
+        const roi=[450,750,1310,200],marks=this.handCostMarkersIn(f,this.roi("handExpanded", roi));
+        const layout=env.TCGBetterGI.costMarkerLayout(marks,count,this.panelTransform("handExpanded"));
         if(!layout)return null;
         const read=C.identify({status:"readable",count,slots:layout.markers.map((marker,index)=>({index,marker}))},
           bank.expanded,(slot,p,filename)=>score(this,env,f,Math.round(slot.marker.x)+p[0],
-            Math.round(slot.marker.y)+p[1],p[2],p[3],filename,2));
+            Math.round(slot.marker.y)+p[1],p[2],p[3],filename,2,
+            this.observedRoi("handExpanded",[Math.round(slot.marker.x)+p[0],Math.round(slot.marker.y)+p[1],p[2],p[3]])));
         if(read.slots.every(s=>!s.id)&&!this.diagnosticKeys.has("expanded-art-miss")){
           this.diagnosticKeys.add("expanded-art-miss");
           this.trace("expanded-art-miss",{count,slots:read.slots,inputs:0});

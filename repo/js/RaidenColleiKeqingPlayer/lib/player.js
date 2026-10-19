@@ -328,8 +328,10 @@
     }
     async enter() {
       const host = this.host;
+      const manifest = JSON.parse(file.readTextSync("manifest.json"));
       host.trace("start", {
-        version: JSON.parse(file.readTextSync("manifest.json")).version,
+        version: manifest.version,
+        scriptName: manifest.name,
         sharedVersion: T.sharedVersion,
         options: this.options,
       });
@@ -646,8 +648,10 @@
         this.readyState = null;
         host.boardReady = false; host.lastObservedAt = 0; host.lastObservedRevision = -1;
         host.preparedHandInput = null;
+        if (after.quietObservationRequired) host.autoRisk = true;
         host.trace("post-confirmation-refresh-required", { action, handRefresh: refreshHand,
           combatWithoutObservedTransition: after.freshObservationRequired === true,
+          quietObservationRequired: after.quietObservationRequired === true,
           consumptionConfirmed: after.confirmed, effectsComplete: false });
       } else if (after.phase === "board" && after.turn === "user" && T.legalState(after)) this.readyState = after;
       this.actions++; this.progress();

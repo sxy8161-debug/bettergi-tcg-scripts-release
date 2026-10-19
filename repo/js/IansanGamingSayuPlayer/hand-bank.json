@@ -14,13 +14,12 @@
       22
     ]
   ],
-  "scoreFloor": 0.95,
+  "scoreFloor": 0.93,
   "runnerUpGap": 0.2,
   "entries": [
     {
       "id": "boar",
       "name": "野猪公主",
-      "scoreFloor": 0.94,
       "views": [
         {
           "name": "original",
@@ -61,7 +60,6 @@
     {
       "id": "gambler",
       "name": "赌徒的耳环",
-      "scoreFloor": 0.94,
       "views": [
         {
           "name": "original",
@@ -416,6 +414,19 @@
             "patches": [
               "assets/expanded/偷懒的新方法-v03-p01.png",
               "assets/expanded/偷懒的新方法-v03-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "gambler",
+        "name": "赌徒的耳环",
+        "views": [
+          {
+            "name": "runtime-576200ab98",
+            "patches": [
+              "assets/expanded/赌徒的耳环-v01-p01.png",
+              "assets/expanded/赌徒的耳环-v01-p02.png"
             ]
           }
         ]

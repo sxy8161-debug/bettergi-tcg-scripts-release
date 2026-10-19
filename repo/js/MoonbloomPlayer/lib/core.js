@@ -586,6 +586,20 @@ function actionRefused(s, m, action) {
       total:certain?canopy.length+(researchCheck?1:0):null,colors:certain?"random-basic":"unknown",
       ...(!certain?{canopyChecks,researchCheck}:{})};
   }
+  function drawPaymentMatches(before,a,after,m,cost,exactPaid){
+    if(cardTriggers(before.hand[a.index],m).total===0&&exactPaid)return true;
+    if(!countdownFamily.includes(a.id))return false;
+    const receipt=after.choiceReceipt,paid=size(cost),remaining=total(before.dice)-paid;
+    // Unknown research/refunds are not guessed. This branch only proves the
+    // observed no-net-refund case with a source-bound native payment exit.
+    // More non-Omni dice disappeared than the fee could consume: payment alone
+    // cannot explain the resulting all-Omni vector. Shared host rechecks it twice.
+    return receipt?.origin===actionKey(a)+"/"+boardKey(before)&&receipt.id===a.id&&
+      receipt.kind==="payment"&&receipt.exited===true&&receipt.unresolved!==true&&
+      !!payment(before.dice,cost,team[before.active].element)&&
+      total(before.dice)-(before.dice.Omni||0)>paid&&remaining>0&&
+      (after.dice.Omni||0)===remaining&&diceOrder.every(e=>e==="Omni"||(after.dice[e]||0)===0);
+  }
   function knownAttachmentKinds(hand) {
     const kinds=new Set();
     for(const h of hand) {
@@ -973,7 +987,8 @@ function actionRefused(s, m, action) {
   root.TCG={projectionBudget,team,cards,techniques,byId,initialNames,norm,identify,observedCard,handCardKnown,characterName,role,
     diceOrder,total,size,known,alive,enemyCount,bag,indexedHand,reconcileHand,actionRefused,blockAction,
     skillQuote,skillProbeAttempted,recordSkillCost,clearSkillCosts,refreshSkillCosts,drawConsumptionProven,
-    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"&&cardTriggers(s.hand[a.index],m).total===0?cardInputCost(s,a,m):null,
+    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"&&(cardTriggers(s.hand[a.index],m).total===0||countdownFamily.includes(a.id))?cardInputCost(s,a,m):null,
+    drawPaymentMatches,
     refusalCost:(s,m,a)=>a.type==="card"?cardCost(s,a,m):a.type==="skill"?skillCost(a.who,a.skill,m,s):null,
     removedOne,boardKey,actionKey,fact,payment,
     cardCost,cardInputCost,cardContextError,cardInputError,cardLegal,skillCost,skillLegal,legalState,freshMemory,nextRound,
@@ -986,8 +1001,8 @@ function actionRefused(s, m, action) {
       "heal-dice":["请选择一个角色","对所选角色生效"],heal:["请选择一个角色","对所选角色生效"]}};
 })(globalThis);
 
-globalThis.TCG.version = "1.3.6";
-globalThis.TCG.sharedVersion = "1.5.6";
+globalThis.TCG.version = "1.4.1";
+globalThis.TCG.sharedVersion = "1.6.1";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
