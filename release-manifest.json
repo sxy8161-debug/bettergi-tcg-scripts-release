@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sourceRepository": "sxy8161-debug/bettergi-tcg-scripts",
-  "sourceCommit": "50062bfd95d1f600d41e8402e503b318ce062c7a",
-  "sourceDate": "2026-10-19T13:59:46+08:00",
+  "sourceCommit": "2744a4656cc1543b9ca933755ab61eddbf93451d",
+  "sourceDate": "2026-10-19T14:09:31+08:00",
   "sharedVersion": "1.6.3",
   "playerVersions": {
     "raiden": "1.4.1",
@@ -957,9 +957,9 @@
     "repo/js/MonaSayuDilucPlayer/assets/num/Hand8.png": "6a1dcb6562d5948fb5e551b3c6828e5c02e61ab2c8e50c43cf9a4e3c8f09737a",
     "repo/js/MonaSayuDilucPlayer/assets/num/Hand9.png": "120a39db25fd7d3a756d0004773d2516007341ad1325f425fe541390e3d46e62",
     "repo/js/MonaSayuDilucPlayer/assets/num/Hand10.png": "ad6f19cf68f74973cd8b76ee6d7ce89336291d77b8055e545724c6ae1462319b",
-    "repo.json": "a2189a5301dd0a19536535a2a71dcfdb820baa3db14ab42ce82ef89801ffa26a",
-    "repo.json.gz": "5384631bfc0839acb9272d83e45d60d65f44038a34d8d133ec2426a648397f64",
-    "README.md": "092a9df351acfe528348c5e7e97cd360aa0364d882bec403be3a4aa9f26ca5d7",
+    "repo.json": "631dce2069caea858d2d2abe60193c8739501855ff8626af540ad66ff4c62851",
+    "repo.json.gz": "f8da323a29b92fa93f3fc3954452d8b1e46b782bf4efebf67d6f964b0d2f3408",
+    "README.md": "74f606c95292c89b8781d879cfa58c252d808618651cc3671441dd8049218982",
     "LICENSE-GPL-3.0.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
   }
 }
