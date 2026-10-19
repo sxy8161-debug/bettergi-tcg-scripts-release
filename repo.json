@@ -1,5 +1,5 @@
 {
-  "time": "20261019094723",
+  "time": "20261019135946",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -23,7 +23,7 @@
             "PVE",
             "1.4.1"
           ],
-          "lastUpdated": "2026-10-19 09:47:23"
+          "lastUpdated": "2026-10-19 13:59:46"
         },
         {
           "name": "IansanGamingSayuPlayer",
@@ -41,7 +41,7 @@
             "PVE",
             "1.4.1"
           ],
-          "lastUpdated": "2026-10-19 09:47:23"
+          "lastUpdated": "2026-10-19 13:59:46"
         },
         {
           "name": "MoonbloomPlayer",
@@ -59,25 +59,25 @@
             "PVE",
             "1.4.1"
           ],
-          "lastUpdated": "2026-10-19 09:47:23"
+          "lastUpdated": "2026-10-19 13:59:46"
         },
         {
           "name": "MonaSayuDilucPlayer",
           "type": "directory",
-          "version": "0.1.1",
+          "version": "1.0.0",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
               "name": "巨鲸也是咸鱼"
             }
           ],
-          "description": "[我不是牌神]莫娜早柚迪卢克~|~莫娜挂水与快速切换，早柚扩散对群，迪卢克连斩和元素爆发收尾；结合装备减费、返骰与过牌，逐步观察并重新决策。",
+          "description": "[我不是牌神]莫娜早柚迪卢克~|~莫娜先挂水并快速切换，早柚留场扩散、准备攻击与爆发处理群怪，迪卢克以蒸发、连续战技和爆发接力收尾。自动安排起手留牌、伙伴检索、装备减费、返骰、过牌与调和，根据血量、附着和可用骰子选择输出，角色阵亡后由队友接力。",
           "tags": [
             "七圣召唤",
             "PVE",
-            "0.1.1"
+            "1.0.0"
           ],
-          "lastUpdated": "2026-10-19 09:47:23"
+          "lastUpdated": "2026-10-19 13:59:46"
         }
       ]
     }

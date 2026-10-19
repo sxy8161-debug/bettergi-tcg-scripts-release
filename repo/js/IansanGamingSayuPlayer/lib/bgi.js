@@ -2426,6 +2426,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const recovered = { ...settled, hand, ...(this.pendingHandEvidence ? { handEvidence: this.pendingHandEvidence } : {}) };
       return this.finishObservation(recovered, pendingAction, handRead);
     }
+    emptyHandIn(f,panel="handExpanded") {
+      const region=this.roi(panel,[1003,928,504,124]);
+      return this.has(f,"hand_empty",region,0.97,false)||this.has(f,"hand_empty_blue",region,0.97,false);
+    }
     async proveEmptyHand(plan,settled) {
       const receipt=this.consumptionReceipt,a=plan?.action,b=plan?.before;
       if(plan?.mode!=="remove" || plan.hand.length!==0 || b?.hand?.length!==1 || !a ||
@@ -2436,7 +2440,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       let stable=0;
       for(let attempt=0;attempt<3;attempt++) {
         const p=this.frame(f=>({phase:this.phaseIn(f),count:this.handCountIn(f),
-          empty:this.has(f,"hand_empty",this.roi("handExpanded", [1003,928,504,124]),0.97,false)}));
+          empty:this.emptyHandIn(f)}));
         const matched=p.phase.phase==="board"&&p.phase.turn==="user"&&p.empty&&(p.count===null||p.count===0);
         stable=matched?stable+1:0;
         this.trace("empty-hand-native",{attempt,matched,stable,count:p.count,phase:p.phase});
@@ -3086,10 +3090,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         throw error;
       }
       const targeted = action.type === "card" && action.target !== null;
+      const drawCost = action.type === "card" ? TCG.drawPayment(before,action,memory) : null;
       this.consumptionReceipt={id:action.id,index:action.index,target:action.target??null,
         beforeKey:TCG.boardKey(before),inputSent:false,
-        ...(action.type==="card"&&TCG.byId[action.id]?.type==="draw"?
-          {sourceInstanceIds:h.instanceIds?.slice()||[],cost:TCG.drawPayment(before,action,memory)}:{}),
+        ...(drawCost?{sourceInstanceIds:h.instanceIds?.slice()||[],cost:drawCost}:{}),
         ...(sourceCount?{sourceCountProof:sourceCount}:{})};
       const destination=action.type==="tune"?this.point("phase",1867,518):
         targeted?this.point("board",charX[action.target],720):[x,this.point("board",0,595)[1]];
@@ -3440,7 +3444,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async provePaidDraw(action,before,after,memory) {
       const r=this.consumptionReceipt,h=before.hand?.[action.index],cost=r?.cost,p=r?.sourceCountProof;
       if(TCG.drawConsumptionProven(action,before,after))return true;
-      if(action.type!=="card"||TCG.byId[action.id]?.type!=="draw"||after.handRead!=="full"||
+      if(action.type!=="card"||after.handRead!=="full"||
           this.confirmationSession?.key!==TCG.actionKey(action)+"/"+TCG.boardKey(before)||
           this.confirmationSession.transition||
           !TCG.legalState(after)||before.diceKnown!==true||after.diceKnown!==true||this.autoRisk||
@@ -3838,7 +3842,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         const p = this.frame((f) => ({
           phase: this.phaseIn(f),
           count: this.handCountIn(f),
-          empty: this.has(f, "hand_empty", this.roi("bottom", [1003, 928, 504, 124]), 0.97, false),
+          empty: this.emptyHandIn(f,"bottom"),
         }));
         const matched =
           p.phase.phase === "board" &&

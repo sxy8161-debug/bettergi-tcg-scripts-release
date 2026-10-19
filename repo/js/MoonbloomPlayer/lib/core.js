@@ -231,7 +231,9 @@ function refreshSkillCosts(m,s) {
   }
 function drawConsumptionProven(a,b,s) {
     const r=s?.drawConsumption,h=b?.hand?.[a?.index];
-    return a?.type==="card"&&byId[a.id]?.type==="draw"&&s.phase==="board"&&s.turn==="user"&&
+    // Eligibility comes from the deck's drawPayment adapter at receipt creation
+    // and proof validation; retrieval supports need not have display type draw.
+    return a?.type==="card"&&!!byId[a.id]&&s.phase==="board"&&s.turn==="user"&&
       r?.kind==="native-paid-draw"&&r.beforeKey===boardKey(b)&&r.id===a.id&&r.index===a.index&&
       r.target===(a.target??null)&&r.inputSent===true&&r.stableReads===2&&r.cost>0&&
       h?.id===a.id&&r.sourceInstanceIds?.length>0&&JSON.stringify(r.sourceInstanceIds)===JSON.stringify(h.instanceIds)&&
@@ -1002,7 +1004,7 @@ function actionRefused(s, m, action) {
 })(globalThis);
 
 globalThis.TCG.version = "1.4.1";
-globalThis.TCG.sharedVersion = "1.6.1";
+globalThis.TCG.sharedVersion = "1.6.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();

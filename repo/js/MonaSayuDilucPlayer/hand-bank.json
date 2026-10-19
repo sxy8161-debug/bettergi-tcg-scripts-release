@@ -275,6 +275,59 @@
         "show"
       ],
       "scoreFloor": 0.95
+    },
+    {
+      "id": "dunyarzad",
+      "name": "迪娜泽黛",
+      "views": [
+        {
+          "name": "runtime-5ad0c00475",
+          "patches": [
+            "assets/hand/迪娜泽黛-v01-p01.png",
+            "assets/hand/迪娜泽黛-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timaeus",
+      "name": "蒂玛乌斯",
+      "scoreFloor": 0.9,
+      "views": [
+        {
+          "name": "runtime-7db639d892",
+          "patches": [
+            "assets/hand/蒂玛乌斯-v01-p01.png",
+            "assets/hand/蒂玛乌斯-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "liben",
+      "name": "立本",
+      "views": [
+        {
+          "name": "runtime-0dc22332e8",
+          "patches": [
+            "assets/hand/立本-v01-p01.png",
+            "assets/hand/立本-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flowingFlame",
+      "name": "流火焦灼",
+      "views": [
+        {
+          "name": "runtime-4720356d51",
+          "patches": [
+            "assets/hand/流火焦灼-v01-p01.png",
+            "assets/hand/流火焦灼-v01-p02.png"
+          ]
+        }
+      ]
     }
   ],
   "expanded": {
@@ -347,6 +400,13 @@
               "assets/expanded/换班时间-v01-p01.png",
               "assets/expanded/换班时间-v01-p02.png"
             ]
+          },
+          {
+            "name": "runtime-fd4101d622",
+            "patches": [
+              "assets/expanded/换班时间-v02-p01.png",
+              "assets/expanded/换班时间-v02-p02.png"
+            ]
           }
         ],
         "scoreFloor": 0.95
@@ -391,6 +451,65 @@
           "show"
         ],
         "scoreFloor": 0.95
+      },
+      {
+        "id": "dunyarzad",
+        "name": "迪娜泽黛",
+        "views": [
+          {
+            "name": "runtime-ce9e4f8a7c",
+            "patches": [
+              "assets/expanded/迪娜泽黛-v01-p01.png",
+              "assets/expanded/迪娜泽黛-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-4e1a316fbb",
+            "patches": [
+              "assets/expanded/迪娜泽黛-v02-p01.png",
+              "assets/expanded/迪娜泽黛-v02-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "timaeus",
+        "name": "蒂玛乌斯",
+        "views": [
+          {
+            "name": "runtime-c2ab6784cc",
+            "patches": [
+              "assets/expanded/蒂玛乌斯-v01-p01.png",
+              "assets/expanded/蒂玛乌斯-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "liben",
+        "name": "立本",
+        "views": [
+          {
+            "name": "runtime-4e1a316fbb",
+            "patches": [
+              "assets/expanded/立本-v01-p01.png",
+              "assets/expanded/立本-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "flowingFlame",
+        "name": "流火焦灼",
+        "views": [
+          {
+            "name": "runtime-9e548c0097",
+            "patches": [
+              "assets/expanded/流火焦灼-v01-p01.png",
+              "assets/expanded/流火焦灼-v01-p02.png"
+            ]
+          }
+        ]
       }
     ]
   }

@@ -84,7 +84,9 @@ function refreshSkillCosts(m,s) {
   }
 function drawConsumptionProven(a,b,s) {
     const r=s?.drawConsumption,h=b?.hand?.[a?.index];
-    return a?.type==="card"&&byId[a.id]?.type==="draw"&&s.phase==="board"&&s.turn==="user"&&
+    // Eligibility comes from the deck's drawPayment adapter at receipt creation
+    // and proof validation; retrieval supports need not have display type draw.
+    return a?.type==="card"&&!!byId[a.id]&&s.phase==="board"&&s.turn==="user"&&
       r?.kind==="native-paid-draw"&&r.beforeKey===boardKey(b)&&r.id===a.id&&r.index===a.index&&
       r.target===(a.target??null)&&r.inputSent===true&&r.stableReads===2&&r.cost>0&&
       h?.id===a.id&&r.sourceInstanceIds?.length>0&&JSON.stringify(r.sourceInstanceIds)===JSON.stringify(h.instanceIds)&&
@@ -329,19 +331,19 @@ function actionRefused(s, m, action) {
       s.characters[a.who].frozen===false&&(a.skill!=="Q"||s.characters[a.who].energy>=team[a.who].maxEnergy)&&
       !!payment(s.dice,skillCost(a.who,a.skill,m,s),team[a.who].element);
   }
-  // All-dice replacement (Timaeus) precedes ordinary die reductions. Within
-  // ordinary reductions, combat statuses precede supports in installation order.
+  // Native slot03: Lyre reduces Gilded to one before Timaeus spends one
+  // material. Keep support ordering and zero-cost handling unchanged.
   // Return the actual reducers as well as the price, so only a confirmed play consumes them.
   function cardPrice(id,target,m) {
     const c=byId[id],base={...c.cost},effects=[];let n=size(base);
     if(c.type==="talent")n=Math.max(0,n-(m.troupe[target]||0));
-    if(c.type==="artifact"&&n>0) {
-      const i=m.supports.findIndex(x=>x.id==="timaeus"&&x.round!==m.round&&known(x.materials)&&x.materials>=n);
-      if(i>=0){effects.push({kind:"support",i,n});n=0;}
-    }
     if(["weapon","artifact"].includes(c.type)) {
       if(m.garden&&n>0){n=Math.max(0,n-2);effects.push({kind:"garden"});}
       if(c.type==="artifact"&&m.lyre&&n>0){n=Math.max(0,n-m.lyre);effects.push({kind:"lyre"});}
+    }
+    if(c.type==="artifact"&&n>0) {
+      const i=m.supports.findIndex(x=>x.id==="timaeus"&&x.round!==m.round&&known(x.materials)&&x.materials>=n);
+      if(i>=0){effects.push({kind:"support",i,n});n=0;}
     }
     for(let i=0;i<m.supports.length;i++) {
       const x=m.supports[i];if(x.round===m.round)continue;
@@ -450,7 +452,11 @@ function actionRefused(s, m, action) {
     if(a.type==="probe"||a.type==="switch")return {mode:"unchanged",hand:h};
     // Swirls and reaction artifacts can insert cards; do not trust the old empty hand.
     if(a.type==="skill")return m?.talents[1]||m?.artifactKinds.includes("gilded")?{mode:"full"}:{mode:"unchanged",hand:h};
-    if(a.type==="card"&&(["draw","recycle","talent","support"].includes(c?.type)))return {mode:"full"};
+    if(a.type==="card"&&(["draw","recycle","talent"].includes(c?.type)))return {mode:"full"};
+    if(a.type==="card"&&c?.type==="support"&&(!m||a.id==="timaeus"||
+      ["liben","dunyarzad"].includes(a.id)&&m.supports.some(x=>x.id==="dunyarzad"&&!x.drawUsed)))
+      return {mode:"full",retainedHand:indexedHand(h.filter((_,i)=>i!==a.index)),
+        retainedVariantFamilies:[["countdown3","countdown2","countdown1","show"]]};
     if(a.type==="card"||a.type==="tune") {
       if(h[a.index]?.id!==a.id)throw new Error("手牌索引与身份不一致");
       return {mode:"remove",hand:indexedHand(h.filter((_,i)=>i!==a.index))};
@@ -466,10 +472,22 @@ function actionRefused(s, m, action) {
       enemyCount(c)!==null&&JSON.stringify(c.enemies.map(e=>e.hp))!==JSON.stringify(b.enemies.map(e=>e.hp)));
     if(a.type==="tune")return c.turn==="user"&&removedOne(b.hand,c.hand,a.id)&&total(c.dice)===total(b.dice)&&(c.dice[a.element]||0)===(b.dice[a.element]||0)+1;
     if(a.type!=="card"||!c.hand)return false;
-    if(byId[a.id]?.type==="draw")return drawConsumptionProven(a,b,c)||cardCountDecreased(b.hand,c.hand,a.id);
+    if(drawConsumptionProven(a,b,c))return true;
+    if(byId[a.id]?.type==="draw")return cardCountDecreased(b.hand,c.hand,a.id);
     if(a.id==="lyre")return cardCountDecreased(b.hand,c.hand,a.id)&&c.hand.length===b.hand.length;
     if(["support","talent"].includes(byId[a.id]?.type))return cardCountDecreased(b.hand,c.hand,a.id);
     return removedOne(b.hand,c.hand,a.id);
+  }
+  function emptyHandEffect(a,b,c) {
+    if(b.hand?.length!==1||c.phase!=="board"||c.turn!=="user"||c.active!==b.active||
+      Array.isArray(c.hand)&&c.hand.length!==0||
+      !["card","tune"].includes(a.type)||b.hand[a.index]?.id!==a.id||
+      (a.type==="card"?["draw","recycle","talent"].includes(byId[a.id]?.type):
+        ["countdown3","countdown2","countdown1"].includes(a.id)))return false;
+    const p=c.handEvidence;
+    return p?.kind==="native-empty-fan"&&
+      p.stableReads>=2&&p.inputSent===true&&p.sourceCount===1&&p.id===a.id&&p.index===a.index&&
+      p.target===(a.target??null)&&p.beforeKey===boardKey(b);
   }
   function openingSetting(){return "优先装备与启动牌";}
   function openingContext(c={}){return {enemyCount:enemyCount({enemies:c.enemies})??c.enemyCount??null};}
@@ -485,8 +503,10 @@ function actionRefused(s, m, action) {
     return {replace,keep:hand.filter((h,i)=>!replace[i]),duplicateWeapons:[]};
   }
   function rerollPlan(items,m) {
-    const primary=team[m.defeated[m.lastActive]?m.defeated.findIndex(v=>!v):m.lastActive]?.element||"Hydro";
-    const secondary=primary==="Hydro"?(m.openingContext?.enemyCount<=2?"Pyro":"Anemo"):null;
+    const setup=!m.defeated[0]&&m.used[0]===0;
+    const primary=team[setup?0:m.defeated[m.lastActive]?m.defeated.findIndex(v=>!v):m.lastActive]?.element||"Hydro";
+    const count=m.enemyAliveCount??m.openingContext?.enemyCount;
+    const secondary=primary==="Hydro"?(known(count)&&count>0&&count<=2?"Pyro":"Anemo"):null;
     const indices=items.flatMap((d,i)=>d.element==="Omni"||d.element===primary||d.element===secondary?[i]:[]);
     return {primary,secondary,elements:[primary,secondary,"Omni"].filter(Boolean),indices};
   }
@@ -495,13 +515,14 @@ function actionRefused(s, m, action) {
     known,alive,total,size,payment,boardKey,actionKey,freshMemory,nextRound,OpeningFlow,legalState,freshActionBoard,
     switchCost,skillCost,skillLegal,cardPrice,cardCost,cardLegal,cardRefund,generateDice,enemyCount,elementReaction,damageAgainst,
     gamblerRemaining,noteBoard,commit,deferUncertain,rejectAction,handPlan,verify,verifyResynchronized:(a,b,c,t)=>legalState(c)&&verify(a,b,c,t),
-    emptyHandEffect:()=>false,removalEffect:()=>false,openingSetting,openingContext,keepOpening,openingPlan,rerollPlan,rerollCounter,
-    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"?cardCost(a.id,a.target,m,s):null,
+    emptyHandEffect,removalEffect:()=>false,openingSetting,openingContext,keepOpening,openingPlan,rerollPlan,rerollCounter,
+    drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"||byId[a.id]?.type==="support"&&handPlan(a,s,m).mode==="full"
+      ?cardCost(a.id,a.target,m,s):null,
     refusalCost:(s,m,a)=>a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(a.id,a.target,m,s):a.type==="switch"?switchCost(m):{}};
 })(globalThis);
 
-globalThis.TCG.version = "0.1.1";
-globalThis.TCG.sharedVersion = "1.6.1";
+globalThis.TCG.version = "1.0.0";
+globalThis.TCG.sharedVersion = "1.6.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
