@@ -64,7 +64,7 @@ jobs:
               const manifest = await response.json();
               if (manifest.sourceCommit === sha) {
                 const versions = Object.values(manifest.playerVersions || {});
-                if (versions.length !== 3 || !versions.every(v => /^\d+\.\d+\.\d+$/.test(v)) ||
+                if (versions.length !== 4 || !versions.every(v => /^\d+\.\d+\.\d+$/.test(v)) ||
                     !/^\d+\.\d+\.\d+$/.test(manifest.sharedVersion)) throw Error('Invalid published versions');
                 const tag = 'v' + manifest.sharedVersion + '-' + sha.slice(0, 12);
                 const release = await get('https://api.github.com/repos/' + repo + '/releases/tags/' + tag);
@@ -97,7 +97,7 @@ jobs:
           mkdir -p "$PAYLOAD"
           cp -a dist "$PAYLOAD/dist"
           (cd "$PAYLOAD/dist" && zip -qr "$PAYLOAD/tcg-scripts.zip" .)
-          for player in RaidenColleiKeqingPlayer IansanGamingSayuPlayer MoonbloomPlayer; do
+          for player in RaidenColleiKeqingPlayer IansanGamingSayuPlayer MoonbloomPlayer MonaSayuDilucPlayer; do
             (cd "$PAYLOAD/dist/repo/js" && zip -qr "$PAYLOAD/$player.zip" "$player")
           done
           node <<'NODE'
@@ -105,7 +105,7 @@ jobs:
           const path = require('node:path');
           const crypto = require('node:crypto');
           const hash = name => crypto.createHash('sha256').update(fs.readFileSync(path.join(process.env.PAYLOAD, name))).digest('hex');
-          const archives = ['tcg-scripts.zip', 'RaidenColleiKeqingPlayer.zip', 'IansanGamingSayuPlayer.zip', 'MoonbloomPlayer.zip'];
+          const archives = ['tcg-scripts.zip', 'RaidenColleiKeqingPlayer.zip', 'IansanGamingSayuPlayer.zip', 'MoonbloomPlayer.zip', 'MonaSayuDilucPlayer.zip'];
           fs.appendFileSync(process.env.GITHUB_OUTPUT,
             'manifest_sha=' + hash('dist/release-manifest.json') + '\narchives_sha=' +
             JSON.stringify(Object.fromEntries(archives.map(name => [name, hash(name)]))) + '\n');
@@ -156,7 +156,7 @@ jobs:
           const crypto = require('node:crypto');
           const zlib = require('node:zlib');
           const root = path.join(process.env.PAYLOAD, 'dist');
-          const players = {raiden: 'RaidenColleiKeqingPlayer', iansan: 'IansanGamingSayuPlayer', moonbloom: 'MoonbloomPlayer'};
+          const players = {raiden: 'RaidenColleiKeqingPlayer', iansan: 'IansanGamingSayuPlayer', moonbloom: 'MoonbloomPlayer', mozailu: 'MonaSayuDilucPlayer'};
           const roots = ['repo.json', 'repo.json.gz', 'README.md', 'LICENSE-GPL-3.0.txt'];
           const safe = name => typeof name === 'string' && name.length > 0 &&
             !path.posix.isAbsolute(name) && !/[\\:\u0000-\u001f\u007f]/.test(name) &&
@@ -228,7 +228,7 @@ jobs:
             assert.equal(hash(fs.readFileSync(file)), archiveHashes[name], 'ZIP SHA mismatch: ' + name);
           }
           fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tag=v' + manifest.sharedVersion + '-' + manifest.sourceCommit.slice(0, 12) + '\n');
-          console.log('Verified ' + listed.length + ' hashed files and four ZIP archives; no artifact code executed.');
+          console.log('Verified ' + listed.length + ' hashed files and ' + archives.length + ' ZIP archives; no artifact code executed.');
           NODE
       - name: Commit the release tree and create an immutable GitHub Release
         working-directory: release-checkout
@@ -266,5 +266,6 @@ jobs:
             "$PAYLOAD/RaidenColleiKeqingPlayer.zip" \
             "$PAYLOAD/IansanGamingSayuPlayer.zip" \
             "$PAYLOAD/MoonbloomPlayer.zip" \
+            "$PAYLOAD/MonaSayuDilucPlayer.zip" \
             --repo "$GITHUB_REPOSITORY" --verify-tag --target "$RELEASE_HEAD" \
             --title "自动牌手 ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
