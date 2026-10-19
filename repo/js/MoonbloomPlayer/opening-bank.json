@@ -323,5 +323,497 @@
         }
       ]
     }
-  ]
+  ],
+  "atlas": {
+    "assets/opening/白垩之术-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "a179b073b60c8f500d886b76eb719980c2d557b7fb42cd52824a599bbb0aae0c"
+    },
+    "assets/opening/白垩之术-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "88534115387eacbbe5cf0c90b783bb5d41584e8c49df8b3c3a11ac3d55b3c755"
+    },
+    "assets/opening/运筹帷幄-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        765,
+        90,
+        85
+      ],
+      "sourceSha256": "12a77437894a2332261f68f6e6e1e72b2ae77a62918ab6c1f3bc17e80f3396f6"
+    },
+    "assets/opening/运筹帷幄-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        765,
+        90,
+        85
+      ],
+      "sourceSha256": "a3047fa1881e693bfd0685a6e895dea4836174dd49b5f9215776259c07bbc3d3"
+    },
+    "assets/opening/赌徒的耳环-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        765,
+        90,
+        85
+      ],
+      "sourceSha256": "7eb1048ecf82244c5c271c633cb9a6194edf14d91e2ab23a188d65c900af617b"
+    },
+    "assets/opening/赌徒的耳环-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        765,
+        90,
+        85
+      ],
+      "sourceSha256": "6d66d8041a1cde7716c4c78f9aab245e9190a244354db0282e1419333eb60335"
+    },
+    "assets/opening/换班时间-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "90a1433dff01dfec45514fb96b330be013439eba63a420b197759368bb228bdb"
+    },
+    "assets/opening/换班时间-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "00a661cf89f54a6d01f88b02aa14bd27f32de093df817716d9a9ce478aacde85"
+    },
+    "assets/opening/悬木人-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "c653930df0d15cf71e6c194e8aa8051e0f475a2213ca6f37d4fbab57eca76f57"
+    },
+    "assets/opening/悬木人-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "18f554b488a79e17ef064e142b8ccd7935ce1a59c2a32f5e98fc0f8555600fad"
+    },
+    "assets/opening/悬木人-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "bec23310409648ac63d6d2911eee9a071f9c999f975be8ab84c111b25c8216c7"
+    },
+    "assets/opening/悬木人-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "929aba682a2426030a32e32431008b58ea2a889d75a4966022258f6acd4e9c74"
+    },
+    "assets/opening/沙中遗事-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "750da33003e4c1cdb5c8179b45df4e6512797ab6e53c56ade3a91ac3ba9d5836"
+    },
+    "assets/opening/沙中遗事-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "c0c6e108f45e089ad520a1a4efa0a132a906cec8085dea26db4ccf3a90fa9a02"
+    },
+    "assets/opening/沙中遗事-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "55e7ca12f9e356cc1428704732fdd8043a113ad3677edb940765507135641a0a"
+    },
+    "assets/opening/沙中遗事-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "88bccc7e4cbedf53e30ed572afb07709737b9c3f94a6a3c39e6740f305d0f933"
+    },
+    "assets/opening/元素共鸣-交织之草-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "8ea151e516f237ad277cc044ab18757f9672ee6742aeb7c524e124e3fe747b57"
+    },
+    "assets/opening/元素共鸣-交织之草-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "d8117b55f99f41300787a68b0b3ccc99d7ac7bd92600fbc4d377010c22287e11"
+    },
+    "assets/opening/元素共鸣-交织之草-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "1048985c457989d58eb80823e3bb1ea22755616faeb105d5c9b4115427808c1e"
+    },
+    "assets/opening/藏锋何处-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        680,
+        90,
+        85
+      ],
+      "sourceSha256": "e728ec19153a968bb8c69040c87fac563f899c27e11c7a348cf79ac0544d70be"
+    },
+    "assets/opening/藏锋何处-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        680,
+        90,
+        85
+      ],
+      "sourceSha256": "40e6a3cfa25d6a92d2d9bb9b27228fc43d69d864c8e8f4e06ae5ce1fc56a3cb5"
+    },
+    "assets/opening/困困冥想术-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "9a64979471b20d14da06a25c9c8146c0a1135855420735c434af1ee06c3e3d4e"
+    },
+    "assets/opening/困困冥想术-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "31f694a1bca4f18a3366865231e02498fa5b81c62f17e197b95ab1119cb1ff85"
+    },
+    "assets/opening/困困冥想术-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "798fdd7ae4882942b03fd394431d35e06be01ce8aff4433b487d3b947ed2915a"
+    },
+    "assets/opening/困困冥想术-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "7e70bb9842fd9d9f1001f778e56224505d4ece7f28a7e3a96106da8b22ea0a3d"
+    },
+    "assets/opening/刺身拼盘-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "b72aee6129a2f307d607062b836a3e264372c4398db586a93853c5bd9654233d"
+    },
+    "assets/opening/刺身拼盘-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "5a208752079b2ddf1b01bbb42c4139dd58a6202227b96bf4fe433473ab32e8df"
+    },
+    "assets/opening/刺身拼盘-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "721d9cd3eb4d0536d4abfbf9f93193bb37e07e0bcf2bf0a69da8cd0d9e3fe05d"
+    },
+    "assets/opening/幻戏倒计时-3-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "b523993e449123b381973ef14c8a438295dd24d073a8f842b1d7f82caec458c5"
+    },
+    "assets/opening/幻戏倒计时-3-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "c4ff29d6310d59e41edb3988e274b96c729a979d8ea5633a5facc8f87567890a"
+    },
+    "assets/opening/幻戏倒计时-3-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "33b47505d01df5e0fb2a6af1b83a45173905c51276f987ad0ffa3eff934b1ecf"
+    },
+    "assets/opening/天才的改造法-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "928cdca1a15334e5701baa6ceebb7371ce85f54aacc4036ea360efe1807f59cc"
+    },
+    "assets/opening/天才的改造法-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "0a2b1c837c41979406717e04cd74e5f47d841061af99e8fc69c47ae3e252532f"
+    },
+    "assets/opening/天才的改造法-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "83e98b4298a96b595d8b57ff0420552b19699a6b5680b360f27e726eca1d332f"
+    },
+    "assets/opening/清扫时间-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "2e59541487d339046bfdbf22dad88da4fd18150635d8222844abb517df08a633"
+    },
+    "assets/opening/清扫时间-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "91fd5fa92da12319a3f8dc7288af5366352c51cab5c94e6da55057cdca2e1bae"
+    },
+    "assets/opening/清扫时间-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "383f3b14aa7ec5a8b9b81bfc5e4d0e21b5205c422d892f0db195738110c6fccd"
+    },
+    "assets/opening/清扫时间-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "9edecb684443799940a3d7b3a37e3052fe1905d014783d7572a1652f700088f8"
+    },
+    "assets/opening/月兆-满辉-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "a08c6041e8bb74cabefbc6afa26172f827e741cd4001f39c8b0198511c6b2a15"
+    },
+    "assets/opening/月兆-满辉-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "08457559814f320f35c5db8083ffbfafc9b852610a208d2c8208fab9aaf928d5"
+    },
+    "assets/opening/月兆-满辉-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "eb75871305c613b5b4a5173168357b936fb5e13cdca9a6969b5c2e7ec913bdb3"
+    },
+    "assets/opening/盈满之实-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "0d56692eff503027b38269e957b8f20b1398394fc5eb0b5b388075dfa0a0b00c"
+    },
+    "assets/opening/盈满之实-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "5ba65ef6788a63f365ba90d1174512fefb9fea5776b7dd4887164e88b9cb7a49"
+    },
+    "assets/opening/科研的动力-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "6d62254c1149cffb3520f78a3b32c20585771b9a76cb8f0e56f27c51b44b942f"
+    },
+    "assets/opening/科研的动力-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        680,
+        90,
+        85
+      ],
+      "sourceSha256": "afd105fed2c7924f232c42fd6bc7da39edf6e92932f0d2eac2d9e29eb9ffc820"
+    },
+    "assets/opening/科研的动力-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        680,
+        90,
+        85
+      ],
+      "sourceSha256": "c1511cc1e36db888fa6076f25ece0e81990f5fd7ae6ddbefd1886c85c8501909"
+    },
+    "assets/opening/科研的动力-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        680,
+        90,
+        85
+      ],
+      "sourceSha256": "fa2ece2c0038d0b25bf6090cc4a7c463e367aa214c5f0cf6a5cb3a8a9f169a8e"
+    },
+    "assets/opening/水仙十字大冒险-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "ae8dcd6994fa33150d299eb1aca040654579fb6df2ec6fc4771dfe92f1e0053c"
+    },
+    "assets/opening/水仙十字大冒险-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "bf594983c909325c6f57187c933029dd8e64c5423e821ae1095ba9b45955af08"
+    }
+  }
 }

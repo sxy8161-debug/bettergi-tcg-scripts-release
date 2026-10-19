@@ -179,5 +179,387 @@
         "assets/opening/狼的末路-v01-p02.png"
       ]
     }
-  ]
+  ],
+  "atlas": {
+    "assets/opening/野猪公主-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "b0e7767ecfeca224fba3f1719077ebbef38fded93c2206c8591e9bc81d1693ea"
+    },
+    "assets/opening/野猪公主-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "610e7cd96489187d267556a78ef2a710da8b4252ba986f9defdeacf1a1359743"
+    },
+    "assets/opening/运筹帷幄-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "12a77437894a2332261f68f6e6e1e72b2ae77a62918ab6c1f3bc17e80f3396f6"
+    },
+    "assets/opening/运筹帷幄-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "a3047fa1881e693bfd0685a6e895dea4836174dd49b5f9215776259c07bbc3d3"
+    },
+    "assets/opening/赌徒的耳环-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "7eb1048ecf82244c5c271c633cb9a6194edf14d91e2ab23a188d65c900af617b"
+    },
+    "assets/opening/赌徒的耳环-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "6d66d8041a1cde7716c4c78f9aab245e9190a244354db0282e1419333eb60335"
+    },
+    "assets/opening/旧时庭园-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "5699ba7928cd9c4570ba28cb5db4108aa0df48d26fe79c44b397bafce6141e56"
+    },
+    "assets/opening/旧时庭园-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "6e9cb447b540687cb1d1bb2eaf2f346acc486937e2700db27d2f08d328eec623"
+    },
+    "assets/opening/饰金之梦-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "0bb856b419b662244441f804c38a1b1680cdedb41abfb49549009640f2793792"
+    },
+    "assets/opening/饰金之梦-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "7eee89219e46103686c74244d8aea5f7726af48615484bea1787a7fd48b65289"
+    },
+    "assets/opening/灵光明烁之心-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "f8ee0516cc08df3646f152a69fa917d8005538c40ddd78b66459857335c4491f"
+    },
+    "assets/opening/灵光明烁之心-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "850e842c1c7d40d1685376910ec4b70393f41b81ba20f1c268cff5d26b963413"
+    },
+    "assets/opening/黄金屋-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "20661c2770a23725b4f85c61273ae90c40db752fa5f2621f6c91f577fcb30858"
+    },
+    "assets/opening/黄金屋-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "585c4560c4b29b927dbfc35f11f8adf56bab6fce9c9ad060360b8cf707f890a3"
+    },
+    "assets/opening/琴音之诗-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "864094e44898b3600c7d78fc3fb932a2a429dd4187edc1598d7a5bcc69e7f94b"
+    },
+    "assets/opening/琴音之诗-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "9099bc3d70eceb82c6ea4e794eeb94e014865a487f2d3d0aaa7c1f0ee15d80b6"
+    },
+    "assets/opening/贯月矢-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "acc0fc70a15a297468606935e1bcb9bc6bae23ef8406b1768a08ccc6af493815"
+    },
+    "assets/opening/贯月矢-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        425,
+        90,
+        85
+      ],
+      "sourceSha256": "50d0e3dfb187f59010f59c753780e65804fc684430abffca89e84eb9f68973a1"
+    },
+    "assets/opening/欧庇克莱歌剧院-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "55ad86463d53ea9e66a2f02672c0e606d509010e38e86862faee6be2bde36c47"
+    },
+    "assets/opening/欧庇克莱歌剧院-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        170,
+        90,
+        85
+      ],
+      "sourceSha256": "71fdce25059aef386e830ba6e2b69ed1437de696286354f92c85f483d86d8d08"
+    },
+    "assets/opening/狂欢节奏-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "0d7f1417a176e1b5de46f95fda1444430c9ac913d6d847f1e3800d84d12227a4"
+    },
+    "assets/opening/狂欢节奏-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "1ca2bf5d813a64216671abfe859e94dfe83c62a7862816a420121cf947517f88"
+    },
+    "assets/opening/换班时间-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "90a1433dff01dfec45514fb96b330be013439eba63a420b197759368bb228bdb"
+    },
+    "assets/opening/换班时间-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "00a661cf89f54a6d01f88b02aa14bd27f32de093df817716d9a9ce478aacde85"
+    },
+    "assets/opening/纵声欢唱-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "10da2e1debcdf992c1cfc5af0b60c29dc00ee9aebe4a1d14d8c54f6227f02544"
+    },
+    "assets/opening/纵声欢唱-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "11a5bf30ca7c7438fbe305d2dffb00094f9152ac7563641a21b6cef3a255d76e"
+    },
+    "assets/opening/奇瑰之汤-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "323d9c34729c04cf987f59a68e35b22ef2b7300b169129b004939d5c42ad22f3"
+    },
+    "assets/opening/奇瑰之汤-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "c1c5413ed2cccf758f2c2bae84b4d3781d68a6f16176fcd953213aac2fe1c8c8"
+    },
+    "assets/opening/偷懒的新方法-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "4b765953e0a0b10541437193f145a0bb5c2b39db36f8a525c7396c5c19fe56d8"
+    },
+    "assets/opening/偷懒的新方法-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        90,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "d2a0647af31656198855cec4c08a2ffd199159b4a2a9826b3284b41336853152"
+    },
+    "assets/opening/偷懒的新方法-v02-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        180,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "6f546cb5af2c24179a956a66253d60a9663ce33aac31d4bbdd8e8a90c82147fe"
+    },
+    "assets/opening/偷懒的新方法-v02-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "a8ac1d9345ea6cb70c8cfda6083d45ac9fdd426fe380775f6227b4cbd0c5e970"
+    },
+    "assets/opening/偷懒的新方法-v03-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        0,
+        90,
+        85
+      ],
+      "sourceSha256": "aeb914b89cc55cf762ea807311a1eae6bb84d623712412ee22a6ec693a03b6d8"
+    },
+    "assets/opening/偷懒的新方法-v03-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        85,
+        90,
+        85
+      ],
+      "sourceSha256": "f6da5458a0b0d519febe2d8c7fe7e04bb07337a323495f20cb23a91ec74d129f"
+    },
+    "assets/opening/黄金剧团的奖赏-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        510,
+        90,
+        85
+      ],
+      "sourceSha256": "3825f05bcf2598301b67a60ae111e961bc176e03d4bde6a47ee5e900307c2940"
+    },
+    "assets/opening/黄金剧团的奖赏-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        0,
+        595,
+        90,
+        85
+      ],
+      "sourceSha256": "ba7715e0b090985b17582c71c4e34c558f1b1ae39b74b32f6a87b74a8479b972"
+    },
+    "assets/opening/狼的末路-v01-p01.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        270,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "59e78be7d0e5ffc23761e6e39de28f6e1b7a807f82a5cc9e75a633baf60cd07b"
+    },
+    "assets/opening/狼的末路-v01-p02.png": {
+      "file": "assets/card-atlas/opening.png",
+      "rect": [
+        360,
+        255,
+        90,
+        85
+      ],
+      "sourceSha256": "348958933e51602800e8c113ad78bcf42f31f9f3c5b3aef009103caf90f04a00"
+    }
+  }
 }

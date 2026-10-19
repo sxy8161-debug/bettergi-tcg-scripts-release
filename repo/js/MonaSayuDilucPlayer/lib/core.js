@@ -521,8 +521,8 @@ function actionRefused(s, m, action) {
     refusalCost:(s,m,a)=>a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(a.id,a.target,m,s):a.type==="switch"?switchCost(m):{}};
 })(globalThis);
 
-globalThis.TCG.version = "1.0.0";
-globalThis.TCG.sharedVersion = "1.6.3";
+globalThis.TCG.version = "1.0.1";
+globalThis.TCG.sharedVersion = "1.6.4";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
