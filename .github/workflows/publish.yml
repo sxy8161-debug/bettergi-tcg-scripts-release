@@ -230,6 +230,23 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tag=v' + manifest.sharedVersion + '-' + manifest.sourceCommit.slice(0, 12) + '\n');
           console.log('Verified ' + listed.length + ' hashed files and ' + archives.length + ' ZIP archives; no artifact code executed.');
           NODE
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          path: homepage-checkout
+      - name: Sync the default-branch homepage from the verified distribution
+        working-directory: homepage-checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$PAYLOAD/dist/README.md" README.md
+          git add -- README.md
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -c core.hooksPath=/dev/null commit -m "Sync published script overview"
+            git push origin HEAD:main
+          fi
       - name: Commit the release tree and create an immutable GitHub Release
         working-directory: release-checkout
         env:
