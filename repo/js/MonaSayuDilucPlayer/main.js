@@ -574,8 +574,8 @@ function actionRefused(s, m, action) {
     refusalCost:(s,m,a)=>a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(a.id,a.target,m,s):a.type==="switch"?switchCost(m):{}};
 })(globalThis);
 
-globalThis.TCG.version = "1.1.5";
-globalThis.TCG.sharedVersion = "1.6.9";
+globalThis.TCG.version = "1.1.6";
+globalThis.TCG.sharedVersion = "1.7.0";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -1182,7 +1182,7 @@ globalThis.TCG.selectStrategy(globalThis.TCG.defaultStrategy);
   const enemyHpXs = { 1: [856], 2: [751, 962], 3: [646, 856, 1066], 4: [541, 751, 961, 1171] };
   // Verified skill names from DSTCG's repository card dictionary. The native
   // skill/payment preview hides the usual turn marker; it is not an unknown
-  // board. Require BOTH the exact skill name and its type, not merely a panel.
+  // board. Require BOTH a uniquely matched skill name and its type, not merely a panel.
   const skillNames = TCG.team.map(c => c.skills);
   const skillTypes = { NA: "普通攻击", E: "元素战技", Q: "元素爆发" };
   // This asset is the tooltip ABOVE the control, not its clickable area.
@@ -1704,19 +1704,46 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       throw new Error("当前行动牌桌不符合新开局未行动条件");
     }
+    matchSkillPreview(name, detail) {
+      // The native header's expand glyph can be OCR'd as a separate "A".
+      // Keep the raw OCR for diagnostics. Do not remove Chinese text or costs.
+      const raw = TCG.norm(name);
+      const text = /^[A-Za-z]?[\u3400-\u9fff]+[A-Za-z]?$/.test(raw) &&
+        (raw.match(/[A-Za-z]/g) || []).length <= 1 ? raw.replace(/[A-Za-z]/g, "") : raw;
+      const unknown = { identity: null, nameMatch: null };
+      if (!/^[\u3400-\u9fff]{2,16}$/.test(text)) return unknown;
+      const distance = (a, b) => {
+        let row = Array.from({length:b.length + 1}, (_, i) => i);
+        for (let i = 1; i <= a.length; i++) {
+          const next = [i];
+          for (let j = 1; j <= b.length; j++)
+            next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+          row = next;
+        }
+        return row[b.length];
+      };
+      const candidates = [];
+      // Rank the whole registered team, not just the expected action. A wrong
+      // role/slot must still fail at requireSkillPreview; ties never authorize.
+      for (let who = 0; who < skillNames.length; who++) for (const skill of ["NA", "E", "Q"]) {
+        const title = TCG.norm(skillNames[who][skill]);
+        const alias = (TCG.team[who].skillAliases?.[skill] || []).some(n => TCG.norm(n) === text);
+        const edits = alias ? 0 : distance(text, title);
+        if (edits <= (title.length >= 5 ? 2 : 1))
+          candidates.push({who, skill, title:skillNames[who][skill], edits, alias});
+      }
+      candidates.sort((a, b) => a.edits - b.edits);
+      const best = candidates[0];
+      if (!best || candidates[1]?.edits === best.edits || !detail.includes(skillTypes[best.skill])) return unknown;
+      return { identity:{who:best.who, skill:best.skill},
+        nameMatch:{title:best.title, edits:best.edits, method:best.alias ? "registered-alias" : best.edits ? "fuzzy" : "exact"} };
+    }
     skillPreviewIn(f) {
       // Native E preview read "神变·恶曜开眼\n3" with the old tall ROI.
       // Exclude the cost row instead of deleting arbitrary digits from OCR.
       const name = this.ocr(f, this.roi("details", [135, 122, 238, 42]));
       const detail = this.ocr(f, this.roi("details", [70, 210, 320, 85]));
-      const candidates = [];
-      for (let who = 0; who < skillNames.length; who++) for (const skill of ["NA", "E", "Q"]) {
-        const names = [skillNames[who][skill], ...(TCG.team[who].skillAliases?.[skill] || [])];
-        if (names.some(title => TCG.norm(name) === TCG.norm(title)) && detail.includes(skillTypes[skill])) {
-          candidates.push({ who, skill });
-        }
-      }
-      return { name, detail, identity: candidates.length === 1 ? candidates[0] : null };
+      return { name, detail, ...this.matchSkillPreview(name, detail) };
     }
     async requireSkillPreview(action, feeProbe=false, readFee=false) {
       let stable = 0, last = null, fee = null, feeStable = 0, absent = true, missing = true;
