@@ -3424,7 +3424,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       // Absence is measured on the CARD UI, not on a particular table skin.
       // A failed expansion can leave folded cards. Any marker (even an
       // incomplete row) or rim vetoes zero; missing price digits never count.
-      if (!this.handFanReady || !this.boardReady || this.choiceSession || this.pendingChoiceCard)
+      // boardReady permits reuse of an unobscured board; expand() correctly
+      // clears it through clickAt(). It is NOT hand-observation readiness.
+      // The caller owns board settling; this frame proves phase and presence.
+      if (!this.handFanReady || this.choiceSession || this.pendingChoiceCard)
         return false;
       const phase = this.phaseIn(f);
       if (phase.result || phase.phase !== "board" || phase.turn !== "user") return false;

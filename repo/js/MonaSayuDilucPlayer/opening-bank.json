@@ -178,6 +178,23 @@
           ]
         }
       ]
+    },
+    {
+      "id": "dunyarzad",
+      "name": "迪娜泽黛",
+      "patches": [
+        "assets/opening/迪娜泽黛-v01-p01.png",
+        "assets/opening/迪娜泽黛-v01-p02.png"
+      ],
+      "views": [
+        {
+          "name": "user-opening1600-0f9ad7a09f",
+          "patches": [
+            "assets/opening/迪娜泽黛-v01-p01.png",
+            "assets/opening/迪娜泽黛-v01-p02.png"
+          ]
+        }
+      ]
     }
   ],
   "atlas": {
@@ -284,7 +301,7 @@
     "assets/opening/饰金之梦-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        180,
         425,
         90,
         85
@@ -294,7 +311,7 @@
     "assets/opening/饰金之梦-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        90,
+        270,
         425,
         90,
         85
@@ -304,7 +321,7 @@
     "assets/opening/黄金剧团的奖赏-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        180,
+        360,
         425,
         90,
         85
@@ -314,8 +331,8 @@
     "assets/opening/黄金剧团的奖赏-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        270,
-        425,
+        0,
+        510,
         90,
         85
       ],
@@ -324,8 +341,8 @@
     "assets/opening/黄金屋-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        360,
-        425,
+        90,
+        510,
         90,
         85
       ],
@@ -334,7 +351,7 @@
     "assets/opening/黄金屋-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        180,
         510,
         90,
         85
@@ -424,8 +441,8 @@
     "assets/opening/野猪公主-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        270,
-        340,
+        0,
+        425,
         90,
         85
       ],
@@ -434,8 +451,8 @@
     "assets/opening/野猪公主-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        360,
-        340,
+        90,
+        425,
         90,
         85
       ],
@@ -490,6 +507,26 @@
         85
       ],
       "sourceSha256": "9963db98f3764ff48d8faad30dbebef539322105700e62397ea4d421a16b038d"
+    },
+    "assets/opening/迪娜泽黛-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        270,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "b7a6a155ee2bfafb01dce901764e9d5c83c296b2b0db18304b33740b5b0d192b"
+    },
+    "assets/opening/迪娜泽黛-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        360,
+        340,
+        90,
+        85
+      ],
+      "sourceSha256": "63660e0a04bd817ad6b8efa62d47b12bf25c1e0990ccc1baf77401c594ed7d4f"
     }
   }
 }
