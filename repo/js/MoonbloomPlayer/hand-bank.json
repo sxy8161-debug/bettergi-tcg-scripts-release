@@ -3587,10 +3587,20 @@
       ],
       "sourceSha256": "6144ce7c84b4a0985deedcfec6e5fed51d2f3dba4f9b6bc7200b5aaae48a7207"
     },
-    "assets/core/出战角色.png": {
+    "assets/hand_cost_pyro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
         50,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "afde030836735ef00a0f2471135b23550830ef4fe3d5a98a1800fab3d41d3b0b"
+    },
+    "assets/core/出战角色.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        60,
         164,
         106,
         26
@@ -3600,7 +3610,7 @@
     "assets/core/角色状态_冻结2.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        156,
+        166,
         164,
         30,
         26
@@ -3610,7 +3620,7 @@
     "assets/dice/NativeMainAnemo.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        186,
+        196,
         164,
         23,
         24
@@ -3620,7 +3630,7 @@
     "assets/dice/NativeMainCryo.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        209,
+        219,
         164,
         23,
         24
@@ -3630,7 +3640,7 @@
     "assets/dice/NativeMainElectro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        232,
+        242,
         164,
         23,
         24
@@ -3640,7 +3650,7 @@
     "assets/dice/NativeMainPyro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        255,
+        265,
         164,
         22,
         24
@@ -3650,7 +3660,7 @@
     "assets/dice/NativeMainHydro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        277,
+        287,
         164,
         26,
         23
@@ -3660,7 +3670,7 @@
     "assets/dice/NativeMainOmni.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        303,
+        313,
         164,
         24,
         23
@@ -3670,7 +3680,7 @@
     "assets/dice/NativeMainDendro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        327,
+        337,
         164,
         26,
         22
@@ -3680,7 +3690,7 @@
     "assets/dice/NativeMainGeo.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        353,
+        363,
         164,
         23,
         22
@@ -3690,7 +3700,7 @@
     "assets/core/角色状态_冻结.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        376,
+        386,
         164,
         17,
         19
@@ -3700,7 +3710,7 @@
     "assets/state/StateFreeze.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        393,
+        403,
         164,
         16,
         16
@@ -3710,7 +3720,7 @@
     "assets/charge.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        409,
+        419,
         164,
         15,
         15
@@ -3720,7 +3730,7 @@
     "assets/state/StateCryo.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        424,
+        434,
         164,
         15,
         15
@@ -3730,7 +3740,7 @@
     "assets/state/StateDendro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        439,
+        449,
         164,
         15,
         15
@@ -3740,7 +3750,7 @@
     "assets/state/StateElectro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        454,
+        464,
         164,
         15,
         15
@@ -3750,7 +3760,7 @@
     "assets/state/StateHydro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        469,
+        479,
         164,
         15,
         15
@@ -3760,7 +3770,7 @@
     "assets/state/StatePyro.png": {
       "file": "assets/card-atlas/ui.png",
       "rect": [
-        484,
+        494,
         164,
         15,
         15

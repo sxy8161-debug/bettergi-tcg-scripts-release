@@ -481,7 +481,10 @@ function actionRefused(s, m, action) {
     if(a.type==="probe"||a.type==="switch")return {mode:"unchanged",hand:h};
     // Swirls and reaction artifacts can insert cards; do not trust the old empty hand.
     if(a.type==="skill")return m?.talents[1]||m?.artifactKinds.includes("gilded")?{mode:"full"}:{mode:"unchanged",hand:h};
-    if(a.type==="card"&&(["draw","recycle","talent"].includes(c?.type)))return {mode:"full"};
+    // A recycle replaces one observed card with one observed equipment card.
+    // verify() requires that complete replacement; it is not a pending draw.
+    if(a.type==="card"&&c?.type==="recycle")return {mode:"full",refreshAfterConsumption:false};
+    if(a.type==="card"&&(["draw","talent"].includes(c?.type)))return {mode:"full"};
     if(a.type==="card"&&c?.type==="support"&&(!m||a.id==="timaeus"||
       ["liben","dunyarzad"].includes(a.id)&&m.supports.some(x=>x.id==="dunyarzad"&&!x.drawUsed)))
       return {mode:"full",retainedHand:indexedHand(h.filter((_,i)=>i!==a.index)),
@@ -557,8 +560,8 @@ function actionRefused(s, m, action) {
     refusalCost:(s,m,a)=>a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(a.id,a.target,m,s):a.type==="switch"?switchCost(m):{}};
 })(globalThis);
 
-globalThis.TCG.version = "1.1.0";
-globalThis.TCG.sharedVersion = "1.6.5";
+globalThis.TCG.version = "1.1.2";
+globalThis.TCG.sharedVersion = "1.6.7";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -2672,7 +2675,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     handCostMarkersIn(f, roi, useColor = false) {
       const threshold = roi.panel === "handFolded" && roi.layoutKey === "16:10" ? .88 : .9;
-      return ["hand_cost_neutral", "hand_cost_element", "hand_cost_dendro", "hand_cost_electro", "hand_cost_matching"]
+      return ["hand_cost_neutral", "hand_cost_element", "hand_cost_dendro", "hand_cost_electro", "hand_cost_matching", "hand_cost_pyro"]
         .flatMap(asset => this.matches(f, asset, roi, threshold, useColor));
     }
     handCostLayoutIn(f, nativeCount = null) {
@@ -3010,34 +3013,51 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
     }
     async readHand(expected = this.handCountHint, evidence = null, scan = { titles: 0 }) {
-      // Evidence passed here was obtained in this very observation, not an
-      // estimated count or the previous action's projected hand.
-      const n = evidence ? evidence.count : await this.handCount(expected);
-      // This scratch list belongs to one observe() call: no submitted action,
-      // phase transition or next round can inherit it. A changed native count
-      // replaces it; a failed title alone does not erase successful slots.
-      if (scan.cards && scan.cards.length !== n) scan.titleCandidates = null;
-      const hand = scan.cards?.length === n ? scan.cards : Array(n).fill(null);
-      scan.cards = hand;
-      // Establish the expanded fan once. Selecting a card only raises that
-      // card; it does not require resetting/re-expanding the whole hand.
-      if (n > 0 && !this.handFanReady) {
-        this.requireHandObservation(this.phase(), "before-scan-expand");
-        await this.expand();
+      const started = Date.now(), titlesBefore = scan.titles;
+      let observed = null;
+      try {
+        // One owner for the read transaction. The artwork adapter only seeds
+        // identities/count; it cannot finish a second title/reset lifecycle.
+        if (!scan.cards && this.readFoldedHand)
+          evidence = await this.readFoldedHand(expected, evidence, scan);
+        // Evidence passed here was obtained in this very observation, not an
+        // estimated count or the previous action's projected hand.
+        const n = evidence ? evidence.count : await this.handCount(expected);
+        // This scratch list belongs to one observe() call: no submitted action,
+        // phase transition or next round can inherit it. A changed native count
+        // replaces it; a failed title alone does not erase successful slots.
+        if (scan.cards && scan.cards.length !== n) scan.titleCandidates = null;
+        const hand = scan.cards?.length === n ? scan.cards : Array(n).fill(null);
+        scan.cards = hand;
+        // Establish the expanded fan once. Selecting a card only raises that
+        // card; it does not require resetting/re-expanding the whole hand.
+        if (n > 0 && !hand.every(Boolean) && !this.handFanReady) {
+          this.requireHandObservation(this.phase(), "before-scan-expand");
+          await this.expand();
+        }
+        this.handScanSerial++;
+        // Copy all positions before the first title click invalidates the proof.
+        // Selection raises one card but does not reorder the rest of this fan.
+        const points = this.handPoints(n);
+        await this.prepareHandObservation?.(n);
+        if (!scan.route) scan.route = "expanded-artwork-fallback";
+        this.trace("hand-scan", { count: n, expected, reusedCount: !!evidence, route: scan.route });
+        await this.fillHandArtwork?.(hand, scan);
+        await this.readHandTitles(hand, points, scan);
+        observed = this.finishHandObservation ? this.finishHandObservation(hand, scan) : hand;
+        if (this.handFanReady || this.handNeedsReset) {
+          this.requireHandObservation(this.phase(), "before-hand-reset");
+          await this.reset();
+        }
+        this.handCountHint = null;
+        return observed;
+      } finally {
+        // Do not click in finally: a failed title retains this observation's
+        // known slots; a changed phase belongs to the recovery/phase owner.
+        try { this.trace("hand-read-completed", { route: scan.route || "expanded-artwork-fallback",
+          count: observed?.length ?? null, titleSlots: scan.titles - titlesBefore,
+          elapsedMs: Date.now() - started }); } catch {}
       }
-      this.handScanSerial++;
-      // Copy all positions before the first title click invalidates the proof.
-      // Selection raises one card but does not reorder the rest of this fan.
-      const points = this.handPoints(n);
-      await this.prepareHandObservation?.(n);
-      this.trace("hand-scan", { count: n, expected, reusedCount: !!evidence });
-      await this.fillHandArtwork?.(hand, scan);
-      await this.readHandTitles(hand, points, scan);
-      const observed = this.finishHandObservation ? this.finishHandObservation(hand, scan) : hand;
-      this.requireHandObservation(this.phase(), "before-hand-reset");
-      await this.reset();
-      this.handCountHint = null;
-      return observed;
     }
     async observedHand(plan = null, scan = { titles: 0 }) {
       if (plan?.mode === "full") {
@@ -3632,8 +3652,16 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             count: phase.phase === "board" && phase.turn === "user" ? this.handCountIn(f) : null,
           };
         });
-        if (p.phase !== "board" || p.turn !== "user" || this.inputRevision !== revision)
-          return null;
+        // This sample is newer than confirm()'s entry phase. A late choice
+        // or unreadable transition must interrupt, not authorize a reset
+        // through the ordinary "no consumption evidence" return value.
+        if (p.result || p.phase !== "board" || p.turn !== "user") {
+          const error = new Error("收牌前消费核验期间页面变化：" + p.phase + "/" + p.turn);
+          error.code = "TCG_OBSERVATION_INTERRUPTED";
+          error.phase = { ...p, hand: null };
+          throw error;
+        }
+        if (this.inputRevision !== revision) return null;
         stable =
           p.count === plan.hand.length && p.count === last
             ? stable + 1
@@ -4288,6 +4316,19 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       // confirmed, but use the existing quiet-board observer before planning.
       // Do not require HP gain: full HP or healing suppression may prevent it.
       const quietObservationRequired = action.type === "card" && action.id === "edict";
+      // The pending action owns both identity synchronization and whether
+      // consumption might still precede insertion. The lifecycle must not
+      // reconstruct that plan after commit has changed the deck memory.
+      const completed = (after, confirmed) => ({
+        ...after, ...this.confirmationExtras?.(), confirmed,
+        // A card may enter combat confirmation as a skill (e.g. a kernel).
+        // That adapter preserves cardAction; its hand effects remain a card's.
+        handRefreshRequired: confirmed && (action.cardAction || action).type === "card" &&
+          session.plan?.mode === "full" && session.plan.refreshAfterConsumption !== false &&
+          Array.isArray(after.hand) && after.hand.length <= before.hand.length,
+        freshObservationRequired: confirmed && (effectAction && !session.transition || quietObservationRequired),
+        quietObservationRequired: confirmed && quietObservationRequired,
+      });
       while (Date.now() < deadline) {
         sampledAt = Date.now();
         const p = this.phase();
@@ -4331,39 +4372,42 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           return { ...p, confirmed };
         }
         if (p.turn === "user") {
-          if (handoff && !handoff.ready) {
-            const now = Date.now(), minimumMs = action.skill === "Q" ? 15000 : 10000;
-            // Reuse the official 10s/15s no-handoff grace, but keep observing:
-            // a real opponent return can release it early; terminal/pick/choice
-            // still dispatch above. Never require a nonexistent enemy turn.
-            const eligible = p.phase === "board" &&
-              (session.transition || now - handoff.startedAt >= minimumMs);
-            if (eligible) { handoff.ownSince ??= now; handoff.ownReads++; }
-            else { handoff.ownSince = null; handoff.ownReads = 0; }
-            if (!eligible || handoff.ownReads < 3 || now - handoff.ownSince < 2000) {
-              const reason = eligible ? "own-turn-still-settling" : "handoff-not-observed";
-              if (handoff.reason !== reason) {
-                handoff.reason = reason;
-                this.trace("combat-handoff-wait", { action, reason, phase: p.phase, turn: p.turn,
-                  transition: session.transition, elapsedMs: now - handoff.startedAt, minimumMs });
-              }
-              await waitForSample(450); continue;
-            }
-            handoff.ready = true;
-            // Phase persistence is not full effect proof. Keep the existing
-            // quiet COMPLETE-board observer before any hand scan or input.
-            this.autoRisk = true;
-            this.trace("combat-handoff-ready", { action, transition: session.transition,
-              elapsedMs: now - handoff.startedAt, ownStableMs: now - handoff.ownSince,
-              ownReads: handoff.ownReads, proof: session.transition ? "observed-opponent-return" : "conservative-no-handoff-window" });
-          }
           let after;
           try {
             this.requireHandObservation(p, "before-confirm-reset");
+            // Finish the submitted card's view as soon as its own board returns,
+            // not after the entire combat handoff wait. Never fold enemy/choice
+            // pages, and keep pre-reset consumption evidence bound to this action.
             const receipt = await this.removalEvidenceBeforeReset(session.plan);
-            if (!this.boardReady && (this.handNeedsReset || this.handFanReady)) await this.reset();
+            if (p.phase === "board" && (this.handNeedsReset || this.handFanReady)) await this.reset();
             if (receipt && this.inputRevision >= receipt.revision && this.inputRevision <= receipt.revision + 1)
               session.plan = { ...session.plan, preResetEvidence: { ...receipt, revision: this.inputRevision } };
+            if (handoff && !handoff.ready) {
+              const now = Date.now(), minimumMs = action.skill === "Q" ? 15000 : 10000;
+              // Reuse the official 10s/15s no-handoff grace, but keep observing:
+              // a real opponent return can release it early; terminal/pick/choice
+              // still dispatch above. Never require a nonexistent enemy turn.
+              const eligible = p.phase === "board" &&
+                (session.transition || now - handoff.startedAt >= minimumMs);
+              if (eligible) { handoff.ownSince ??= now; handoff.ownReads++; }
+              else { handoff.ownSince = null; handoff.ownReads = 0; }
+              if (!eligible || handoff.ownReads < 3 || now - handoff.ownSince < 2000) {
+                const reason = eligible ? "own-turn-still-settling" : "handoff-not-observed";
+                if (handoff.reason !== reason) {
+                  handoff.reason = reason;
+                  this.trace("combat-handoff-wait", { action, reason, phase: p.phase, turn: p.turn,
+                    transition: session.transition, elapsedMs: now - handoff.startedAt, minimumMs });
+                }
+                await waitForSample(450); continue;
+              }
+              handoff.ready = true;
+              // Phase persistence is not full effect proof. Keep the existing
+              // quiet COMPLETE-board observer before any hand scan or input.
+              this.autoRisk = true;
+              this.trace("combat-handoff-ready", { action, transition: session.transition,
+                elapsedMs: now - handoff.startedAt, ownStableMs: now - handoff.ownSince,
+                ownReads: handoff.ownReads, proof: session.transition ? "observed-opponent-return" : "conservative-no-handoff-window" });
+            }
             after = await this.observe(true, session.plan ? { ...session.plan, transitionPassed: session.transition } : null);
           } catch (e) {
             if (["TCG_BOARD_RETRY", "TCG_DICE_RETRY", "TCG_HAND_RETRY"].includes(e.code)) {
@@ -4405,9 +4449,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             // hand this early snapshot straight to the next planner. A new
             // full observation is required when no enemy turn was observed;
             // it must not wait for predicted damage or exclude zero damage.
-            return { ...after, ...this.confirmationExtras?.(), confirmed: true,
-              freshObservationRequired: effectAction && !session.transition || quietObservationRequired,
-              quietObservationRequired };
+            return completed(after, true);
           }
           if (!budgetMatches && !await this.observedResourceProof(after)) {
             this.trace("budget-reconciliation-wait", { action, expectedDice: this.expectedDice,
@@ -4436,9 +4478,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           const confirmed = TCG.verifyResynchronized(action, before, after, session.transition);
           this.adoptObservedState(after, "post-action-resync");
           this.trace("state-resynced", { action, confirmed, after });
-          return { ...after, ...this.confirmationExtras?.(), confirmed, resynchronized: true,
-            freshObservationRequired: confirmed && (effectAction && !session.transition || quietObservationRequired),
-            quietObservationRequired: confirmed && quietObservationRequired };
+          return { ...completed(after, confirmed), resynchronized: true };
         }
         if (p.phase === "roll" && combat) return { ...p, confirmed: session.transition };
         await waitForSample(450);
@@ -5217,9 +5257,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         planningMs = Date.now() - started;
       host.trace("decision", action);
       if (action.type === "stop") throw new Error(action.reason);
-      // Use the deck's pre-action identity/order contract, not the card's
-      // display category. Weapons, food and other cards can also insert cards.
-      const handChangingCard = action.type === "card" && T.handPlan(action, state, memory).mode === "full";
       const execution = await this.execute(action, state);
       if (!execution.sent) return;
       log.info("[第" + memory.round + "回合] " + actionCommentary(action, state, memory));
@@ -5240,8 +5277,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         log.warn("动作效果未确认，已重新同步，不重复输入。");
       }
       T.noteBoard(memory, after);
-      const refreshHand = after.confirmed && handChangingCard &&
-        Array.isArray(after.hand) && after.hand.length <= state.hand.length;
+      const refreshHand = after.confirmed && after.handRefreshRequired === true;
       if (refreshHand) {
         // Consumption can precede card insertion (native draw 3 -> 2). Do not
         // plan from that partial hand. This also covers non-draw categories
@@ -5803,74 +5839,51 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             elapsedMs:Date.now()-started,inputs:0});}catch{}
         }
       }
-      async readHand(expected=this.handCountHint,evidence=null,scan={titles:0}){
-        const started=Date.now(),titlesBefore=scan.titles;let route="expanded-artwork-fallback",hand=null;
-        try{
-          if(scan.cards)
-            return hand=await super.readHand(expected,evidence,scan);
-          // Full synchronization always tries the native artwork bank first.
-          // A raised fan is a view state, not evidence that every identity failed.
-          if(this.handFanReady||this.handNeedsReset){
-            this.requireHandObservation(this.phase(),"before-hand-artwork");
-            if(this.handFanReady){
-              const count=this.frame(f=>this.nativeHandCountIn(f));
-              if(count!==null)evidence={count};
-            }
-            await this.reset();
+      async readFoldedHand(expected,evidence,scan){
+        // Full synchronization always tries the native artwork bank first.
+        // A raised fan is a view state, not evidence that every identity failed.
+        if(this.handFanReady||this.handNeedsReset){
+          this.requireHandObservation(this.phase(),"before-hand-artwork");
+          if(this.handFanReady){
+            const count=this.frame(f=>this.nativeHandCountIn(f));
+            if(count!==null)evidence={count};
           }
-          let read=await this.folded("board",scan.settling===true);
-          if(read?.status==="raised"){
-            this.requireHandObservation(this.phase(),"raised-hand-before-folded-read");
-            if(read.nativeCount!==null)evidence={count:read.nativeCount};
-            await this.reset();
-            read=await this.folded("board",scan.settling===true);
-          }
-          const cards=read?.slots.map(s=>s.id?T.observedCard(T.byId[s.id].name,s.index):null);
-          if(!read||read.status==="raised"||read.countConflict||(evidence&&evidence.count!==read.count))
-            return hand=await super.readHand(expected,evidence,scan);
-          // Resolve missing count from native evidence without discarding the
-          // artwork identities merely because an older count hint disagrees.
-          let count=evidence?evidence.count:read.nativeCount;
-          // A complete calibrated native row measures count and slots together.
-          // Only an actual disagreement requires another measurement; a missing
-          // expanded badge alone is not a reason to toggle an already folded fan.
-          if(count===null && expected!==null && expected!==read.count){
-            this.requireHandObservation(this.phase(),"before-local-hand-count");
-            count=await this.handCount(expected);
-          }
-          count??=read.count;
-          if(count!==read.count)return hand=await super.readHand(null,{count},scan);
-          // Kept opening cards are already observed identities. Before the
-          // first action/read, reuse that evidence through the same complete
-          // family/count checks; never infer a countdown stage from its price.
-          const retained=scan.retainedHand??(this.handScanSerial===0&&!this.currentAction&&read.count===5
-            ?this.openingCards:null);
-          this.fillHandVariants(cards,read.slots,retained,scan.retainedVariantFamilies);
-          scan.cards=cards;
-          this.handScanSerial++;
-          if(cards.every(Boolean)){
-            route=this.handFanReady?"folded-identities-native-count":"folded-full";
-            await this.prepareHandObservation?.(count);
-          }else{
-            route="local-title-fallback";
-            this.requireHandObservation(this.phase(),"before-local-hand-fallback");
-            if(!this.handFanReady)await this.expand();
-            const points=this.handPoints(count);
-            await this.prepareHandObservation?.(count);
-            scan.titleCandidates=read.slots.map(s=>s.titleCandidates);
-            await this.fillHandArtwork(cards,scan);
-            await this.readHandTitles(cards,points,scan);
-          }
-          hand=this.finishHandObservation?this.finishHandObservation(cards,scan):cards;
-          if(this.handFanReady||this.handNeedsReset){
-            this.requireHandObservation(this.phase(),"before-hand-reset");
-            await this.reset();
-          }
-          this.handCountHint=null;return hand;
-        }finally{
-          try{this.trace("hand-read-completed",{route,count:hand?.length??null,
-            titleSlots:scan.titles-titlesBefore,elapsedMs:Date.now()-started});}catch{}
+          await this.reset();
         }
+        let read=await this.folded("board",scan.settling===true);
+        if(read?.status==="raised"){
+          this.requireHandObservation(this.phase(),"raised-hand-before-folded-read");
+          if(read.nativeCount!==null)evidence={count:read.nativeCount};
+          await this.reset();
+          read=await this.folded("board",scan.settling===true);
+        }
+        const cards=read?.slots.map(s=>s.id?T.observedCard(T.byId[s.id].name,s.index):null);
+        if(!read||read.status==="raised"||read.countConflict||(evidence&&evidence.count!==read.count))
+          return evidence;
+        // Resolve missing count from native evidence without discarding the
+        // artwork identities merely because an older count hint disagrees.
+        let count=evidence?evidence.count:read.nativeCount;
+        // A complete calibrated native row measures count and slots together.
+        // Only an actual disagreement requires another measurement; a missing
+        // expanded badge alone is not a reason to toggle an already folded fan.
+        if(count===null && expected!==null && expected!==read.count){
+          this.requireHandObservation(this.phase(),"before-local-hand-count");
+          count=await this.handCount(expected);
+        }
+        count??=read.count;
+        if(count!==read.count)return {count};
+        // Kept opening cards are already observed identities. Before the
+        // first action/read, reuse that evidence through the same complete
+        // family/count checks; never infer a countdown stage from its price.
+        const retained=scan.retainedHand??(this.handScanSerial===0&&!this.currentAction&&read.count===5
+          ?this.openingCards:null);
+        this.fillHandVariants(cards,read.slots,retained,scan.retainedVariantFamilies);
+        scan.cards=cards;
+        scan.route=cards.every(Boolean)
+          ?this.handFanReady?"folded-identities-native-count":"folded-full"
+          :"local-title-fallback";
+        scan.titleCandidates=read.slots.map(s=>s.titleCandidates);
+        return {count};
       }
       async opening(){
         if(!openingBank||T.openingSetting(this.options.mulligan)==="全部保留")return super.opening();
