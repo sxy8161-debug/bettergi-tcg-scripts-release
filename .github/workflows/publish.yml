@@ -70,6 +70,18 @@ jobs:
                 const release = await get('https://api.github.com/repos/' + repo + '/releases/tags/' + tag);
                 if (release.ok) published = true;
                 else if (release.status !== 404) throw Error('Release lookup failed: HTTP ' + release.status);
+                else {
+                  // A user-authorized same-version replacement keeps its original
+                  // tag. Its notes explicitly bind the replacement to this source.
+                  const releases = await get('https://api.github.com/repos/' + repo + '/releases?per_page=100');
+                  if (!releases.ok) throw Error('Replacement lookup failed: HTTP ' + releases.status);
+                  const sourceUrl = 'https://github.com/sxy8161-debug/bettergi-tcg-scripts/commit/' + sha;
+                  const assets = ['tcg-scripts.zip', 'RaidenColleiKeqingPlayer.zip', 'IansanGamingSayuPlayer.zip', 'MoonbloomPlayer.zip', 'MonaSayuDilucPlayer.zip'];
+                  published = (await releases.json()).some(item => !item.draft && !item.prerelease &&
+                    item.tag_name.startsWith('v' + manifest.sharedVersion + '-') &&
+                    (item.body || '').includes('](' + sourceUrl + ')') &&
+                    assets.every(name => item.assets.some(asset => asset.name === name && asset.state === 'uploaded')));
+                }
               }
             } else if (response.status !== 404) throw Error('Manifest lookup failed: HTTP ' + response.status);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'sha=' + sha + '\ndate=' + date + '\nbuild=' + !published + '\n');
