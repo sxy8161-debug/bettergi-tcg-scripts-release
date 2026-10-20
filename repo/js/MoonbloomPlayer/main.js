@@ -1004,8 +1004,8 @@ function actionRefused(s, m, action) {
       "heal-dice":["请选择一个角色","对所选角色生效"],heal:["请选择一个角色","对所选角色生效"]}};
 })(globalThis);
 
-globalThis.TCG.version = "1.4.5";
-globalThis.TCG.sharedVersion = "1.6.7";
+globalThis.TCG.version = "1.4.7";
+globalThis.TCG.sharedVersion = "1.6.9";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -3284,11 +3284,33 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async expand(resetFirst = true) {
       // The native control is a toggle. Card selection does not close the fan;
       // never click that control again while the same layout remains ready.
+      if (resetFirst && !this.boardReady && !this.handFanReady) await this.reset();
+      if (this.raisedHandIn) {
+        const view = this.frame(f => {
+          this.requireHandObservation(this.phaseIn(f), "before-hand-view-toggle");
+          return this.raisedHandIn(f) ? "expanded" :
+            this.collapsedLayoutIn(f).status === "readable" ? "folded" : null;
+        });
+        // Draw/choice animations can raise or fold the fan independently of
+        // our last click. A complete native layout outranks the view hint.
+        // Unknown layout is not permission to toggle an already-open fan.
+        if (view === "expanded") {
+          if (!this.handFanReady) this.handPositionProof = null;
+          this.handFanReady = this.handNeedsReset = true;
+          this.boardReady = false;
+          this.trace("hand-expand-skipped", { reason: "native-expanded-layout" });
+          return;
+        }
+        if (view === "folded" && this.handFanReady) {
+          this.handFanReady = false;
+          this.handPositionProof = null;
+          this.trace("hand-view-reconciled", { view, reason: "native-layout-contradicts-hint" });
+        }
+      }
       if (this.handFanReady) {
         this.trace("hand-expand-skipped", { reason: "fan-already-ready" });
         return;
       }
-      if (resetFirst && !this.boardReady) await this.reset();
       this.clickAt(...this.point("handFolded",967,1041));
       this.moveTo(...this.point("bottom",1791,917));
       await sleep(180);
@@ -3731,14 +3753,15 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     async handCount(expected = null) {
       this.requireHandObservation(this.phase(), "before-hand-expand");
-      if (!this.handFanReady) await this.expand();
+      await this.expand();
       const readCount = () =>
         this.frame((f) => {
           // The fan's count badge is transient. Collect consecutive read-only
           // count frames quickly; full phase OCR between them can outlive it.
           // A fresh phase guard follows the bounded sampling BEFORE any input.
           const sample = this.handSample(f);
-          return { ...sample, empty: (sample.count === null || sample.count === 0) && this.emptyHandIn(f) };
+          return { ...sample, presence: (sample.count === null || sample.count === 0)
+            ? this.handPresenceIn(f) : { state:"present", reason:"positive-count" } };
         });
       const reads = [],
         samples = [];
@@ -3755,7 +3778,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         samples.push(sample);
         // Zero requires fresh structural absence as well as a stable view.
         // A lone OCR zero, an old empty flag, or missing fee digits is not zero.
-        const empty = sample.empty === true;
+        const empty = sample.presence.state === "absent";
         const resolved = empty ? 0 : result === 0 ? null : result;
         if (empty) emptySince ??= Date.now(); else emptySince = null;
         reads[reads.length - 1] = resolved;
@@ -3772,7 +3795,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           }
           this.trace("hand-count", { count: resolved, reads,
             source: resolved === 0 ? "card-structure-absence" : sample.source,
-            ...(resolved === 0 ? { stableMs:Date.now()-emptySince, revision } : {}) });
+            ...(resolved === 0 ? { stableMs:Date.now()-emptySince, revision, presence:sample.presence } : {}) });
           this.recordHandLayout(resolved);
           return resolved;
         }
@@ -3784,6 +3807,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         if (attempt < 7 && remaining > 0) await sleep(remaining);
       }
       this.requireHandObservation(this.phase(), "hand-count-unresolved");
+      this.trace("hand-count-unresolved", {
+        expected, revision,
+        samples:samples.map((s,i)=>({ count:reads[i], source:s.source, presence:s.presence })),
+      });
       const knownCounts = [...new Set(reads.filter((n) => n !== null))];
       if (knownCounts.length > 0) {
         const error = new Error(
@@ -4240,30 +4267,44 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const recovered = { ...settled, hand, ...(this.pendingHandEvidence ? { handEvidence: this.pendingHandEvidence } : {}) };
       return this.finishObservation(recovered, pendingAction, handRead);
     }
-    emptyHandIn(f) {
-      // Absence is measured on the CARD UI, not on a particular table skin.
-      // A failed expansion can leave folded cards. Any marker (even an
-      // incomplete row) or rim vetoes zero; missing price digits never count.
-      // boardReady permits reuse of an unobscured board; expand() correctly
-      // clears it through clickAt(). It is NOT hand-observation readiness.
-      // The caller owns board settling; this frame proves phase and presence.
+    handPresenceIn(f) {
+      // Presence and unreadability are different facts. This is a same-frame
+      // observation, not another cache, predicted count or table-skin matcher.
       if (!this.handFanReady || this.choiceSession || this.pendingChoiceCard)
-        return false;
+        return { state:"unknown", reason:"view-not-ready" };
       const phase = this.phaseIn(f);
-      if (phase.result || phase.phase !== "board" || phase.turn !== "user") return false;
-      // Match the intrinsic colored corner, not grayscale character-art
-      // gradients underneath an empty fan. The rim is independently grayscale.
-      if (this.handCostMarkersIn(f, this.roi("handExpanded", [450,750,1310,200]), true).length ||
-          this.handCostMarkersIn(f, this.roi("handFolded", [430,977,1050,42]), true).length ||
-          this.matches(f, "hand_rim", this.roi("handExpanded", [500,900,1260,135]), .85, false).length)
-        return false;
-      // The own-turn marker may survive a detail/payment overlay. Such a
-      // view is unknown even when the hand itself is hidden.
-      return !this.ocr(f, this.roi("details", [311,115,341,50])) &&
-        !this.ocr(f, this.roi("details", [135,122,238,42])) &&
-        !this.ocr(f, this.roi("phase", [600,510,720,65])) &&
-        !this.matches(f, "core/确定", this.roi("bottom", [770,900,380,90])).length &&
-        !this.cardPaymentControlsIn(f).length;
+      if (phase.result || phase.phase !== "board" || phase.turn !== "user")
+        return { state:"unknown", reason:"phase", phase };
+      // Incomplete card structure still vetoes zero. Keep both views: a
+      // failed fan toggle can leave real folded cards. Prices are irrelevant.
+      for (const [panel, rect] of [
+        ["handExpanded", [450,750,1310,200]], ["handFolded", [430,977,1050,42]],
+      ]) {
+        const markers = this.handCostMarkersIn(f, this.roi(panel, rect), true);
+        if (markers.length) return { state:"present", reason:"cost-marker", panel, markers };
+      }
+      const rims = this.matches(f, "hand_rim", this.roi("handExpanded", [500,900,1260,135]), .85, false);
+      if (rims.length) return { state:"present", reason:"card-rim", rims };
+      // Read the WHOLE header row, then assign text to the existing title
+      // panels by position. Cropping the legacy skill title first can turn the
+      // neighbouring opponent HUD into a false title ("已宣布结束" -> "束").
+      // Unknown titles inside a panel remain blockers; no word allowlist or
+      // special case for any opponent, language fragment or tablecloth.
+      const titleAreas = [[311,115,341,50], [135,122,238,42]].map(rect => this.roi("details", rect).rect),
+        rows = this.ocrRows(f, this.roi("details", [0,100,700,85])).filter(r => TCG.norm(r.text));
+      for (const row of rows) {
+        if (![row.x,row.y,row.w,row.h].every(Number.isFinite) || row.w <= 0 || row.h <= 0)
+          return { state:"unknown", reason:"title-location-unreadable", row };
+        if (titleAreas.some(([x,y,w,h]) =>
+          row.x >= x && row.x < x+w && row.y+row.h/2 >= y && row.y+row.h/2 <= y+h))
+          return { state:"unknown", reason:"detail-title", row };
+      }
+      const banner = this.ocr(f, this.roi("phase", [600,510,720,65]));
+      if (banner) return { state:"unknown", reason:"central-banner", text:banner };
+      if (this.matches(f, "core/确定", this.roi("bottom", [770,900,380,90])).length ||
+          this.cardPaymentControlsIn(f).length)
+        return { state:"unknown", reason:"payment-control" };
+      return { state:"absent", reason:"no-card-structure", outsideTitleRows:rows };
     }
     async proveEmptyHand(plan,settled) {
       const receipt=this.consumptionReceipt,a=plan?.action,b=plan?.before;
@@ -5310,7 +5351,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const spent=Object.fromEntries(TCG.diceOrder.map(e=>[e,(before.dice[e]||0)-(after.dice[e]||0)]));
       const exactPaid=Object.values(spent).every(n=>Number.isInteger(n)&&n>=0)&&TCG.total(spent)===TCG.size(cost)&&
           !!TCG.payment(spent,cost,TCG.team[before.active].element);
-      if(TCG.drawPaymentMatches?!TCG.drawPaymentMatches(before,action,after,memory,cost,exactPaid):!exactPaid)return false;
+      if(TCG.drawPaymentMatches?!TCG.drawPaymentMatches(before,action,after,memory,cost,exactPaid,r):!exactPaid)return false;
       const decreased=after.hand.filter(h=>h.id===action.id).length<before.hand.filter(h=>h.id===action.id).length;
       // Ordinary confirmed consumption needs no extra dice OCR. Only the
       // same-name ambiguity adds the existing independent resource proof.

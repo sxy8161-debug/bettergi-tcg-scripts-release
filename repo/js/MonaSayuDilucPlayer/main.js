@@ -510,6 +510,19 @@ function actionRefused(s, m, action) {
     if(["support","talent"].includes(byId[a.id]?.type))return cardCountDecreased(b.hand,c.hand,a.id);
     return removedOne(b.hand,c.hand,a.id);
   }
+  function drawPaymentMatches(before,a,after,m,cost,exactPaid,receipt) {
+    if(exactPaid)return true;
+    if(!countdownFamily.includes(a.id)||receipt?.paymentSubmitted!==true)return false;
+    const paid=size(cost),remaining=total(before.dice)-paid;
+    // Same-name redraw can hide consumption. After this source's verified
+    // central payment, conversion must explain more lost coloured dice than
+    // the fee alone can spend. The shared host still requires unchanged board
+    // facts, source/count/price ownership and two native dice-vector frames.
+    // Net refunds, a zero fee or an already-Omni hand do not gain new authority.
+    return !!payment(before.dice,cost,team[before.active].element)&&
+      total(before.dice)-(before.dice.Omni||0)>paid&&remaining>0&&
+      (after.dice.Omni||0)===remaining&&diceOrder.every(e=>e==="Omni"||(after.dice[e]||0)===0);
+  }
   function emptyHandEffect(a,b,c) {
     if(b.hand?.length!==1||c.phase!=="board"||c.turn!=="user"||c.active!==b.active||
       Array.isArray(c.hand)&&c.hand.length!==0||
@@ -557,11 +570,12 @@ function actionRefused(s, m, action) {
     emptyHandEffect,removalEffect:()=>false,openingSetting,openingContext,keepOpening,openingPlan,rerollPlan,rerollCounter,
     drawPayment:(s,a,m)=>byId[a.id]?.type==="draw"||byId[a.id]?.type==="support"&&handPlan(a,s,m).mode==="full"
       ?cardCost(a.id,a.target,m,s):null,
+    drawPaymentMatches,
     refusalCost:(s,m,a)=>a.type==="skill"?skillCost(a.who,a.skill,m,s):a.type==="card"?cardCost(a.id,a.target,m,s):a.type==="switch"?switchCost(m):{}};
 })(globalThis);
 
-globalThis.TCG.version = "1.1.2";
-globalThis.TCG.sharedVersion = "1.6.7";
+globalThis.TCG.version = "1.1.5";
+globalThis.TCG.sharedVersion = "1.6.9";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -775,7 +789,7 @@ globalThis.TCG.defaultStrategy = "default";
       a.type==="card"?T.cardCost(a.id,a.target,m,s):a.type==="switch"?T.switchCost(m):{};
     const paid=projectedPayment(s,cost);if(!paid)return null;
     n.dice=paid.remaining;
-    let value=-T.size(cost)*.25-.12,stop=false,estimate=null,terminal=false;
+    let value=-T.size(cost)*.25-.12,stop=false,estimate=null,terminal=false,drawCount=0;
     const focus=carry(s,m),c=T.byId[a.id],cast=a.type==="skill"?a:a.type==="card"?c?.combatSkill:null;
     if(a.type==="end") {
       return {state:n,memory:v,value:reserveValue(s,m)-.2,stop:true,terminal:false};
@@ -796,13 +810,15 @@ globalThis.TCG.defaultStrategy = "default";
       if(a.id.startsWith("countdown")||a.id==="show")n.dice={Omni:T.total(n.dice)};
       if(c.type==="draw") {
         const count=a.id==="draw"?2:4;
-        value+=Math.min(count,10-n.hand.length)*.75+(a.id==="draw"?0:T.total(n.dice)*.18);stop=true;
+        drawCount=Math.min(count,10-n.hand.length);
+        value+=drawCount*.75+(a.id==="draw"?0:T.total(n.dice)*.18);stop=true;
       }
       if(c.type==="support") {
         value+=({dunyarzad:2.1,timaeus:2.5,liben:1.0,house:1.2}[a.id]||0)*(m.round<=2?1:.45);
         if(["timaeus","dunyarzad","liben"].includes(a.id)) {
           const draws=Number(a.id==="timaeus")+m.supports.filter(x=>x.id==="dunyarzad"&&!x.drawUsed).length;
-          value+=Math.min(draws,10-n.hand.length)*.75;
+          drawCount=Math.min(draws,10-n.hand.length);
+          value+=drawCount*.75;
           if(draws)stop=true; // value retrieval without inventing its random identity
         }
       }
@@ -845,14 +861,24 @@ globalThis.TCG.defaultStrategy = "default";
     // loses its value; a neutral Lyre/re-equip cycle cannot farm that bonus.
     if(c?.type==="artifact"||a.id==="lyre")value+=artifactValue(s,v,a.target)-artifactValue(s,m,a.target);
     if(stop)value+=reserveValue(n,v);
-    return {state:n,memory:v,value,stop,estimate,terminal,conditionalPayment:!!paid.conditional};
+    // Random cards have investment value, not spendable attack resources.
+    // Only flag a definite loss of funds: even perfect colour tuning could not
+    // pay any eligible on-field skill after this draw. Native discounts count;
+    // colour uncertainty alone is not a reason to suppress a draw.
+    const skills=["NA","E","Q"].map(skill=>({type:"skill",who:s.active,skill}));
+    const attackReserveLost=drawCount>0&&T.size(cost)>0&&
+      skills.some(a=>T.skillLegal(s,a,m)&&!T.actionRefused(s,m,a))&&
+      skills.every(a=>n.characters[a.who].frozen||
+        a.skill==="Q"&&n.characters[a.who].energy<T.team[a.who].maxEnergy||
+        T.total(n.dice)<T.size(T.skillCost(a.who,a.skill,v,n)));
+    return {state:n,memory:v,value,stop,estimate,terminal,attackReserveLost,conditionalPayment:!!paid.conditional};
   }
   function choose(s,m) {
     if(!T.legalState(s))throw new Error("策略仅接受完整原生行动牌桌");
     // Only hypothetical fast resource prefixes are explored. Every actual card is
     // confirmed and observed again; no sequence is queued for later execution.
     const initial={state:s,memory:m,value:0,sequence:[],opponentReply:false};
-    let frontier=[initial],best=null,setup=null,development=null,used=0;
+    let frontier=[initial],best=null,combat=null,setup=null,development=null,used=0;
     function extend(node,a) {
       if(used>=320)return null;
       used++;
@@ -863,8 +889,10 @@ globalThis.TCG.defaultStrategy = "default";
         terminal=p.terminal&&!opponentReply&&!paymentUncertain,
         score=node.value+p.value-(p.terminal&&!terminal?100:0)-
           (opponentReply&&p.estimate?Math.max(0,p.value-(p.terminal?100:0))*.25:0);
-      const candidate={action:sequence[0],score,sequence,estimate:p.estimate,terminal,paymentUncertain};
+      const candidate={action:sequence[0],score,sequence,estimate:p.estimate,terminal,paymentUncertain,
+        attackReserveLost:p.attackReserveLost};
       if((p.stop||sequence.length===5)&&(!best||score>best.score))best=candidate;
+      if(p.estimate&&!opponentReply&&(!combat||score>combat.score))combat=candidate;
       if(p.estimate?.hydroSetup&&!sequence.some(x=>x.type==="switch")&&(!setup||score>setup.score))setup=candidate;
       // Slot10 delayed a payable Timaeus until round3, though playing it in
       // round1 still left Mona's E payable even under the conservative payment.
@@ -889,6 +917,38 @@ globalThis.TCG.defaultStrategy = "default";
         node=extend(node,a);if(!node)break;
       }
       if(node&&T.skillLegal(node.state,cast,node.memory)&&!T.actionRefused(node.state,node.memory,cast))extend(node,cast);
+    }
+    // The value beam can discard a free prerequisite before its saving is
+    // realised (native Suleika: Troupe -> Garden -> Wolf saved two dice, but
+    // naked Wolf survived the beam). Complete payable on-field equipment
+    // reductions before ranking, just like the tuning funding routes above.
+    // All steps use the SAME projection budget and real card-price rules.
+    // They are candidates only: execute the first step, then observe/replan.
+    const cardStep=(node,id)=>{
+      if(!node)return null;
+      const a=enumerate(node.state,node.memory).find(a=>a.type==="card"&&a.id===id&&
+        a.target===(["weapon","artifact","recycle"].includes(T.byId[id].type)?s.active:null));
+      return a?extend(node,a):null;
+    };
+    for(const h of s.hand) {
+      if(!["weapon","artifact"].includes(T.byId[h.id]?.type)||T.size(T.cardCost(h.id,s.active,m))<=0)continue;
+      const starts=[];
+      for(const reducer of ["garden","lyre"]) {
+        const p=cardStep(initial,reducer);
+        if(p)starts.push(p);
+      }
+      if(s.hand.some(x=>x.id==="garden")&&!m.legendUsed&&!m.weapons.some(Boolean)&&!m.artifacts.some(Boolean))
+        for(const seed of enumerate(s,m).filter(a=>a.type==="card"&&a.target===s.active&&
+          ["weapon","artifact"].includes(T.byId[a.id]?.type)&&a.id!==h.id&&T.size(T.cardCost(a.id,a.target,m))===0)) {
+          const p=cardStep(extend(initial,seed),"garden");
+          if(p)starts.push(p);
+        }
+      for(const node of starts) {
+        if(T.size(T.cardCost(h.id,s.active,node.memory))>=T.size(T.cardCost(h.id,s.active,m)))continue;
+        const equipped=cardStep(node,h.id);if(!equipped)continue;
+        for(const a of enumerate(equipped.state,equipped.memory))
+          if(a.type==="skill"||a.type==="card"&&T.byId[a.id]?.combatSkill)extend(equipped,a);
+      }
     }
     for(let depth=0;depth<5&&frontier.length;depth++) {
       const next=[];
@@ -916,6 +976,12 @@ globalThis.TCG.defaultStrategy = "default";
       setup.score>reserveValue(s,m)-.2)best={...setup,reason:"opening-water-before-dry-relay"};
     if(development&&best.estimate&&!best.terminal&&best.estimate.direct<best.estimate.target?.hp)
       best={...development,reason:"opening-development-preserves-water"};
+    // After development, cash a useful already-evaluated attack instead of
+    // spending its last funds on random retrieval. This changes investment
+    // ordering, not enemy damage/death facts; it never forecasts a rescue card.
+    // Known resource prefixes still compete inside the same320 projection budget.
+    if(best.attackReserveLost&&!(m.round===1&&m.used.every(n=>n===0))&&combat?.score>0)
+      best={...combat,reason:"paid-draw-preserves-last-attack"};
     // The guide also cashes equipment lost on defeat, not just replacement.
     // A free Boar before a low-HP equipped carry attacks is insurance, not a
     // prediction of death or extra spendable dice. Do not delay a proven win.
@@ -2484,11 +2550,33 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async expand(resetFirst = true) {
       // The native control is a toggle. Card selection does not close the fan;
       // never click that control again while the same layout remains ready.
+      if (resetFirst && !this.boardReady && !this.handFanReady) await this.reset();
+      if (this.raisedHandIn) {
+        const view = this.frame(f => {
+          this.requireHandObservation(this.phaseIn(f), "before-hand-view-toggle");
+          return this.raisedHandIn(f) ? "expanded" :
+            this.collapsedLayoutIn(f).status === "readable" ? "folded" : null;
+        });
+        // Draw/choice animations can raise or fold the fan independently of
+        // our last click. A complete native layout outranks the view hint.
+        // Unknown layout is not permission to toggle an already-open fan.
+        if (view === "expanded") {
+          if (!this.handFanReady) this.handPositionProof = null;
+          this.handFanReady = this.handNeedsReset = true;
+          this.boardReady = false;
+          this.trace("hand-expand-skipped", { reason: "native-expanded-layout" });
+          return;
+        }
+        if (view === "folded" && this.handFanReady) {
+          this.handFanReady = false;
+          this.handPositionProof = null;
+          this.trace("hand-view-reconciled", { view, reason: "native-layout-contradicts-hint" });
+        }
+      }
       if (this.handFanReady) {
         this.trace("hand-expand-skipped", { reason: "fan-already-ready" });
         return;
       }
-      if (resetFirst && !this.boardReady) await this.reset();
       this.clickAt(...this.point("handFolded",967,1041));
       this.moveTo(...this.point("bottom",1791,917));
       await sleep(180);
@@ -2931,14 +3019,15 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     async handCount(expected = null) {
       this.requireHandObservation(this.phase(), "before-hand-expand");
-      if (!this.handFanReady) await this.expand();
+      await this.expand();
       const readCount = () =>
         this.frame((f) => {
           // The fan's count badge is transient. Collect consecutive read-only
           // count frames quickly; full phase OCR between them can outlive it.
           // A fresh phase guard follows the bounded sampling BEFORE any input.
           const sample = this.handSample(f);
-          return { ...sample, empty: (sample.count === null || sample.count === 0) && this.emptyHandIn(f) };
+          return { ...sample, presence: (sample.count === null || sample.count === 0)
+            ? this.handPresenceIn(f) : { state:"present", reason:"positive-count" } };
         });
       const reads = [],
         samples = [];
@@ -2955,7 +3044,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         samples.push(sample);
         // Zero requires fresh structural absence as well as a stable view.
         // A lone OCR zero, an old empty flag, or missing fee digits is not zero.
-        const empty = sample.empty === true;
+        const empty = sample.presence.state === "absent";
         const resolved = empty ? 0 : result === 0 ? null : result;
         if (empty) emptySince ??= Date.now(); else emptySince = null;
         reads[reads.length - 1] = resolved;
@@ -2972,7 +3061,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           }
           this.trace("hand-count", { count: resolved, reads,
             source: resolved === 0 ? "card-structure-absence" : sample.source,
-            ...(resolved === 0 ? { stableMs:Date.now()-emptySince, revision } : {}) });
+            ...(resolved === 0 ? { stableMs:Date.now()-emptySince, revision, presence:sample.presence } : {}) });
           this.recordHandLayout(resolved);
           return resolved;
         }
@@ -2984,6 +3073,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         if (attempt < 7 && remaining > 0) await sleep(remaining);
       }
       this.requireHandObservation(this.phase(), "hand-count-unresolved");
+      this.trace("hand-count-unresolved", {
+        expected, revision,
+        samples:samples.map((s,i)=>({ count:reads[i], source:s.source, presence:s.presence })),
+      });
       const knownCounts = [...new Set(reads.filter((n) => n !== null))];
       if (knownCounts.length > 0) {
         const error = new Error(
@@ -3440,30 +3533,44 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const recovered = { ...settled, hand, ...(this.pendingHandEvidence ? { handEvidence: this.pendingHandEvidence } : {}) };
       return this.finishObservation(recovered, pendingAction, handRead);
     }
-    emptyHandIn(f) {
-      // Absence is measured on the CARD UI, not on a particular table skin.
-      // A failed expansion can leave folded cards. Any marker (even an
-      // incomplete row) or rim vetoes zero; missing price digits never count.
-      // boardReady permits reuse of an unobscured board; expand() correctly
-      // clears it through clickAt(). It is NOT hand-observation readiness.
-      // The caller owns board settling; this frame proves phase and presence.
+    handPresenceIn(f) {
+      // Presence and unreadability are different facts. This is a same-frame
+      // observation, not another cache, predicted count or table-skin matcher.
       if (!this.handFanReady || this.choiceSession || this.pendingChoiceCard)
-        return false;
+        return { state:"unknown", reason:"view-not-ready" };
       const phase = this.phaseIn(f);
-      if (phase.result || phase.phase !== "board" || phase.turn !== "user") return false;
-      // Match the intrinsic colored corner, not grayscale character-art
-      // gradients underneath an empty fan. The rim is independently grayscale.
-      if (this.handCostMarkersIn(f, this.roi("handExpanded", [450,750,1310,200]), true).length ||
-          this.handCostMarkersIn(f, this.roi("handFolded", [430,977,1050,42]), true).length ||
-          this.matches(f, "hand_rim", this.roi("handExpanded", [500,900,1260,135]), .85, false).length)
-        return false;
-      // The own-turn marker may survive a detail/payment overlay. Such a
-      // view is unknown even when the hand itself is hidden.
-      return !this.ocr(f, this.roi("details", [311,115,341,50])) &&
-        !this.ocr(f, this.roi("details", [135,122,238,42])) &&
-        !this.ocr(f, this.roi("phase", [600,510,720,65])) &&
-        !this.matches(f, "core/确定", this.roi("bottom", [770,900,380,90])).length &&
-        !this.cardPaymentControlsIn(f).length;
+      if (phase.result || phase.phase !== "board" || phase.turn !== "user")
+        return { state:"unknown", reason:"phase", phase };
+      // Incomplete card structure still vetoes zero. Keep both views: a
+      // failed fan toggle can leave real folded cards. Prices are irrelevant.
+      for (const [panel, rect] of [
+        ["handExpanded", [450,750,1310,200]], ["handFolded", [430,977,1050,42]],
+      ]) {
+        const markers = this.handCostMarkersIn(f, this.roi(panel, rect), true);
+        if (markers.length) return { state:"present", reason:"cost-marker", panel, markers };
+      }
+      const rims = this.matches(f, "hand_rim", this.roi("handExpanded", [500,900,1260,135]), .85, false);
+      if (rims.length) return { state:"present", reason:"card-rim", rims };
+      // Read the WHOLE header row, then assign text to the existing title
+      // panels by position. Cropping the legacy skill title first can turn the
+      // neighbouring opponent HUD into a false title ("已宣布结束" -> "束").
+      // Unknown titles inside a panel remain blockers; no word allowlist or
+      // special case for any opponent, language fragment or tablecloth.
+      const titleAreas = [[311,115,341,50], [135,122,238,42]].map(rect => this.roi("details", rect).rect),
+        rows = this.ocrRows(f, this.roi("details", [0,100,700,85])).filter(r => TCG.norm(r.text));
+      for (const row of rows) {
+        if (![row.x,row.y,row.w,row.h].every(Number.isFinite) || row.w <= 0 || row.h <= 0)
+          return { state:"unknown", reason:"title-location-unreadable", row };
+        if (titleAreas.some(([x,y,w,h]) =>
+          row.x >= x && row.x < x+w && row.y+row.h/2 >= y && row.y+row.h/2 <= y+h))
+          return { state:"unknown", reason:"detail-title", row };
+      }
+      const banner = this.ocr(f, this.roi("phase", [600,510,720,65]));
+      if (banner) return { state:"unknown", reason:"central-banner", text:banner };
+      if (this.matches(f, "core/确定", this.roi("bottom", [770,900,380,90])).length ||
+          this.cardPaymentControlsIn(f).length)
+        return { state:"unknown", reason:"payment-control" };
+      return { state:"absent", reason:"no-card-structure", outsideTitleRows:rows };
     }
     async proveEmptyHand(plan,settled) {
       const receipt=this.consumptionReceipt,a=plan?.action,b=plan?.before;
@@ -4510,7 +4617,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const spent=Object.fromEntries(TCG.diceOrder.map(e=>[e,(before.dice[e]||0)-(after.dice[e]||0)]));
       const exactPaid=Object.values(spent).every(n=>Number.isInteger(n)&&n>=0)&&TCG.total(spent)===TCG.size(cost)&&
           !!TCG.payment(spent,cost,TCG.team[before.active].element);
-      if(TCG.drawPaymentMatches?!TCG.drawPaymentMatches(before,action,after,memory,cost,exactPaid):!exactPaid)return false;
+      if(TCG.drawPaymentMatches?!TCG.drawPaymentMatches(before,action,after,memory,cost,exactPaid,r):!exactPaid)return false;
       const decreased=after.hand.filter(h=>h.id===action.id).length<before.hand.filter(h=>h.id===action.id).length;
       // Ordinary confirmed consumption needs no extra dice OCR. Only the
       // same-name ambiguity adds the existing independent resource proof.
@@ -4807,6 +4914,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         // observed payment button once; the card itself invokes the skill.
         // Never add a target click or a separate skill cast here.
         const point = this.clickAt(b.x + b.w / 2, b.y + b.h / 2);
+        const receipt = this.consumptionReceipt;
+        if (receipt?.inputSent && before && receipt.beforeKey === TCG.boardKey(before) &&
+            receipt.id === action.id && receipt.index === action.index &&
+            receipt.target === (action.target ?? null))
+          receipt.paymentSubmitted = true;
         this.trace("card-confirm-clicked", {
           id: action.id,
           point,
