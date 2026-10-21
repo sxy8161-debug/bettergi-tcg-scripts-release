@@ -47,7 +47,6 @@ const projectionBudget = (() => {
       maxEnergy: 3,
       weapon: "claymore",
       skills: { NA: "刃爪悬星", E: "瑞兽登高楼", Q: "璨焰金猊舞" },
-      skillAliases: { Q: ["璨焰金貌舞"] },
     },
     {
       name: "早柚",
@@ -1255,8 +1254,8 @@ function actionRefused(s, m, action) {
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.4.8";
-globalThis.TCG.sharedVersion = "1.7.0";
+globalThis.TCG.version = "1.5.0";
+globalThis.TCG.sharedVersion = "1.7.3";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -3129,11 +3128,6 @@ globalThis.TCG.selectStrategy(globalThis.TCG.defaultStrategy);
     return candidates.length === 1 ? candidates[0] : null;
   }
   const enemyHpXs = { 1: [856], 2: [751, 962], 3: [646, 856, 1066], 4: [541, 751, 961, 1171] };
-  // Verified skill names from DSTCG's repository card dictionary. The native
-  // skill/payment preview hides the usual turn marker; it is not an unknown
-  // board. Require BOTH a uniquely matched skill name and its type, not merely a panel.
-  const skillNames = TCG.team.map(c => c.skills);
-  const skillTypes = { NA: "普通攻击", E: "元素战技", Q: "元素爆发" };
   // This asset is the tooltip ABOVE the control, not its clickable area.
   // Use it only as a scene marker. First-pick confirmation uses the official
   // character-card path, not the separate tooltip/control geometry.
@@ -3253,6 +3247,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.captureGeometry = null;
       this.captureGeometryError = null;
       this.metrics = {frames:0,captureMs:0,frameWorkMs:0,ocrCalls:0,ocrMs:0,memoHits:0,geometryChecks:0,geometryMs:0};
+      this.runStage = "entry";
+      this.runDiagnostics = { startedAt: Date.now(), phase: null,
+        timing: { observationMs: 0, planningMs: 0, inputMs: 0, settlementMs: 0, postActionMs: 0 },
+        counts: { planned: 0, submitted: 0, confirmed: 0 }, lastAction: null,
+        missing: { board: null, hand: null }, lastMissing: null };
       this.inputRevision = 0;
       this.lastCostSample = null;
       this.handPositionProof = null;
@@ -3289,6 +3288,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       return point;
     }
     trace(event, data) {
+      const now = Date.now();
+      this.recordRunDiagnostic(event, data, now);
+      if (["result", "stop", "terminal-entry"].includes(event)) {
+        const summary = this.runSummary(event, data, now);
+        data = { ...data, summary };
+        this.reportRunSummary(summary);
+      }
       const text = JSON.stringify({ at: new Date().toISOString(), event, data });
       if (this.logAppend === null) {
         const indexPath = "logs/tcg-log-index.json";
@@ -3311,6 +3317,93 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       if (!file.writeTextSync(this.path, text + "\n", this.logAppend))
         throw new Error("无法写入对局日志：" + this.path);
       this.logAppend = true;
+    }
+    recordRunDiagnostic(event, data, now) {
+      const d = this.runDiagnostics;
+      if (event === "start") d.startedAt = now;
+      if (event === "observation-timing") d.timing.observationMs += data.ms;
+      if (event === "action-timing") {
+        for (const key of ["planningMs", "inputMs", "settlementMs", "postActionMs"])
+          d.timing[key] += data[key] || 0;
+        // A recovered execute() can return sent:false after native confirmation.
+        // Never overwrite that evidence, or infer submission from execute.sent.
+        if (d.lastAction?.key === data.action && d.lastAction.status === "planned")
+          d.lastAction.status = data.outcome === "failed" ? "failed-before-submission" : data.outcome;
+      }
+      if (event === "decision") {
+        d.counts.planned++;
+        d.lastAction = { key: TCG.actionKey(data), status: "planned", at: now };
+      }
+      const status = { "input-submitted": "pending", confirmed: "confirmed",
+        "action-uncertain": "unconfirmed", "native-input-rejected": "rejected",
+        "tuning-retry-alternative": "rejected" }[event];
+      if (status && data.action) {
+        d.lastAction = { key: TCG.actionKey(data.action), status, at: now };
+        if (event === "input-submitted") d.counts.submitted++;
+        if (event === "confirmed") d.counts.confirmed++;
+      }
+      const gap = (kind, fields) => {
+        const previous = d.missing[kind];
+        if (!fields.length) {
+          if (previous) d.lastMissing = { ...previous, resolved: true, resolvedAt: now };
+          d.missing[kind] = null;
+        } else {
+          const same = previous && JSON.stringify(previous.fields) === JSON.stringify(fields);
+          d.missing[kind] = { fields: [...fields], firstAt: same ? previous.firstAt : now, lastAt: now, resolved: false };
+          d.lastMissing = d.missing[kind];
+        }
+      };
+      if (Array.isArray(data?.missing)) {
+        if (data.missing.length || event === "board-settle-wait") gap("board", data.missing);
+      } else if (data?.code === "TCG_DICE_RETRY") gap("board", ["dice"]);
+      if (["hand-count-unresolved", "hand-read-deferred"].includes(event) ||
+          ["TCG_HAND_RETRY", "TCG_HAND_UNRESOLVED"].includes(data?.code))
+        gap("hand", [event === "hand-count-unresolved" ? "hand.count" : "hand"]);
+      if (event === "hand-read-completed" && Number.isInteger(data.count)) gap("hand", []);
+      const state = event === "state" ? data.state :
+        ["state-resynced", "confirmed"].includes(event) ? data.after : null;
+      if (state?.phase === "board" && state.turn === "user" && TCG.legalState(state) && !this.observationIssues(state).length) {
+        gap("board", []);
+        if (Array.isArray(state.hand)) gap("hand", []);
+      }
+    }
+    runSummary(event, data, now) {
+      const d = this.runDiagnostics, elapsedMs = now - d.startedAt;
+      const describe = gap => gap && { ...gap,
+        spanMs: (gap.resolved ? gap.resolvedAt : now) - gap.firstAt,
+        lastSeenAgoMs: now - gap.lastAt };
+      return { outcome: event === "result" ? "completed" : event === "terminal-entry" ? "already-ended" : "stopped",
+        result: data.result || null, reason: data.reason, code: data.code,
+        stage: this.runStage, phase: d.phase && { ...d.phase, ageMs: now - d.phase.at }, elapsedMs,
+        timing: { ...d.timing, otherMs: Math.max(0, elapsedMs - Object.values(d.timing).reduce((a,b) => a+b, 0)) },
+        counts: { ...d.counts }, lastAction: d.lastAction && { ...d.lastAction },
+        missing: Object.values(d.missing).filter(Boolean).map(describe), lastMissing: describe(d.lastMissing),
+        recognition: this.metricSnapshot() };
+    }
+    reportRunSummary(s) {
+      const seconds = ms => (ms / 1000).toFixed(1) + "秒";
+      const stages = { entry: "启动", "phase-wait": "阶段等待", observation: "观察", planning: "决策",
+        input: "输入及恢复", confirmation: "效果确认", "post-action": "确认后记账",
+        opening: "起手", pick: "选人", replacement: "阵亡换人", roll: "重投", choice: "挑选卡牌" };
+      const statuses = { planned: "仅计划", pending: "已提交、待确认", confirmed: "已确认",
+        unconfirmed: "未确认", rejected: "游戏拒绝", "not-submitted": "未完成提交", probed: "仅检视",
+        "failed-before-submission": "未形成提交记录即失败" };
+      const fieldName = field => {
+        const match = /^own\[(\d)\]\.(energy|hp|status)$/.exec(field);
+        return match ? (TCG.team[Number(match[1])]?.name || match[1]) +
+          { energy: "充能", hp: "生命", status: "状态" }[match[2]] :
+          ({ dice: "骰子", active: "出战角色", hand: "手牌", "hand.count": "手牌数量", phase: "页面阶段", turn: "行动方" }[field] || field);
+      };
+      const outcome = s.outcome === "completed" ? "正常结束（" + (s.result === "win" ? "胜利" : s.result === "lose" ? "失败" : "结果未知") + "）" :
+        s.outcome === "already-ended" ? "启动时已在结束页，不计本轮结果" : "脚本停止";
+      const missing = s.missing.length ? s.missing.map(g => g.fields.map(fieldName).join("、") +
+        "（未解决记录跨度" + seconds(g.spanMs) + "，距末次缺读" + seconds(g.lastSeenAgoMs) + "）").join("；") : "无未解决的缺读记录";
+      log.info("[对局摘要] " + outcome + "；处理阶段：" + (stages[s.stage] || s.stage) +
+        "；总用时" + seconds(s.elapsedMs) + "，观察" + seconds(s.timing.observationMs) +
+        "，输入/恢复" + seconds(s.timing.inputMs) + "，确认" + seconds(s.timing.settlementMs) +
+        "（均含重试，非纯等待）" + "；计划/提交/确认：" + s.counts.planned + "/" + s.counts.submitted + "/" + s.counts.confirmed +
+        "；最后动作：" + (s.lastAction ? s.lastAction.key + " " + (statuses[s.lastAction.status] || s.lastAction.status) : "无") +
+        "；缺读：" + missing + (s.reason ? "；停止原因：" + s.reason : ""));
     }
     frame(fn) {
       this.requireMatchTime();
@@ -3586,7 +3679,9 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       await sleep(200);
     }
     phaseIn(f) {
-      return this.memoFrame(f, "phase", () => this.readPhaseIn(f));
+      const p = this.memoFrame(f, "phase", () => this.readPhaseIn(f));
+      this.runDiagnostics.phase = { phase: p.phase, turn: p.turn, at: Date.now() };
+      return p;
     }
     readPhaseIn(f) {
       // Native victory animation starts around y=500 before moving upward.
@@ -3653,99 +3748,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       throw new Error("当前行动牌桌不符合新开局未行动条件");
     }
-    matchSkillPreview(name, detail) {
-      // The native header's expand glyph can be OCR'd as a separate "A".
-      // Keep the raw OCR for diagnostics. Do not remove Chinese text or costs.
-      const raw = TCG.norm(name);
-      const text = /^[A-Za-z]?[\u3400-\u9fff]+[A-Za-z]?$/.test(raw) &&
-        (raw.match(/[A-Za-z]/g) || []).length <= 1 ? raw.replace(/[A-Za-z]/g, "") : raw;
-      const unknown = { identity: null, nameMatch: null };
-      if (!/^[\u3400-\u9fff]{2,16}$/.test(text)) return unknown;
-      const distance = (a, b) => {
-        let row = Array.from({length:b.length + 1}, (_, i) => i);
-        for (let i = 1; i <= a.length; i++) {
-          const next = [i];
-          for (let j = 1; j <= b.length; j++)
-            next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-          row = next;
-        }
-        return row[b.length];
-      };
-      const candidates = [];
-      // Rank the whole registered team, not just the expected action. A wrong
-      // role/slot must still fail at requireSkillPreview; ties never authorize.
-      for (let who = 0; who < skillNames.length; who++) for (const skill of ["NA", "E", "Q"]) {
-        const title = TCG.norm(skillNames[who][skill]);
-        const alias = (TCG.team[who].skillAliases?.[skill] || []).some(n => TCG.norm(n) === text);
-        const edits = alias ? 0 : distance(text, title);
-        if (edits <= (title.length >= 5 ? 2 : 1))
-          candidates.push({who, skill, title:skillNames[who][skill], edits, alias});
-      }
-      candidates.sort((a, b) => a.edits - b.edits);
-      const best = candidates[0];
-      if (!best || candidates[1]?.edits === best.edits || !detail.includes(skillTypes[best.skill])) return unknown;
-      return { identity:{who:best.who, skill:best.skill},
-        nameMatch:{title:best.title, edits:best.edits, method:best.alias ? "registered-alias" : best.edits ? "fuzzy" : "exact"} };
-    }
-    skillPreviewIn(f) {
-      // Native E preview read "神变·恶曜开眼\n3" with the old tall ROI.
-      // Exclude the cost row instead of deleting arbitrary digits from OCR.
-      const name = this.ocr(f, this.roi("details", [135, 122, 238, 42]));
-      const detail = this.ocr(f, this.roi("details", [70, 210, 320, 85]));
-      return { name, detail, ...this.matchSkillPreview(name, detail) };
-    }
-    async requireSkillPreview(action, feeProbe=false, readFee=false) {
-      let stable = 0, last = null, fee = null, feeStable = 0, absent = true, missing = true;
-      for (let attempt = 0; attempt < 10; attempt++) {
-        const sampledAt = Date.now();
-        last = this.frame(f => {
-          const preview = this.skillPreviewIn(f);
-          return { ...preview, phase: this.phaseIn(f),
-            fee: readFee && !feeProbe && ["E","Q"].includes(action.skill)
-              ? this.skillFeeIn(f, action, preview.identity) : null,
-            warning: feeProbe ? null : this.warnings(f) };
-        });
-        if (!feeProbe) await this.requireNoWarning(last.warning);
-        const matched = last.identity?.who === action.who && last.identity?.skill === action.skill &&
-          ["unknown", "board"].includes(last.phase.phase) && last.phase.turn !== "enemy";
-        this.trace("skill-preview", { attempt, matched, ...last });
-        absent=absent && this.emptySkillPreview(last);
-        missing=missing && (this.emptySkillPreview(last) || this.characterSkillPreview(last));
-        stable = matched ? stable + 1 : 0;
-        feeStable = matched && last.fee!==null ? last.fee===fee ? feeStable+1 : 1 : 0;
-        fee = last.fee;
-        if (stable >= 2) return { fee:feeStable>=2?fee:null };
-        const remaining = (matched ? 120 : 250) - (Date.now() - sampledAt);
-        if (attempt < 9 && remaining > 0) await sleep(remaining);
-      }
-      const error=new Error("技能确认页未核实目标技能：" + (last?.name || "空标题"));
-      if(absent)error.code="TCG_SKILL_PREVIEW_ABSENT";
-      else if(missing)error.code="TCG_SKILL_PREVIEW_CHARACTER";
-      throw error;
-    }
-    emptySkillPreview(p) {
-      return (
-        !p.identity &&
-        ![p.name, p.nativeName, p.enlargedName, p.detail, p.aliasDetail].some((v) =>
-          TCG.norm(v || ""),
-        ) &&
-        p.phase?.phase === "board" &&
-        p.phase.turn === "user"
-      );
-    }
-    characterSkillPreview(p) {
-      const names = [p.name, p.nativeName, p.enlargedName].map((v) => TCG.norm(v || ""));
-      const named = names.filter(Boolean);
-      return (
-        !p.identity &&
-        !TCG.norm(p.detail || "") &&
-        !TCG.norm(p.aliasDetail || "") &&
-        named.length > 0 &&
-        named.every((name) => name === named[0] && TCG.characterName(name) >= 0) &&
-        p.phase?.phase === "board" &&
-        p.phase.turn === "user"
-      );
-    }
     characterOverviewIn(f) {
       // Native 17:18: the character overview has a role title, not a skill title.
       // Its right-hand section varies with equipment/statuses. Read this only
@@ -3783,68 +3785,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.trace("character-overview-dismissed", { reason, panel: second.panel, point });
       await sleep(300);
       return true;
-    }
-    async requireOpenedSkill(action, before, x, readFee = false, feeProbe = false) {
-      try {
-        return await this.requireSkillPreview(action, feeProbe, readFee);
-      } catch (error) {
-        if (!["TCG_SKILL_PREVIEW_ABSENT", "TCG_SKILL_PREVIEW_CHARACTER"].includes(error.code)) throw error;
-        let overview = null;
-        if (error.code === "TCG_SKILL_PREVIEW_CHARACTER") {
-          overview = this.frame(f => {
-            const preview = {...this.skillPreviewIn(f), phase:this.phaseIn(f)};
-            if (!this.emptySkillPreview(preview) && !this.characterSkillPreview(preview)) return null;
-            const panel = this.characterOverviewIn(f);
-            if (panel && this.characterSkillPreview(preview) && TCG.characterName(panel.name) !==
-                TCG.characterName(preview.name || preview.nativeName || preview.enlargedName)) return null;
-            return panel;
-          });
-          if (!overview) throw error;
-          this.trace("skill-preview-overview", {...overview, feeProbe, recoveryLimit:1});
-          this.boardReady=false;await this.reset();
-        }
-        // Reopen only an absent first-click preview, never an already sent skill.
-        // Two fresh full boards must prove all resources/characters unchanged;
-        // a fresh empty-detail sample also guards against a late-arriving panel.
-        for (let sample = 0; sample < 2; sample++) {
-          let board;
-          try { board = this.board(); }
-          catch (unsettled) {
-            if (unsettled.code !== "TCG_DICE_RETRY") throw unsettled;
-            const changed = new Error("技能详情缺失且骰子未读清，重新观察而不补点");
-            changed.code = "TCG_STATE_REFRESH";
-            throw changed;
-          }
-          if (
-            board.phase !== "board" ||
-            board.turn !== "user" ||
-            !board.diceKnown ||
-            boardDifferences(before, board).length !== 0
-          ) {
-            const changed = new Error("技能详情缺失且牌桌已变化，重新观察而不补点");
-            changed.code = "TCG_STATE_REFRESH";
-            throw changed;
-          }
-          if (sample === 0) await sleep(300);
-        }
-        const stillEmpty = this.frame((f) => ({
-          ...this.skillPreviewIn(f),
-          phase: this.phaseIn(f),
-        }));
-        if (!this.emptySkillPreview(stillEmpty)) throw error;
-        await this.requireNoWarning();
-        this.trace("skill-preview-reopen", {
-          who: action.who,
-          skill: action.skill,
-          proof: overview ? "verified-overview-reset-two-unchanged-boards-and-empty-details" :
-            "two-unchanged-boards-and-empty-details",
-          feeProbe,
-          limit: 1,
-        });
-        this.clickAt(...this.point("bottom", x, 957));
-        await sleep(120);
-        return this.requireSkillPreview(action, feeProbe, readFee);
-      }
     }
     diceIn(f, roll = false, expectedRollCount = 8, actionLayout = false) {
       const inAction = roll && (actionLayout || expectedRollCount !== 8);
@@ -4174,12 +4114,14 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     
     async probeSkill(action,before,memory) {
-      if(action.who!==before.active)throw new Error("费用检视只能用于当前角色");
       const x={NA:1608,E:1716,Q:1824}[action.skill];
-      this.clickAt(...this.point("bottom",x,957));await sleep(120);await this.requireOpenedSkill(action,before,x,false,true);
+      if(action.who!==before.active || !x)throw new Error("费用检视只能用于当前角色的固定技能槽");
+      this.clickAt(...this.point("bottom",x,957));await sleep(1200);
       let fee=null,last=null,stable=0;
       for(let i=0;i<4;i++){
-        const n=this.frame(f=>this.skillFeeIn(f,action));stable=n!==null&&n===last?stable+1:1;last=n;
+        const sample=this.frame(f=>({phase:this.phaseIn(f),fee:this.skillFeeIn(f,action)}));
+        this.requireHandObservation(sample.phase,"skill-fee-probe");
+        const n=sample.fee;stable=n!==null&&n===last?stable+1:1;last=n;
         if(n!==null&&stable>=2){fee=n;break;}await sleep(180);
       }
       // A fee probe NEVER casts. Cancel, then prove unchanged real resources.
@@ -4264,7 +4206,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         enemies.every((c, i) => at(enemyHpXs[enemies.length][i], 170, 212, c, !c.active))
       );
     }
-    characterIn(f, who, enemy = false, enemyLayoutCount = 3, readAura = false) {
+    characterIn(f, who, enemy = false, enemyLayoutCount = 3, readStatus = false) {
       const count = enemy ? enemyLayoutCount : 3;
       const hpXs = enemy ? enemyHpXs[count] : enemyHpXs[3];
       const hpX = hpXs[who];
@@ -4322,20 +4264,21 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       if (enemy) {
         // Positive aura matches only. Missing templates do NOT prove no aura.
-        const aura = readAura && !dead ? this.auraIn(f, hpX, loweredValid ? 212 : 170) : [];
-        const frozen=!dead&&this.has(f,"state/StateFreeze",this.roi("board", [stateX,stateY,167,382]),0.9);
+        const aura = readStatus && !dead ? this.auraIn(f, hpX, loweredValid ? 212 : 170) : [];
+        const frozen = readStatus && !dead &&
+          this.has(f, "state/StateFreeze", this.roi("board", [stateX, stateY, 167, 382]), 0.9);
         return {
           hp,
           dead: dead ? true : hp === null ? null : false,
           active: !dead && loweredValid && !conflict,
           aura,
           auraKnown: aura.length > 0 && aura.length <= 2,
-          frozen: frozen?true:null,
+          frozen: frozen ? true : null,
         };
       }
       const cx = [812, 1022, 1233][who];
-      const charged = this.matches(f, "charge", this.roi("board", [cx, 612, 32, 180]), 0.86).length;
-      const empty = this.matches(f, "uncharge", this.roi("board", [cx, 612, 32, 180]), 0.86).length;
+      const charged = dead ? 0 : this.matches(f, "charge", this.roi("board", [cx, 612, 32, 180]), 0.86).length;
+      const empty = dead ? 0 : this.matches(f, "uncharge", this.roi("board", [cx, 612, 32, 180]), 0.86).length;
       const energy = charged + empty === TCG.team[who].maxEnergy ? charged : null;
       const statusROI = [stateX, stateY, 167, 382];
       const frozen =
@@ -4402,8 +4345,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         )
           return unknown();
       return best.cards.map((c, i) => {
+        // Freeze, like aura, does not select a layout. Read only admitted slots
+        // in this same frame, after overlap and unreadable-outer-card checks.
         const aura = c.dead === true ? [] : this.auraIn(f, best.xs[i], c.active ? 212 : 170);
-        return { ...c, aura, auraKnown: aura.length > 0 && aura.length <= 2 };
+        const frozen = c.dead !== true &&
+          this.has(f, "state/StateFreeze", this.roi("board", [best.xs[i] + 17, 105, 167, 382]), 0.9);
+        return { ...c, aura, auraKnown: aura.length > 0 && aura.length <= 2, frozen: frozen ? true : null };
       });
     }
     auraIn(f, hpX, hpY) {
@@ -6237,19 +6184,20 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       error.code = "TCG_TUNE_UNCONFIRMED";
       throw error;
     }
-    async inputSkill(action, before, memory, cost, readFee = false) {
+    async inputSkill(action, before) {
+      // executeInput already verified the current actor, board and resources.
+      // Fixed role + fixed slot identifies the skill; no title/type OCR.
       const x = { NA: 1608, E: 1716, Q: 1824 }[action.skill];
+      if (!x || action.who !== before.active) throw new Error("技能槽位或当前出战角色不符");
       this.clickAt(...this.point("bottom",x,957));
-      await sleep(120);
-      const preview = await this.requireOpenedSkill(action, before, x, readFee);
-      if (this.expectedDice !== null && preview.fee !== null) {
-        this.expectedDice = TCG.total(before.dice) - preview.fee;
-        this.trace("skill-fee-budget", { who: action.who, skill: action.skill,
-          nominal: cost, actual: preview.fee, expectedDice: this.expectedDice,
-          source: "current-confirmed-preview" });
-      }
+      await sleep(1200);
+      const preview = this.frame(f => ({ phase:this.phaseIn(f), warning:this.warnings(f) }));
+      this.requireHandObservation(preview.phase, "before-skill-confirm");
+      await this.requireNoWarning(preview.warning);
       this.clickAt(...this.point("bottom",x,957));
-      this.trace("skill-confirm-clicked", { who: action.who, skill: action.skill, point: this.point("bottom",x,957) });
+      // Sent is not confirmed. The existing pending session observes payment
+      // and native effects; no missing tooltip or successful click proves a cast.
+      this.trace("skill-confirm-clicked", { who:action.who, skill:action.skill, point:this.point("bottom",x,957) });
     }
     
     async inputSwitch(action,before,memory) {
@@ -6645,10 +6593,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.consumptionReceipt=null;this.pendingHandEvidence=null;
       this.acceptHand(state.hand, reason);
     }
-    reportStop(reason) {
+    reportStop(reason, code) {
       // Preserve the original stop even if its final log write fails.
       try {
-        this.trace("stop", { reason });
+        this.trace("stop", { reason, code });
       } catch (e) {
         log.warn("停止日志保存失败：" + e.message);
       }
@@ -6675,7 +6623,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
   // Verified skill names from DSTCG's repository card dictionary. The native
   // skill/payment preview hides the usual turn marker; it is not an unknown
   // board. Require BOTH a uniquely matched skill name and its type, not merely a panel.
-  const skillNames = TCG.team.map(c => c.skills);
   // This asset is the tooltip ABOVE the control, not its clickable area.
   // Use it only as a scene marker. First-pick confirmation uses the official
   // character-card path, not the separate tooltip/control geometry.
@@ -6832,65 +6779,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       throw error;
     }
 
-    skillPreviewIn(f) {
-      const native = super.skillPreviewIn(f), nativeName = native.name, detail = native.detail;
-      let name = nativeName, enlargedName = null,
-        matched = {identity:native.identity, nameMatch:native.nameMatch};
-      const needsFingerprint = TCG.norm(nativeName) === "电雷驰";
-      // Try the same pixels first; this does not add another game input.
-      if (!matched.identity || needsFingerprint) {
-        enlargedName = this.numericAt(f, this.roi("details", [135, 122, 238, 42]), 3);
-        const enlarged = this.matchSkillPreview(enlargedName, detail);
-        if (enlarged.identity) { name = enlargedName; matched = enlarged; }
-      }
-      let fingerprint = null,
-        aliasDetail = null;
-      // Native 2026-10-09 probe: all four title crops at 1x/2x/3x/4x
-      // consistently lose 掣. Preserve this spelling's independent description
-      // proof instead of silently bypassing it through the shared fuzzy match.
-      if (needsFingerprint) matched = {identity:null, nameMatch:null};
-      if (
-        needsFingerprint &&
-        TCG.norm(enlargedName) === "电雷驰"
-      ) {
-        const fullDetail = this.ocr(f, this.roi("details", [70, 205, 320, 450]));
-        aliasDetail = fullDetail;
-        const signature = TCG.norm(fullDetail);
-        // The native description includes weapon/buff damage (2 -> 3 with
-        // Crescent Pike). Identity uses the stable effect, not base damage.
-        if (
-          detail.includes("元素战技") &&
-          signature.includes("元素战技") &&
-          /造成[0-9]+点雷元素伤害/.test(signature) &&
-          signature.includes("夜魂加持") &&
-          signature.includes("获得1点") &&
-          signature.includes("夜魂值") &&
-          signature.includes("生成1层敏捷切换") &&
-          signature.includes("切换角色") &&
-          signature.includes("快速行动")
-        ) {
-          matched = {identity:{who:0, skill:"E"}, nameMatch:{title:skillNames[0].E, method:"native-description"}};
-          fingerprint = { source: "native-20261009-exact-alias-and-rules", fullDetail };
-          name = skillNames[0].E;
-        }
-      }
-      return {
-        name,
-        nativeName,
-        enlargedName,
-        detail,
-        aliasDetail,
-        fingerprint,
-        ...matched,
-      };
-    }
-
-    skillFeeIn(f, action, verifiedIdentity = undefined) {
-      // Calibrated native preview fee row; identity is independently checked.
-      // A normal-board skill icon or a cost from another card is never proof.
-      const identity =
-        verifiedIdentity === undefined ? this.skillPreviewIn(f).identity : verifiedIdentity;
-      if (identity?.who !== action.who || identity?.skill !== action.skill) return null;
+    skillFeeIn(f, action) {
       // Read the CURRENT action icon's die fee, not the nominal fee in the
       // left description. Native 1080P preview has Q energy in a separate
       // gold badge to the right: exclude it from this narrow numeric crop.
@@ -7282,7 +7171,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           await this.inputHand(action, before, memory);
           break;
         case "skill":
-          await this.inputSkill(action, before, memory, cost, true);
+          await this.inputSkill(action, before);
           break;
         case "switch":
           await this.inputSwitch(action, before, memory);
@@ -7556,7 +7445,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async defer(error, codes, event, message) {
       if (!codes.includes(error.code)) throw error;
       this.checkStalled(message);
-      this.host.trace(event, { code: error.code, reason: String(error.message || error) });
+      this.host.trace(event, { code: error.code, missing: error.missing, phase: error.phase,
+        reason: String(error.message || error) });
       await sleep(400);
     }
 
@@ -7597,6 +7487,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async opening() {
+      this.host.runStage = "opening";
       const flow = this.openingFlow;
       if (flow.opened || flow.picked || flow.rolled || flow.complete)
         throw new Error("开局阶段异常：再次出现初始手牌");
@@ -7618,6 +7509,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async choice() {
+      this.host.runStage = "choice";
       try {
         await this.host.resolveChoice(null, this.memory);
         this.progress();
@@ -7628,6 +7520,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async replacement() {
+      this.host.runStage = "replacement";
       const host = this.host,
         memory = this.memory;
       this.readyState = null;
@@ -7679,6 +7572,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async pick() {
+      this.host.runStage = "pick";
       if (this.openingFlow.complete || this.actions > 0) return this.replacement();
       if (this.openingFlow.picked) throw new Error("开局阶段异常：首次出战后再次出现选人页");
       const choice = this.planOpening();
@@ -7690,6 +7584,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async roll() {
+      this.host.runStage = "roll";
       const flow = this.openingFlow;
       if (!flow.complete && flow.rolled) throw new Error("开局阶段异常：首次掷骰后再次出现重投页");
       if (!flow.complete && !flow.picked && this.memory.openingTarget === null)
@@ -7705,38 +7600,43 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
 
     async observe() {
-      const host = this.host,
-        start = Date.now(),
-        metrics = host.metricSnapshot?.(),
+      const host = this.host, start = Date.now(), metrics = host.metricSnapshot?.(),
         reused = !!this.readyState;
-      let state;
+      host.runStage = "observation";
+      let state, outcome = "failed", failure = null, readError = null;
       try {
-        state = this.readyState || (await host.observe());
-      } catch (e) {
+        try { state = this.readyState || (await host.observe()); }
+        catch (e) {
+          readError = e;
+          this.readyState = null;
+          await this.defer(e, [...BOARD_RETRIES, "TCG_HAND_RETRY"], "observation-deferred", "牌桌识别超时（60秒）");
+          outcome = "deferred";
+          return null;
+        }
+        if (this.readyState)
+          host.trace("decision-state-reused", { handCount: this.readyState.hand.length });
         this.readyState = null;
-        await this.defer(e, [...BOARD_RETRIES, "TCG_HAND_RETRY"], "observation-deferred", "牌桌识别超时（60秒）");
-        return null;
+        if (state.phase !== "board" || state.turn !== "user") {
+          host.trace("decision-deferred", { phase: state.phase, turn: state.turn });
+          await sleep(300);
+          outcome = "deferred";
+          return null;
+        }
+        this.admitActionHand(state);
+        if (!this.openingFlow.complete) this.finishOpening();
+        T.refreshSkillCosts(this.memory,state);
+        T.noteBoard(this.memory, state);
+        host.trace("state", { round: this.memory.round, state, memory: this.memory });
+        outcome = "complete";
+        return state;
+      } catch (e) { failure = e; throw e; }
+      finally {
+        try {
+          host.trace("observation-timing", { ms: Date.now() - start, reused, outcome,
+            handRead: state?.handRead, code: readError?.code, missing: readError?.missing,
+            recognition: host.metricDelta?.(metrics) });
+        } catch (e) { if (!failure) throw e; } // Secondary diagnostic failure must not replace the original error.
       }
-      if (this.readyState)
-        host.trace("decision-state-reused", { handCount: this.readyState.hand.length });
-      host.trace("observation-timing", {
-        ms: Date.now() - start,
-        reused,
-        handRead: state.handRead,
-        recognition: host.metricDelta?.(metrics),
-      });
-      this.readyState = null;
-      if (state.phase !== "board" || state.turn !== "user") {
-        host.trace("decision-deferred", { phase: state.phase, turn: state.turn });
-        await sleep(300);
-        return null;
-      }
-      this.admitActionHand(state);
-      if (!this.openingFlow.complete) this.finishOpening();
-      T.refreshSkillCosts(this.memory,state);
-      T.noteBoard(this.memory, state);
-      host.trace("state", { round: this.memory.round, state, memory: this.memory });
-      return state;
     }
     async execute(action, state) {
       const budget = Object.fromEntries(BUDGET_FIELDS.map(key => [key, this.host[key]]));
@@ -7885,60 +7785,78 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async act() {
       const state = await this.observe();
       if (!state) return;
-      const host = this.host, memory = this.memory, started = Date.now(),
-        metrics = host.metricSnapshot?.(), action = T.choose(state, memory),
-        planningMs = Date.now() - started;
-      host.trace("decision", action);
-      if (action.type === "stop") throw new Error(action.reason);
-      const execution = await this.execute(action, state);
-      if (!execution.sent) return;
-      log.info("[第" + memory.round + "回合] " + actionCommentary(action, state, memory));
-      if (action.type === "probe" && execution.result?.probed) {
-        this.readyState = execution.result; this.progress(); return;
+      const host = this.host, memory = this.memory, started = Date.now(), metrics = host.metricSnapshot?.();
+      let action, inputAt = null, confirmationAt = null, postActionAt = null,
+        outcome = "failed", confirmed = false, failure = null;
+      host.runStage = "planning";
+      try {
+        action = T.choose(state, memory);
+        host.trace("decision", action);
+        if (action.type === "stop") throw new Error(action.reason);
+        inputAt = Date.now(); host.runStage = "input";
+        const execution = await this.execute(action, state);
+        if (!execution.sent) { outcome = "not-submitted"; return; }
+        log.info("[第" + memory.round + "回合] " + actionCommentary(action, state, memory));
+        if (action.type === "probe" && execution.result?.probed) {
+          outcome = "probed"; this.readyState = execution.result; this.progress(); return;
+        }
+        confirmationAt = Date.now(); host.runStage = "confirmation";
+        const after = await this.awaitConfirmation(action, state, memory);
+        postActionAt = Date.now(); host.runStage = "post-action";
+        confirmed = !!after.confirmed;
+        if (after.confirmed) {
+          T.commit(memory, action, state, after);
+          host.trace("confirmed", { action, after, memory });
+        } else if (!(after.handRead === "full" && this.rejectUnchangedTune(action, state, after))) {
+          T.deferUncertain(memory, action, state);
+          host.trace("action-uncertain", { action, after, memory });
+          log.warn("动作效果未确认，已重新同步，不重复输入。");
+        }
+        T.noteBoard(memory, after);
+        const refreshHand = after.confirmed && after.handRefreshRequired === true;
+        if (refreshHand) {
+          // Consumption can precede card insertion (native draw 3 -> 2). Do not
+          // plan from that partial hand. This also covers non-draw categories
+          // declared full by handPlan. No predicted count or replayed input.
+          host.invalidateHand("consumed-hand-changing-card-needs-fresh-hand");
+          host.emptyHandProven = false;
+          host.trace("draw-hand-refresh-required", { id: action.id, beforeCount: state.hand.length,
+            observedCount: after.hand.length, handPlanMode: "full", consumptionConfirmed: true, effectsComplete: false });
+        }
+        if (refreshHand || after.confirmed && after.freshObservationRequired) {
+          // A new observe(), not a blanket sleep or a model-damage predicate.
+          // Drop the recent-board shortcut too; unchanged hand identity may stay.
+          this.readyState = null;
+          host.boardReady = false; host.lastObservedAt = 0; host.lastObservedRevision = -1;
+          host.preparedHandInput = null;
+          if (after.quietObservationRequired) host.autoRisk = true;
+          host.trace("post-confirmation-refresh-required", { action, handRefresh: refreshHand,
+            combatWithoutObservedTransition: after.freshObservationRequired === true,
+            quietObservationRequired: after.quietObservationRequired === true,
+            consumptionConfirmed: after.confirmed, effectsComplete: false });
+        } else if (after.phase === "board" && after.turn === "user" && T.legalState(after)) this.readyState = after;
+        this.actions++; this.progress();
+        outcome = confirmed ? "confirmed" : "unconfirmed";
+      } catch (e) { failure = e; throw e; }
+      finally {
+        const ended = Date.now();
+        try {
+          host.trace("action-timing", { action: action ? T.actionKey(action) : null, outcome, confirmed,
+            planningMs: (inputAt ?? ended) - started,
+            inputMs: (confirmationAt ?? ended) - (inputAt ?? ended),
+            settlementMs: (postActionAt ?? ended) - (confirmationAt ?? ended),
+            postActionMs: ended - (postActionAt ?? ended), totalMs: ended - started,
+            recognition: host.metricDelta?.(metrics), scope: "actual-runtime-not-offline-estimate" });
+        } catch (e) { if (!failure) throw e; } // Keep cancellation/program errors intact.
       }
-      const inputFinished = Date.now(), after = await this.awaitConfirmation(action, state, memory);
-      host.trace("action-timing", { action: T.actionKey(action), planningMs,
-        inputMs: inputFinished - started - planningMs, settlementMs: Date.now() - inputFinished,
-        totalMs: Date.now() - started, recognition: host.metricDelta?.(metrics),
-        confirmed: !!after.confirmed, scope: "actual-runtime-not-offline-estimate" });
-      if (after.confirmed) {
-        T.commit(memory, action, state, after);
-        host.trace("confirmed", { action, after, memory });
-      } else if (!(after.handRead === "full" && this.rejectUnchangedTune(action, state, after))) {
-        T.deferUncertain(memory, action, state);
-        host.trace("action-uncertain", { action, after, memory });
-        log.warn("动作效果未确认，已重新同步，不重复输入。");
-      }
-      T.noteBoard(memory, after);
-      const refreshHand = after.confirmed && after.handRefreshRequired === true;
-      if (refreshHand) {
-        // Consumption can precede card insertion (native draw 3 -> 2). Do not
-        // plan from that partial hand. This also covers non-draw categories
-        // declared full by handPlan. No predicted count or replayed input.
-        host.invalidateHand("consumed-hand-changing-card-needs-fresh-hand");
-        host.emptyHandProven = false;
-        host.trace("draw-hand-refresh-required", { id: action.id, beforeCount: state.hand.length,
-          observedCount: after.hand.length, handPlanMode: "full", consumptionConfirmed: true, effectsComplete: false });
-      }
-      if (refreshHand || after.confirmed && after.freshObservationRequired) {
-        // A new observe(), not a blanket sleep or a model-damage predicate.
-        // Drop the recent-board shortcut too; unchanged hand identity may stay.
-        this.readyState = null;
-        host.boardReady = false; host.lastObservedAt = 0; host.lastObservedRevision = -1;
-        host.preparedHandInput = null;
-        if (after.quietObservationRequired) host.autoRisk = true;
-        host.trace("post-confirmation-refresh-required", { action, handRefresh: refreshHand,
-          combatWithoutObservedTransition: after.freshObservationRequired === true,
-          quietObservationRequired: after.quietObservationRequired === true,
-          consumptionConfirmed: after.confirmed, effectsComplete: false });
-      } else if (after.phase === "board" && after.turn === "user" && T.legalState(after)) this.readyState = after;
-      this.actions++; this.progress();
     }
 
     async run() {
       try {
+        this.host.runStage = "entry";
         if (await this.enter() === false) return;
         while (Date.now() < this.deadline && this.actions < 180) {
+          this.host.runStage = "phase-wait";
           const sampledAt = Date.now();
           const p = this.host.phase();
           if (p.phase !== "board" || p.turn !== "user") this.readyState = null;
@@ -7962,7 +7880,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         throw new Error("达到单局时间或动作上限");
       } catch (e) {
         const reason = String(e.message || e);
-        this.host.reportStop(reason);
+        this.host.reportStop(reason, e.code);
         log.error("牌手停止：" + reason);
         throw e;
       } finally {
