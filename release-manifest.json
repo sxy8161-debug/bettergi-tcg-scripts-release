@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sourceRepository": "sxy8161-debug/bettergi-tcg-scripts",
-  "sourceCommit": "ea77b093a3aa019dea3f58c45bf6b4692ac58963",
-  "sourceDate": "2026-10-26T12:53:43+08:00",
+  "sourceCommit": "6dc86d029dad47afc4a57313fd8ea6e067b4d106",
+  "sourceDate": "2026-10-26T14:20:24+08:00",
   "sharedVersion": "2.0.0",
   "playerVersions": {
     "suite": "2.0.0"
@@ -11,14 +11,14 @@
     "repo/js/TCGPlayerSuite/hand-bank.json": "5851ead2db6dd31060c91ac523a8ec4658306aea3a9d41fb63911099e9e0f06d",
     "repo/js/TCGPlayerSuite/opening-bank.json": "e7de6131a8815410e9235055aeace67be664118660dc512f37b72fcbf150fc91",
     "repo/js/TCGPlayerSuite/manifest.json": "7ea30b8656bb2329471d9e1caee0eab0ddaf66fac448d8ed6dfeffc0bc0bbe7c",
-    "repo/js/TCGPlayerSuite/settings.json": "11f08f1917d2863f6fd516f5a912fe7e9b05ab7281ef424f8a61c023fca85e79",
-    "repo/js/TCGPlayerSuite/main.js": "9a5180b9672fef1fd79b7aef7116169cb44c1c5fa1c82b007ea7e4ee7e836a2a",
+    "repo/js/TCGPlayerSuite/settings.json": "8a0f59e5dd054196247ee47b29ecd5508400c101b309c3c98c64d176d050e913",
+    "repo/js/TCGPlayerSuite/main.js": "dccaf3834606789db817b92e62f30a45034a29b4cfebe80f201ea877f38b4c9e",
     "repo/js/TCGPlayerSuite/README.md": "0d817780a62d031edf6b434b9c5fe54a3ef1e8c8cf37519660a257540f6b5dd4",
     "repo/js/TCGPlayerSuite/assets/card-atlas/hand.png": "392a561587b7d6124867ec05e54e1afbd19198a9c3729dd2a30bd33643ea6124",
     "repo/js/TCGPlayerSuite/assets/card-atlas/expanded.png": "9caf94f38cb00e6713956202f0fc9439780433edfaaf1cd49a00da51c80b8393",
     "repo/js/TCGPlayerSuite/assets/card-atlas/ui.png": "2931fa47c3208602337061b070beafa0455ccec3781fba3b9a2e85b24ceca848",
-    "repo.json": "e7a628c8c87a0ca8ce3bcc0a5fb720a7cc0d29de8571ea0d7cd1734a6c0c4737",
-    "repo.json.gz": "48244a1acf24c1a49b268345ba8f436b23787c17a50e3dddd1b8a65fc79794cb",
+    "repo.json": "c1d02086c90281e4a54a6e36543134b6eb677b78ab820178330631f7f9078692",
+    "repo.json.gz": "430da8d360dba2d97a86a13c8dbef514fa7ad59f0ec9306f05b4c0c064d713a5",
     "README.md": "0d817780a62d031edf6b434b9c5fe54a3ef1e8c8cf37519660a257540f6b5dd4",
     "LICENSE-GPL-3.0.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
   }

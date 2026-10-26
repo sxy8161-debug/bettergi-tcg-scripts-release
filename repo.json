@@ -1,5 +1,5 @@
 {
-  "time": "20261026125343",
+  "time": "20261026142024",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -23,7 +23,7 @@
             "PVE",
             "2.0.0"
           ],
-          "lastUpdated": "2026-10-26 12:53:43"
+          "lastUpdated": "2026-10-26 14:20:24"
         }
       ]
     }
