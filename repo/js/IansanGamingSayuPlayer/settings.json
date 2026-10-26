@@ -10,7 +10,7 @@
     "name": "maxMinutes",
     "type": "select",
     "label": "单局超时保护",
-    "options": ["15", "10", "20"],
+    "options": ["15", "10", "20", "30"],
     "default": "15"
   }
 ]

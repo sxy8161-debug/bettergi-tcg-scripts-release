@@ -1,0 +1,2064 @@
+{
+  "schemaVersion": 1,
+  "patches": [
+    [
+      34,
+      48,
+      46,
+      22
+    ],
+    [
+      34,
+      74,
+      46,
+      22
+    ]
+  ],
+  "scoreFloor": 0.95,
+  "runnerUpGap": 0.2,
+  "entries": [
+    {
+      "id": "liben",
+      "name": "立本",
+      "views": [
+        {
+          "name": "runtime-0dc22332e8",
+          "patches": [
+            "assets/hand/立本-v01-p01.png",
+            "assets/hand/立本-v01-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.93
+    },
+    {
+      "id": "nre",
+      "name": "便携营养袋",
+      "views": [
+        {
+          "name": "native-ed5d7cb698-0",
+          "patches": [
+            "assets/hand/便携营养袋-v01-p01.png",
+            "assets/hand/便携营养袋-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-ed5d7cb698-1",
+          "patches": [
+            "assets/hand/便携营养袋-v02-p01.png",
+            "assets/hand/便携营养袋-v02-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.95
+    },
+    {
+      "id": "sand",
+      "name": "「沙中遗事」",
+      "views": [
+        {
+          "name": "native-b31b22a271-0",
+          "patches": [
+            "assets/hand/沙中遗事-v01-p01.png",
+            "assets/hand/沙中遗事-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-b31b22a271-1",
+          "patches": [
+            "assets/hand/沙中遗事-v02-p01.png",
+            "assets/hand/沙中遗事-v02-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.92
+    },
+    {
+      "id": "shift",
+      "name": "换班时间",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/换班时间-v01-p01.png",
+            "assets/hand/换班时间-v01-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.93
+    },
+    {
+      "id": "draw",
+      "name": "运筹帷幄",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/运筹帷幄-v01-p01.png",
+            "assets/hand/运筹帷幄-v01-p02.png"
+          ]
+        },
+        {
+          "name": "half-left",
+          "patches": [
+            "assets/hand/运筹帷幄-v02-p01.png",
+            "assets/hand/运筹帷幄-v02-p02.png"
+          ]
+        },
+        {
+          "name": "half-right",
+          "patches": [
+            "assets/hand/运筹帷幄-v03-p01.png",
+            "assets/hand/运筹帷幄-v03-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.93
+    },
+    {
+      "id": "stars",
+      "name": "星天之兆",
+      "views": [
+        {
+          "name": "sampler-20261013",
+          "patches": [
+            "assets/hand/星天之兆-v01-p01.png",
+            "assets/hand/星天之兆-v01-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.9
+    },
+    {
+      "id": "countdown3",
+      "name": "幻戏倒计时：3",
+      "views": [
+        {
+          "name": "native-d81982f3da-0",
+          "patches": [
+            "assets/hand/幻戏倒计时-3-v01-p01.png",
+            "assets/hand/幻戏倒计时-3-v01-p02.png"
+          ]
+        },
+        {
+          "name": "native-d81982f3da-1",
+          "patches": [
+            "assets/hand/幻戏倒计时-3-v02-p01.png",
+            "assets/hand/幻戏倒计时-3-v02-p02.png"
+          ]
+        },
+        {
+          "name": "hushang1600-right-edge",
+          "patches": [
+            "assets/hand/幻戏倒计时-3-v03-p01.png",
+            "assets/hand/幻戏倒计时-3-v03-p02.png"
+          ]
+        }
+      ],
+      "titleCandidates": [
+        "countdown3",
+        "countdown2",
+        "countdown1",
+        "show"
+      ],
+      "scoreFloor": 0.95
+    },
+    {
+      "id": "revel",
+      "name": "「狂欢节奏」",
+      "views": [
+        {
+          "name": "original",
+          "patches": [
+            "assets/hand/狂欢节奏-v01-p01.png",
+            "assets/hand/狂欢节奏-v01-p02.png"
+          ]
+        }
+      ],
+      "scoreFloor": 0.93
+    },
+    {
+      "id": "crocodileTalent",
+      "name": "亡水溢流",
+      "views": [
+        {
+          "name": "runtime-5902fb4296",
+          "patches": [
+            "assets/hand/亡水溢流-v01-p01.png",
+            "assets/hand/亡水溢流-v01-p02.png"
+          ]
+        },
+        {
+          "name": "runtime-2e6ca42dfa",
+          "patches": [
+            "assets/hand/亡水溢流-v02-p01.png",
+            "assets/hand/亡水溢流-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scorpionTalent",
+      "name": "亡雷凝蓄",
+      "views": [
+        {
+          "name": "runtime-5902fb4296",
+          "patches": [
+            "assets/hand/亡雷凝蓄-v01-p01.png",
+            "assets/hand/亡雷凝蓄-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emblem",
+      "name": "绝缘之旗印",
+      "views": [
+        {
+          "name": "runtime-5902fb4296",
+          "patches": [
+            "assets/hand/绝缘之旗印-v01-p01.png",
+            "assets/hand/绝缘之旗印-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "harbor",
+      "name": "璃月港口",
+      "views": [
+        {
+          "name": "runtime-5902fb4296",
+          "patches": [
+            "assets/hand/璃月港口-v01-p01.png",
+            "assets/hand/璃月港口-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lair",
+      "name": "风龙废墟",
+      "views": [
+        {
+          "name": "runtime-5902fb4296",
+          "patches": [
+            "assets/hand/风龙废墟-v01-p01.png",
+            "assets/hand/风龙废墟-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "block",
+      "name": "噬骸能量块",
+      "views": [
+        {
+          "name": "runtime-adee7d625a",
+          "patches": [
+            "assets/hand/噬骸能量块-v01-p01.png",
+            "assets/hand/噬骸能量块-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "whiteGlove",
+      "name": "白手套和渔夫",
+      "views": [
+        {
+          "name": "runtime-28a3256aeb",
+          "patches": [
+            "assets/hand/白手套和渔夫-v01-p01.png",
+            "assets/hand/白手套和渔夫-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adeptus",
+      "name": "仙跳墙",
+      "views": [
+        {
+          "name": "runtime-28a3256aeb",
+          "patches": [
+            "assets/hand/仙跳墙-v01-p01.png",
+            "assets/hand/仙跳墙-v01-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "serpentTalent",
+      "name": "亡风啸卷",
+      "views": [
+        {
+          "name": "runtime-d6f93903fd",
+          "patches": [
+            "assets/hand/亡风啸卷-v01-p01.png",
+            "assets/hand/亡风啸卷-v01-p02.png"
+          ]
+        },
+        {
+          "name": "runtime-2e6ca42dfa",
+          "patches": [
+            "assets/hand/亡风啸卷-v02-p01.png",
+            "assets/hand/亡风啸卷-v02-p02.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cleanup",
+      "name": "「清洁工作」",
+      "views": [
+        {
+          "name": "runtime-ea6b606ed5",
+          "patches": [
+            "assets/hand/清洁工作-v01-p01.png",
+            "assets/hand/清洁工作-v01-p02.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "expanded": {
+    "scoreFloor": 0.95,
+    "runnerUpGap": 0.2,
+    "patches": [
+      [
+        34,
+        65,
+        32,
+        26
+      ],
+      [
+        34,
+        103,
+        32,
+        26
+      ]
+    ],
+    "entries": [
+      {
+        "id": "liben",
+        "name": "立本",
+        "views": [
+          {
+            "name": "runtime-4e1a316fbb",
+            "patches": [
+              "assets/expanded/立本-v01-p01.png",
+              "assets/expanded/立本-v01-p02.png"
+            ]
+          }
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "sand",
+        "name": "「沙中遗事」",
+        "views": [
+          {
+            "name": "977a264019a2",
+            "patches": [
+              "assets/expanded/沙中遗事-v01-p01.png",
+              "assets/expanded/沙中遗事-v01-p02.png"
+            ]
+          },
+          {
+            "name": "db6f2846f98a",
+            "patches": [
+              "assets/expanded/沙中遗事-v02-p01.png",
+              "assets/expanded/沙中遗事-v02-p02.png"
+            ]
+          }
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "shift",
+        "name": "换班时间",
+        "views": [
+          {
+            "name": "runtime-d704f96ed1",
+            "patches": [
+              "assets/expanded/换班时间-v01-p01.png",
+              "assets/expanded/换班时间-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-fd4101d622",
+            "patches": [
+              "assets/expanded/换班时间-v02-p01.png",
+              "assets/expanded/换班时间-v02-p02.png"
+            ]
+          }
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "draw",
+        "name": "运筹帷幄",
+        "views": [
+          {
+            "name": "runtime-099a91db70",
+            "patches": [
+              "assets/expanded/运筹帷幄-v01-p01.png",
+              "assets/expanded/运筹帷幄-v01-p02.png"
+            ]
+          }
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "stars",
+        "name": "星天之兆",
+        "views": [
+          {
+            "name": "runtime-cc27a1f3b4",
+            "patches": [
+              "assets/expanded/星天之兆-v01-p01.png",
+              "assets/expanded/星天之兆-v01-p02.png"
+            ]
+          }
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "countdown3",
+        "name": "幻戏倒计时：3",
+        "views": [
+          {
+            "name": "0d3712f781fc",
+            "patches": [
+              "assets/expanded/幻戏倒计时-3-v01-p01.png",
+              "assets/expanded/幻戏倒计时-3-v01-p02.png"
+            ]
+          },
+          {
+            "name": "54664236c07b",
+            "patches": [
+              "assets/expanded/幻戏倒计时-3-v02-p01.png",
+              "assets/expanded/幻戏倒计时-3-v02-p02.png"
+            ]
+          }
+        ],
+        "titleCandidates": [
+          "countdown3",
+          "countdown2",
+          "countdown1",
+          "show"
+        ],
+        "scoreFloor": 0.95
+      },
+      {
+        "id": "crocodileTalent",
+        "name": "亡水溢流",
+        "views": [
+          {
+            "name": "runtime-56b021b2da",
+            "patches": [
+              "assets/expanded/亡水溢流-v01-p01.png",
+              "assets/expanded/亡水溢流-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "scorpionTalent",
+        "name": "亡雷凝蓄",
+        "views": [
+          {
+            "name": "runtime-56b021b2da",
+            "patches": [
+              "assets/expanded/亡雷凝蓄-v01-p01.png",
+              "assets/expanded/亡雷凝蓄-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "emblem",
+        "name": "绝缘之旗印",
+        "views": [
+          {
+            "name": "runtime-56b021b2da",
+            "patches": [
+              "assets/expanded/绝缘之旗印-v01-p01.png",
+              "assets/expanded/绝缘之旗印-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-c8f5d2a997",
+            "patches": [
+              "assets/expanded/绝缘之旗印-v02-p01.png",
+              "assets/expanded/绝缘之旗印-v02-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "harbor",
+        "name": "璃月港口",
+        "views": [
+          {
+            "name": "runtime-56b021b2da",
+            "patches": [
+              "assets/expanded/璃月港口-v01-p01.png",
+              "assets/expanded/璃月港口-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lair",
+        "name": "风龙废墟",
+        "views": [
+          {
+            "name": "runtime-56b021b2da",
+            "patches": [
+              "assets/expanded/风龙废墟-v01-p01.png",
+              "assets/expanded/风龙废墟-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "whiteGlove",
+        "name": "白手套和渔夫",
+        "views": [
+          {
+            "name": "runtime-a29ef53f25",
+            "patches": [
+              "assets/expanded/白手套和渔夫-v01-p01.png",
+              "assets/expanded/白手套和渔夫-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "adeptus",
+        "name": "仙跳墙",
+        "views": [
+          {
+            "name": "runtime-b6bbe16b68",
+            "patches": [
+              "assets/expanded/仙跳墙-v01-p01.png",
+              "assets/expanded/仙跳墙-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "serpentTalent",
+        "name": "亡风啸卷",
+        "views": [
+          {
+            "name": "runtime-b7bf128aaf",
+            "patches": [
+              "assets/expanded/亡风啸卷-v01-p01.png",
+              "assets/expanded/亡风啸卷-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block",
+        "name": "噬骸能量块",
+        "views": [
+          {
+            "name": "runtime-c8f5d2a997",
+            "patches": [
+              "assets/expanded/噬骸能量块-v01-p01.png",
+              "assets/expanded/噬骸能量块-v01-p02.png"
+            ]
+          },
+          {
+            "name": "runtime-270b937c23",
+            "patches": [
+              "assets/expanded/噬骸能量块-v02-p01.png",
+              "assets/expanded/噬骸能量块-v02-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cleanup",
+        "name": "「清洁工作」",
+        "views": [
+          {
+            "name": "runtime-80dd8cd73d",
+            "patches": [
+              "assets/expanded/清洁工作-v01-p01.png",
+              "assets/expanded/清洁工作-v01-p02.png"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "atlas": {
+    "assets/hand/立本-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        0,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "cc61e1c3daf91f579b391a7ef031259d6ebbe59af6406ce013f800b1366a99a1"
+    },
+    "assets/hand/立本-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        46,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "0f35df7c54e4c82058491d1dfeb38759487e12c4d682f6e1ac019c7c3742ad91"
+    },
+    "assets/hand/便携营养袋-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        230,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "676f0f14a281c914b8da887526eddde8301ae32a1523ee4afed1e02893ac09d5"
+    },
+    "assets/hand/便携营养袋-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        276,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "c178e701153311ec061c10076fb0cbe5073c65c3cabac51cb9f45c65333bb370"
+    },
+    "assets/hand/便携营养袋-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        322,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "cbac8e0514aa861c503eb936c7a7d532e68231796b06a72b941d191df30a270f"
+    },
+    "assets/hand/便携营养袋-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "49387c766f1bd0194b4388d6654333252f41edfda7a3716c7e473f25f7258f23"
+    },
+    "assets/hand/沙中遗事-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        460,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "62032efa1610d0d067a4bae7b21d675423abe2ab8fe48d4ee98ce160d42321be"
+    },
+    "assets/hand/沙中遗事-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        0,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "bcff1f7bdc1a9cac75c59f33e915d25b77af6c46aaa692418db5a243050681a7"
+    },
+    "assets/hand/沙中遗事-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        46,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "43da8d40f7184d8d8d5e0bbacb07656b494e0105f0b0a6775355d8c06e476de3"
+    },
+    "assets/hand/沙中遗事-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        92,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "a77ba9d9c7280e3a1889cf42b5face4b8fe766615581d1459cf90806387d5c5b"
+    },
+    "assets/hand/换班时间-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        276,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "07ed7f8db869e1c08bf8ab65572e6116386069cdba7391b53c6480027fcacb0a"
+    },
+    "assets/hand/换班时间-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        322,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "b81cd026f6828690846f953e33c9b6b24f039c3df33355b5b9c2b2a80f090bde"
+    },
+    "assets/hand/运筹帷幄-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        184,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "bb72cfaf7c2040b88d1afe13713dd2713561662ded151c51fc43f317b766ce6a"
+    },
+    "assets/hand/运筹帷幄-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        230,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "658a0819398e3624ea694ee2d4cbf23e7bb756bce22b17298a885f6749029b0e"
+    },
+    "assets/hand/运筹帷幄-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        276,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "92412f5357da158f77b174a8f7d985b1c8d89d2e8ada88575d6dc109661170ff"
+    },
+    "assets/hand/运筹帷幄-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        322,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "d8d486ff6c34edc4da9655a5bec89e5cc0fae878288569efbb2600cf26837a49"
+    },
+    "assets/hand/运筹帷幄-v03-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "94152495557c5cb8c25aabc160e1a777b2782d77ef3511d3ee726f3d2c8a106b"
+    },
+    "assets/hand/运筹帷幄-v03-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        414,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "dc2249b2bbd299be1b0a728612c784db8dfe6cb6296e33864c7cc11198c3b5c2"
+    },
+    "assets/hand/星天之兆-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "867c89f2a357d13c38f84944dd28adde43c5be7c265764cfdbf7e1f2a945936b"
+    },
+    "assets/hand/星天之兆-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        414,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "1bd7b317c7c868ebdcb424dfc3f22bb61c8fc1f7193c79803a164311e068bfcb"
+    },
+    "assets/hand/幻戏倒计时-3-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        0,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "5c5c7e6fd4ba4f6f3e8a2ea3ff1c47a6a3c7ffbd89ee4bc7d49a048ae2a4c62c"
+    },
+    "assets/hand/幻戏倒计时-3-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        46,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "96c5fb2127d3222bd55eb962866d8429f3f54767539fbc38132685c35a40bab0"
+    },
+    "assets/hand/幻戏倒计时-3-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        92,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "eb87ca56efb761c7691d3380e0737b51d36e9fa9ebe801c6bda81e63d4d174cf"
+    },
+    "assets/hand/幻戏倒计时-3-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        138,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "5dcb5094b83fcec5f3570b06b0a082a6e1d16d49c0cf82157c56ac817183ee9c"
+    },
+    "assets/hand/幻戏倒计时-3-v03-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        184,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "757a715735ef1438372e7de870a187a6d344d754493a3fc7146818cba606a850"
+    },
+    "assets/hand/幻戏倒计时-3-v03-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        230,
+        702,
+        46,
+        22
+      ],
+      "sourceSha256": "baf5f45832d1d4b437dbd295ba4878c25c54dcb3dfadf5691278d531d771d8fe"
+    },
+    "assets/hand/狂欢节奏-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        230,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "41c6b05f06ee53df1e2a42c0c2b385d997f0fa1d1b16493a94750d1e275ceb1f"
+    },
+    "assets/hand/狂欢节奏-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        276,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "dda88111eda5412cd36f813316dbc79ee4085094382b611a9bf3ba323e16be2b"
+    },
+    "assets/hand/亡水溢流-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        180,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "633e488bc70f57a311fa3002294880f81e72126302417a36aecfd02b58d6868e"
+    },
+    "assets/hand/亡水溢流-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        226,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "4db980c8ecb919d88c89fed6d6d996ed9acde6056a136fcdefdc060874d540d4"
+    },
+    "assets/hand/亡水溢流-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        272,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "0cc783cf3bdcbcfa84bb08afc2e133fef2524adcb51b4d69025e291d1bf11d6b"
+    },
+    "assets/hand/亡水溢流-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        318,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "4c5c16951dbabd64fea9b9fd6520496749223bda944cd0f3a77e8d71a0d9b697"
+    },
+    "assets/hand/亡雷凝蓄-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        364,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "dbc7e7c0c0c97162ce0a40e8c1a4bced011aaa61a35b058b1f48bb2e2bb6a86e"
+    },
+    "assets/hand/亡雷凝蓄-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        410,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "8199819f75ceff6747cde19321688ee9c05f367a21edc0f7ddc366da26c24df1"
+    },
+    "assets/hand/绝缘之旗印-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        92,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "962dabd941e3187eb6600227047dc851f120785c656eab196d185a7c298f7dbb"
+    },
+    "assets/hand/绝缘之旗印-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        138,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "a765c734e69a30a2d998b24cb51518a024074e9ec8f650d8549abb9e08bb68b9"
+    },
+    "assets/hand/璃月港口-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        322,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "1944572ce316d7b9a077714f1ea7e2a3127a0fed72dd3e8f0b42bb47bd4d719e"
+    },
+    "assets/hand/璃月港口-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "e93a724a6948ea134e9ad9dbdffbbeb7b0b3ce37c8f9654f09206f1c2f2634c4"
+    },
+    "assets/hand/风龙废墟-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        460,
+        746,
+        46,
+        22
+      ],
+      "sourceSha256": "4657db513a77f7398d59a69b853e032b755d60d0211720575dbe947a1c786ad1"
+    },
+    "assets/hand/风龙废墟-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        0,
+        768,
+        46,
+        22
+      ],
+      "sourceSha256": "dfaf3ce148348d827f0ce28ee8be839aa91ab9fa0b931fcb86e5a122bb761967"
+    },
+    "assets/hand/噬骸能量块-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        414,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "e59dd4161a3167b71eed5aff9619636eef36a2b6de472124eadeff923485a2e6"
+    },
+    "assets/hand/噬骸能量块-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        460,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "e37ea0d4db72794db247bfff598edec5fdf718e798fae9736e630f9cdba51d3a"
+    },
+    "assets/hand/白手套和渔夫-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        414,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "30b7b1033022ce4cb13cfda36c60df0c75a1eaf7e0ba385415fd750f5dc20529"
+    },
+    "assets/hand/白手套和渔夫-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        460,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "34cc2e29cd8b44a5eae3e1db571b841c049ea22c5123c41bd4b157913ff8400e"
+    },
+    "assets/hand/仙跳墙-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        138,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "007a31fdf4fdc2dd6d63e9d0c4ecd3426b64f2fa6d1c056f4705538b3f9cb019"
+    },
+    "assets/hand/仙跳墙-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        184,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "e9909223e6b952215ed96b2676130f8d38bae52ce185c03752e4c174cad4c083"
+    },
+    "assets/hand/亡风啸卷-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        456,
+        595,
+        46,
+        22
+      ],
+      "sourceSha256": "0c37714bb639cb1b910a75269abdd1e97cf6be49fe1161c8c39d546145650a60"
+    },
+    "assets/hand/亡风啸卷-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        0,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "6b353a8abb36ee8d59a290c8ecb6299a682e0bead9ad9ea9ee09d390518b6ce8"
+    },
+    "assets/hand/亡风啸卷-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        46,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "7fdc9bbd05d42072d37c0ae585d94ca85f339a138daf9acc997068df34a7460f"
+    },
+    "assets/hand/亡风啸卷-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        92,
+        680,
+        46,
+        22
+      ],
+      "sourceSha256": "1938151f5fb0ddc4cc15f78c1e0b2bfdeefde57737d50e080b78ed093f438da4"
+    },
+    "assets/hand/清洁工作-v01-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        138,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "57172ea540a790422ec20a1022064fceb997ba7237db23444d4a7234c292c8e6"
+    },
+    "assets/hand/清洁工作-v01-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        184,
+        724,
+        46,
+        22
+      ],
+      "sourceSha256": "d6638380e5107c1d8352e9a6b617ebfb192be5a34c0bc8d36c6db489a7550e22"
+    },
+    "assets/expanded/立本-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        0,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "88871fb26325b6bb2fb8955122b06f01221614ac0b86d03dc3921d138695abaa"
+    },
+    "assets/expanded/立本-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        32,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "8841c9bdfa16ca6dff35969925cce0c9d6faf2405be28726d31fb52e89fbd282"
+    },
+    "assets/expanded/沙中遗事-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        192,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "a047f02cd1b2315058072d397b0fab703d356cd3ea73c4898c64ddc3b2f30582"
+    },
+    "assets/expanded/沙中遗事-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        224,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "c78e2b381741f2c55714ddbfdacbf1c45a625008a8887f76b8fa2ae3da2aaef5"
+    },
+    "assets/expanded/沙中遗事-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        256,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "99d4510631ed6332c10f6581de538db23b192259a5edf1326defbe9b13f99519"
+    },
+    "assets/expanded/沙中遗事-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        288,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "263cf9aaea39c947b86e2d6b05fd61ec0ba6fee71c6d064644bd4fa781cb66a6"
+    },
+    "assets/expanded/换班时间-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        0,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "48ef8e5b11cab55f83368b1fa29abe7c9a85609395e01105cee80a9ab6335e42"
+    },
+    "assets/expanded/换班时间-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "7b6bcfd467c9ea3f49762ec2f1cfd820226cd2adc419de6aad7ad80e5ee8aafe"
+    },
+    "assets/expanded/换班时间-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        64,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "2a1c37830a5c893ab82f338e63ecded4b9c6179ae1ea215987fe7601337a9058"
+    },
+    "assets/expanded/换班时间-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        96,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "d9dc9834dd5d728c6db1855f052c64fb37bc8cca79173a703e99ca7da5766ad8"
+    },
+    "assets/expanded/运筹帷幄-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        192,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "be16482b7e5c06c0f8da6646f8a980e0f47cfcbedb4a2aab32b0a86365f87fb1"
+    },
+    "assets/expanded/运筹帷幄-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        224,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "0fbbfe5c1bfe427797153f6a0286ad4667995c13af5a424c766f8a24f0ea0f1a"
+    },
+    "assets/expanded/星天之兆-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        128,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "d09c9ee9b394266dd34a1312acf89d58a17a2f18f6754d436dd602f3b46ea17c"
+    },
+    "assets/expanded/星天之兆-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        160,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "f38293dd015c8bc30c6e8d4e160e0da178eeeae50b767868792aa461686adc49"
+    },
+    "assets/expanded/幻戏倒计时-3-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        384,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "328b21bae84d5cff6ac6b48f6e5805b5c2e7def23d3842274dc1c88b7e54f731"
+    },
+    "assets/expanded/幻戏倒计时-3-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        416,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "29b6d3503b5293c8a6815579dc9c92c558604e9c829be7d7730b3aceb8b71198"
+    },
+    "assets/expanded/幻戏倒计时-3-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        448,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "038c7d16d2bd1a2df70d64e2ad653c9bb54877e06c6a539a3803a459509d1164"
+    },
+    "assets/expanded/幻戏倒计时-3-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        480,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "38444d9d9a2306ec7b5280c4d4e5caace349d211122a95b6a5ed72c0273844ba"
+    },
+    "assets/expanded/亡水溢流-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        0,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "55077a014b318642a7c26f24b1221bb974cf96ce47feb8832022aa32e91b46a7"
+    },
+    "assets/expanded/亡水溢流-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        32,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "9ad989c852827e186b18f565ecb700c13b1bee6060d8ce798299d524246559d4"
+    },
+    "assets/expanded/亡雷凝蓄-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        64,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "876cc1f889a2be1564f4ced894bb59f7682459f7ad887b19fdff99b05803f41c"
+    },
+    "assets/expanded/亡雷凝蓄-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        96,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "293c5f73fb059419d51eb0eaca8022e3d2f1f6b4cafbdfe256bc028515984a2c"
+    },
+    "assets/expanded/绝缘之旗印-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        64,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "34858ba46d7e77f3681f98010afb28f5c02216f8afad873d5264a76906ade1e1"
+    },
+    "assets/expanded/绝缘之旗印-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        96,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "f95dd9f3cedafb0c653b415222dfc795c6652ad84bce3ac4dd484fc1d2e7a53e"
+    },
+    "assets/expanded/绝缘之旗印-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        128,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "cc2c0651b8971b950d46007130c599fc395713524e2006e2054f5d8c727b443d"
+    },
+    "assets/expanded/绝缘之旗印-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        160,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "938e9c56b581f6ad62f157adb628743aa471ada78580a4ecc02032c56f47e6f6"
+    },
+    "assets/expanded/璃月港口-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        384,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "a936c28401d2216094b3cd64625114cdf5660983d80703368fe2ef0794de7352"
+    },
+    "assets/expanded/璃月港口-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        416,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "558051c35d2c6bfbc80c416b9ac5f5675a089487e910925e8a70b6f6815b5de8"
+    },
+    "assets/expanded/风龙废墟-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        256,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "11ff7a0fda86a8b21275b02d2d36ed3c3cabace9d7d4f3168beebaa7984d44e1"
+    },
+    "assets/expanded/风龙废墟-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        288,
+        52,
+        32,
+        26
+      ],
+      "sourceSha256": "fd91444bed69a1d955301f2e660ea721df2ffc55af2b2afc2079256a7d81a85d"
+    },
+    "assets/expanded/白手套和渔夫-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        448,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "1e2a0bb9aedc5ddec53fd47e07fe0495fa0fc4c05c201a964d52e9168b724fa8"
+    },
+    "assets/expanded/白手套和渔夫-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        480,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "d584084c0bafba43256995a292cde4bc4611c2df0d2bd528d32a59e7eb9d3fb2"
+    },
+    "assets/expanded/仙跳墙-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        192,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "f3fc3ff8b94f65b9eaaa452cb25c2f3dceef978cbbd833385b9a5dee9bdd6280"
+    },
+    "assets/expanded/仙跳墙-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        224,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "209f85db8ae6a0c1f3092ec0d65cf2c63521c015874b0e5a0509d7047d9ed52c"
+    },
+    "assets/expanded/亡风啸卷-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        128,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "27380c61cfa477c1fff3db69e67125c4380c0ab31ddff23304f51831ff2b1780"
+    },
+    "assets/expanded/亡风啸卷-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        160,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "d4653c172a34671dbb0bc16f118c590a15e1df59d82c13d4dd6627fb837acce7"
+    },
+    "assets/expanded/噬骸能量块-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        256,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "a47f00b60a062d327478447316b033538dad3a5486105a2eabab7da6cfe9861a"
+    },
+    "assets/expanded/噬骸能量块-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        288,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "3d40ac0e8b5684bfa00421c1949d7ab0cb5a5428cf64d3e51636085e1d4fdaee"
+    },
+    "assets/expanded/噬骸能量块-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        320,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "1255c7574ec3a2f2160374a0a8558bcc60e14ad9a6920b468cd876c901c41ca6"
+    },
+    "assets/expanded/噬骸能量块-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        352,
+        0,
+        32,
+        26
+      ],
+      "sourceSha256": "e0230cf9d020a8d7a7776e3d86358665b18e22dda57309cd27897bb0d211cd75"
+    },
+    "assets/expanded/清洁工作-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        320,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "5090c3fc432fc994b2af0101d025b1428b7e5c198cfceec3896074dcb51475fa"
+    },
+    "assets/expanded/清洁工作-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        352,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "7dfd67ef89feaa648cf7febcfa14b346e6ca7ae03d2e4289ab15d0a3f45a5de9"
+    }
+  },
+  "uiAtlas": {
+    "assets/hand_rim.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        0,
+        0,
+        6,
+        90
+      ],
+      "sourceSha256": "79b7bf47e5169a1eb56db89a6e19d5cabac9ae1934b34a84edec2eb15a2305a7"
+    },
+    "assets/core/回合结算阶段.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        6,
+        0,
+        88,
+        75
+      ],
+      "sourceSha256": "9aae75120ce2f8d75fe62788821cb37a3bd90106a9285c0afab8145aaf57e47e"
+    },
+    "assets/disable.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        94,
+        0,
+        66,
+        66
+      ],
+      "sourceSha256": "a7eac5e7106f74f027060cf582b4ff58683675a8fc04782f122da5028e0726dc"
+    },
+    "assets/dice/NativeRollElectro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        160,
+        0,
+        46,
+        46
+      ],
+      "sourceSha256": "65f6860953ba8a6fa5d3dda2039592cda98091ac1fcf78e26cb14a1d2bd17d65"
+    },
+    "assets/dice/NativeRollPyro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        206,
+        0,
+        42,
+        45
+      ],
+      "sourceSha256": "6ab51b57d641c658ad91e6bd83bdd0110967b4903aadac9bae88f63ec0b7129f"
+    },
+    "assets/dice/NativeRollOmni.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        248,
+        0,
+        51,
+        43
+      ],
+      "sourceSha256": "706c5be419ec2004b3dd2205f36e132caf8f01e56777727550cb5e3265f0f963"
+    },
+    "assets/dice/NativeRollDendro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        299,
+        0,
+        50,
+        43
+      ],
+      "sourceSha256": "079e1cc76cdca729d24c8818580b303ce154b10dbe535c72069fd8439423b2c4"
+    },
+    "assets/dice/NativeRollAnemo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        349,
+        0,
+        44,
+        43
+      ],
+      "sourceSha256": "5525c7d1a32ea33af27b9f0fd01de9f428cabbbf882f8ed9b15599ffbc95ea0f"
+    },
+    "assets/dice/NativeRollGeo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        393,
+        0,
+        44,
+        43
+      ],
+      "sourceSha256": "76e9c522ccf3b22d515e022acc6f4234ea1fc60b1e21f8fdcb0f6dbe976c6db8"
+    },
+    "assets/dice/NativeRollHydro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        437,
+        0,
+        44,
+        43
+      ],
+      "sourceSha256": "23a46a0f7d26d27661c258216f2b25271089f178c9b50d49fdb93db99cd79dc2"
+    },
+    "assets/hand_empowered.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        0,
+        90,
+        42,
+        42
+      ],
+      "sourceSha256": "a257f3414f682f74568c875d97e7729e5cb9e160b6985426ce70ecc752669f37"
+    },
+    "assets/dice/NativeRollCryo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        42,
+        90,
+        45,
+        41
+      ],
+      "sourceSha256": "10b6ac543f5eee3ac81d9e9ac076507ee109db1e3353ceb542a52543d425e5d5"
+    },
+    "assets/ailin/support-rim.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        87,
+        90,
+        6,
+        40
+      ],
+      "sourceSha256": "9eeda6cabb88c91c74e4b83b03c83a1273f31a7b1d87985ba2e528c85d83055c"
+    },
+    "assets/core/对方行动中.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        93,
+        90,
+        27,
+        34
+      ],
+      "sourceSha256": "4b0dba5acf3aa44d35dafc148a76e0d298ce073c172a46132836dba71b92a81a"
+    },
+    "assets/core/回合结束.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        120,
+        90,
+        25,
+        34
+      ],
+      "sourceSha256": "801da79b2959d80e18577531d855016a66ab0f1b49b56aab20236591683447ba"
+    },
+    "assets/num/Hand10.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        145,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "ad6f19cf68f74973cd8b76ee6d7ce89336291d77b8055e545724c6ae1462319b"
+    },
+    "assets/num/Hand5.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        188,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "3a4a461869f0d65ff15316faa622cee374cbaa9c3784ef096226199d8d5539d4"
+    },
+    "assets/num/Hand6.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        231,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "b57f684454c9ca34f2cbfc69a985f93af80201a2daf6785577374365e86b0b8e"
+    },
+    "assets/num/Hand7.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        274,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "d76ac2dc782553beb027cf01e70e30a7a14912f5044c80cf8a5bc99283e825a6"
+    },
+    "assets/num/Hand8.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        317,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "6a1dcb6562d5948fb5e551b3c6828e5c02e61ab2c8e50c43cf9a4e3c8f09737a"
+    },
+    "assets/num/Hand9.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        360,
+        90,
+        43,
+        33
+      ],
+      "sourceSha256": "120a39db25fd7d3a756d0004773d2516007341ad1325f425fe541390e3d46e62"
+    },
+    "assets/core/元素骰子不足.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        0,
+        132,
+        161,
+        32
+      ],
+      "sourceSha256": "3e4260733b424297270cc5d3f974dc1fa04fce8365df25f3ae4fdeed55bf3a91"
+    },
+    "assets/enemy_turn.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        161,
+        132,
+        23,
+        32
+      ],
+      "sourceSha256": "69b399fa79ffd7b61e59b9c9698b14ad55500c719120ddd9fb472f0db367ab4f"
+    },
+    "assets/user_turn.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        184,
+        132,
+        23,
+        32
+      ],
+      "sourceSha256": "9bfccc2ae5b1b2bfe5cdf171ab750697b501274ff27f3a3ec8d5b577c90cb33f"
+    },
+    "assets/core/元素调和.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        207,
+        132,
+        238,
+        31
+      ],
+      "sourceSha256": "7c82662d511813eb80b5e2592fe1c48f5a006481783b2f9f2264534c72e1e091"
+    },
+    "assets/core/确定.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        445,
+        132,
+        64,
+        31
+      ],
+      "sourceSha256": "d4c5e52d87a9b1bae2bd531a87aaa6caaa9c1fdd55377c9e8fc84379b45dcf65"
+    },
+    "assets/hand_cost_dendro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        0,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "8c57ab17456711d35c82516dd673ee3a79304c29ed595f5531a7e48d1ed2b863"
+    },
+    "assets/hand_cost_electro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        10,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "09f93c500a64fe0437bf5dbc105395e77e82c8948e622d9e9f2ac4500a1c5c1f"
+    },
+    "assets/hand_cost_element.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        20,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "2afc93afa261f491648972c6dea2dbc4755f7533c2b28be42a99bd60f4b48bb4"
+    },
+    "assets/hand_cost_matching.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        30,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "e5853b9ed37eac0a7bef87af4258fdc5071a5fdb9f6c96939510383b167e970c"
+    },
+    "assets/hand_cost_neutral.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        40,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "6144ce7c84b4a0985deedcfec6e5fed51d2f3dba4f9b6bc7200b5aaae48a7207"
+    },
+    "assets/hand_cost_pyro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        50,
+        164,
+        10,
+        30
+      ],
+      "sourceSha256": "afde030836735ef00a0f2471135b23550830ef4fe3d5a98a1800fab3d41d3b0b"
+    },
+    "assets/core/出战角色.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        60,
+        164,
+        106,
+        26
+      ],
+      "sourceSha256": "5f65d7b2c86209671de771141fc067b67e50bef8a10585d79c1cb3cbec50b620"
+    },
+    "assets/core/角色状态_冻结2.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        166,
+        164,
+        30,
+        26
+      ],
+      "sourceSha256": "5c517ca5757eb1a35157f267bef53bc3b5c448466e986d3c3c9bd7f34569eec4"
+    },
+    "assets/dice/NativeMainAnemo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        196,
+        164,
+        23,
+        24
+      ],
+      "sourceSha256": "784877582560aac366413154d81c20db88b5de867e295b1e7cba247f4b0c8cf0"
+    },
+    "assets/dice/NativeMainCryo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        219,
+        164,
+        23,
+        24
+      ],
+      "sourceSha256": "ff89985803411460cf120bef5a3d5d1e5d578f051485477d11fc6f8da5410970"
+    },
+    "assets/dice/NativeMainElectro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        242,
+        164,
+        23,
+        24
+      ],
+      "sourceSha256": "6dffbf42497fe6268a112352c7a00d80bf290ee24b3e2ce7786f2dd6ee16b8a8"
+    },
+    "assets/dice/NativeMainPyro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        265,
+        164,
+        22,
+        24
+      ],
+      "sourceSha256": "f733f7b8ea8ff69e817f197b9b2934293c92e34659c1f53bca46ed39fe6eb301"
+    },
+    "assets/dice/NativeMainHydro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        287,
+        164,
+        26,
+        23
+      ],
+      "sourceSha256": "6b39c939f37208f5ee9da449af029deb042eb66ccfefa0a1242f8adea6a99dd3"
+    },
+    "assets/dice/NativeMainOmni.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        313,
+        164,
+        24,
+        23
+      ],
+      "sourceSha256": "65622bd9c4025d3443e1db9a840b7be87ae0dff0f7e8ea369cfc0474b55078f4"
+    },
+    "assets/dice/NativeMainDendro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        337,
+        164,
+        26,
+        22
+      ],
+      "sourceSha256": "d2ca0e49fa41547610404663523e2bb52fc72ac46c04f9f25b9ee1b0a607ffb3"
+    },
+    "assets/dice/NativeMainGeo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        363,
+        164,
+        23,
+        22
+      ],
+      "sourceSha256": "d7a123296b888d6da81bdcfef6ed195d4dc61f1333390659ac5d1f24d37e7e79"
+    },
+    "assets/core/角色状态_冻结.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        386,
+        164,
+        17,
+        19
+      ],
+      "sourceSha256": "98bb53fc94ccf4d788390b7560949907b261125c98228f910dc95746665df46e"
+    },
+    "assets/state/StateFreeze.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        403,
+        164,
+        16,
+        16
+      ],
+      "sourceSha256": "b663f29a59f669272c385d17f4c774d5ddfe530289c755f8ab9f5e03e975b0f6"
+    },
+    "assets/charge.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        419,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "757581b11c4789f585ec1713ff491c2ba9f35d90b59090e6d9ce080ecbe2cd06"
+    },
+    "assets/state/StateCryo.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        434,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "5835287e0d5bbc3089513365e30c37a87df97d1ea58c1cb91a3305b52f332d61"
+    },
+    "assets/state/StateDendro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        449,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "6c8955551a6bce1754b28fd22a60912b76657e750c14fcf00d8689f920c6aa40"
+    },
+    "assets/state/StateElectro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        464,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "abd7a5efb963ea32fbfae82ddf7fe4cbb47a20fc75fe4ac941a06796fb10c794"
+    },
+    "assets/state/StateHydro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        479,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "e4f242468b4736499b81a4cc7af92de5e238e6f055d69108bc35d89d89de8892"
+    },
+    "assets/state/StatePyro.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        494,
+        164,
+        15,
+        15
+      ],
+      "sourceSha256": "6c9963d21994e271632c75d9c66858550b01e814964625c83ecfa8ab35f790fc"
+    },
+    "assets/uncharge.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        0,
+        194,
+        15,
+        15
+      ],
+      "sourceSha256": "f7a4a0a738918000d664dcbac05699a299f28f12387523a606df3affd69c11ea"
+    },
+    "assets/core/角色状态_水泡.png": {
+      "file": "assets/card-atlas/ui.png",
+      "rect": [
+        15,
+        194,
+        15,
+        10
+      ],
+      "sourceSha256": "f2946adb0657f28498da09a678430ff5152cdfb73c1ba03347d9f78e24dee180"
+    }
+  }
+}

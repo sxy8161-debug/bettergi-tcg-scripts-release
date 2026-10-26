@@ -228,6 +228,13 @@
             "assets/hand/抵天雷罚-v02-p01.png",
             "assets/hand/抵天雷罚-v02-p02.png"
           ]
+        },
+        {
+          "name": "runtime-e6e8339a33",
+          "patches": [
+            "assets/hand/抵天雷罚-v03-p01.png",
+            "assets/hand/抵天雷罚-v03-p02.png"
+          ]
         }
       ]
     },
@@ -745,6 +752,32 @@
             ]
           }
         ]
+      },
+      {
+        "id": "penance",
+        "name": "抵天雷罚",
+        "views": [
+          {
+            "name": "runtime-a993f2848d",
+            "patches": [
+              "assets/expanded/抵天雷罚-v01-p01.png",
+              "assets/expanded/抵天雷罚-v01-p02.png"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "exile",
+        "name": "流放者头冠",
+        "views": [
+          {
+            "name": "runtime-a993f2848d",
+            "patches": [
+              "assets/expanded/流放者头冠-v01-p01.png",
+              "assets/expanded/流放者头冠-v01-p02.png"
+            ]
+          }
+        ]
       }
     ]
   },
@@ -752,7 +785,7 @@
     "assets/hand/白垩之术-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         809,
         46,
         22
@@ -762,7 +795,7 @@
     "assets/hand/白垩之术-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         809,
         46,
         22
@@ -772,7 +805,7 @@
     "assets/hand/白垩之术-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         809,
         46,
         22
@@ -782,7 +815,7 @@
     "assets/hand/白垩之术-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         809,
         46,
         22
@@ -792,7 +825,7 @@
     "assets/hand/白垩之术-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         809,
         46,
         22
@@ -802,7 +835,7 @@
     "assets/hand/白垩之术-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         809,
         46,
         22
@@ -812,7 +845,7 @@
     "assets/hand/最好的伙伴-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         787,
         46,
         22
@@ -822,7 +855,7 @@
     "assets/hand/最好的伙伴-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         787,
         46,
         22
@@ -832,7 +865,7 @@
     "assets/hand/最好的伙伴-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         787,
         46,
         22
@@ -842,7 +875,7 @@
     "assets/hand/最好的伙伴-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         787,
         46,
         22
@@ -852,7 +885,7 @@
     "assets/hand/运筹帷幄-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         831,
         46,
         22
@@ -862,8 +895,8 @@
     "assets/hand/运筹帷幄-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        831,
+        0,
+        853,
         46,
         22
       ],
@@ -872,8 +905,8 @@
     "assets/hand/运筹帷幄-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        831,
+        46,
+        853,
         46,
         22
       ],
@@ -882,7 +915,7 @@
     "assets/hand/运筹帷幄-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         853,
         46,
         22
@@ -892,7 +925,7 @@
     "assets/hand/运筹帷幄-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         853,
         46,
         22
@@ -902,7 +935,7 @@
     "assets/hand/运筹帷幄-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         853,
         46,
         22
@@ -912,7 +945,7 @@
     "assets/hand/赦免宣告-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         831,
         46,
         22
@@ -922,7 +955,7 @@
     "assets/hand/赦免宣告-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         831,
         46,
         22
@@ -932,7 +965,7 @@
     "assets/hand/赦免宣告-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         831,
         46,
         22
@@ -942,7 +975,7 @@
     "assets/hand/赦免宣告-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         831,
         46,
         22
@@ -952,7 +985,7 @@
     "assets/hand/流放者头冠-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         787,
         46,
         22
@@ -962,8 +995,8 @@
     "assets/hand/流放者头冠-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        787,
+        0,
+        809,
         46,
         22
       ],
@@ -972,8 +1005,8 @@
     "assets/hand/流放者头冠-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        787,
+        46,
+        809,
         46,
         22
       ],
@@ -982,7 +1015,7 @@
     "assets/hand/流放者头冠-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         809,
         46,
         22
@@ -992,7 +1025,7 @@
     "assets/hand/流放者头冠-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         809,
         46,
         22
@@ -1002,7 +1035,7 @@
     "assets/hand/流放者头冠-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         809,
         46,
         22
@@ -1032,7 +1065,7 @@
     "assets/hand/赌徒的耳环-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         831,
         46,
         22
@@ -1042,7 +1075,7 @@
     "assets/hand/赌徒的耳环-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         831,
         46,
         22
@@ -1052,7 +1085,7 @@
     "assets/hand/蒙德土豆饼-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         831,
         46,
         22
@@ -1062,7 +1095,7 @@
     "assets/hand/蒙德土豆饼-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         831,
         46,
         22
@@ -1072,7 +1105,7 @@
     "assets/hand/本大爷还没有输-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         787,
         46,
         22
@@ -1082,7 +1115,7 @@
     "assets/hand/本大爷还没有输-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         787,
         46,
         22
@@ -1092,7 +1125,7 @@
     "assets/hand/本大爷还没有输-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         787,
         46,
         22
@@ -1102,7 +1135,7 @@
     "assets/hand/本大爷还没有输-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         787,
         46,
         22
@@ -1112,8 +1145,8 @@
     "assets/hand/莲花酥-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        809,
+        0,
+        831,
         46,
         22
       ],
@@ -1122,8 +1155,8 @@
     "assets/hand/莲花酥-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        809,
+        46,
+        831,
         46,
         22
       ],
@@ -1169,10 +1202,30 @@
       ],
       "sourceSha256": "adc0290cdf7d203b60753083d4c771d3323763212a75380d2149b24b84f4ebd1"
     },
+    "assets/hand/抵天雷罚-v03-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        322,
+        765,
+        46,
+        22
+      ],
+      "sourceSha256": "ca6d3a659a6ef023c6ce01d6417556f9359b90eb45d9e99d7fe39d8e3be39d24"
+    },
+    "assets/hand/抵天雷罚-v03-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        765,
+        46,
+        22
+      ],
+      "sourceSha256": "603b7778103858dcc16b6c499a98b431b26fa805f65854b5e68acee4dfd9362d"
+    },
     "assets/hand/雷草祝佑-碎霆-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         875,
         46,
         22
@@ -1182,7 +1235,7 @@
     "assets/hand/雷草祝佑-碎霆-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         875,
         46,
         22
@@ -1192,7 +1245,7 @@
     "assets/hand/换班时间-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         765,
         46,
         22
@@ -1202,7 +1255,7 @@
     "assets/hand/换班时间-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         765,
         46,
         22
@@ -1232,8 +1285,8 @@
     "assets/hand/星天之兆-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        765,
+        0,
+        787,
         46,
         22
       ],
@@ -1242,8 +1295,8 @@
     "assets/hand/星天之兆-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        765,
+        46,
+        787,
         46,
         22
       ],
@@ -1252,7 +1305,7 @@
     "assets/hand/飞叶迴斜-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         875,
         46,
         22
@@ -1262,7 +1315,7 @@
     "assets/hand/飞叶迴斜-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         875,
         46,
         22
@@ -1272,7 +1325,7 @@
     "assets/hand/飞叶迴斜-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         875,
         46,
         22
@@ -1282,7 +1335,7 @@
     "assets/hand/飞叶迴斜-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         875,
         46,
         22
@@ -1292,7 +1345,7 @@
     "assets/hand/飞叶迴斜-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         875,
         46,
         22
@@ -1302,8 +1355,8 @@
     "assets/hand/飞叶迴斜-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        875,
+        0,
+        897,
         46,
         22
       ],
@@ -1312,8 +1365,8 @@
     "assets/hand/飞叶迴斜-v04-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        875,
+        46,
+        897,
         46,
         22
       ],
@@ -1322,7 +1375,7 @@
     "assets/hand/飞叶迴斜-v04-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         897,
         46,
         22
@@ -1332,7 +1385,7 @@
     "assets/hand/飞叶迴斜-v05-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         897,
         46,
         22
@@ -1342,7 +1395,7 @@
     "assets/hand/飞叶迴斜-v05-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         897,
         46,
         22
@@ -1392,7 +1445,7 @@
     "assets/hand/雷楔-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         853,
         46,
         22
@@ -1402,7 +1455,7 @@
     "assets/hand/雷楔-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         853,
         46,
         22
@@ -1412,7 +1465,7 @@
     "assets/hand/雷楔-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         853,
         46,
         22
@@ -1422,7 +1475,7 @@
     "assets/hand/雷楔-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         853,
         46,
         22
@@ -1432,7 +1485,7 @@
     "assets/hand/雷楔-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         853,
         46,
         22
@@ -1442,7 +1495,7 @@
     "assets/hand/雷楔-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         853,
         46,
         22
@@ -1452,8 +1505,8 @@
     "assets/hand/雷楔-v04-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        853,
+        0,
+        875,
         46,
         22
       ],
@@ -1462,8 +1515,8 @@
     "assets/hand/雷楔-v04-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        853,
+        46,
+        875,
         46,
         22
       ],
@@ -1472,7 +1525,7 @@
     "assets/hand/雷楔-v05-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         875,
         46,
         22
@@ -1482,7 +1535,7 @@
     "assets/hand/雷楔-v05-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         875,
         46,
         22
@@ -1512,8 +1565,8 @@
     "assets/expanded/白垩之术-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        384,
-        26,
+        0,
+        52,
         32,
         26
       ],
@@ -1522,8 +1575,8 @@
     "assets/expanded/白垩之术-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        416,
-        26,
+        32,
+        52,
         32,
         26
       ],
@@ -1532,8 +1585,8 @@
     "assets/expanded/白垩之术-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        448,
-        26,
+        64,
+        52,
         32,
         26
       ],
@@ -1542,8 +1595,8 @@
     "assets/expanded/白垩之术-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        480,
-        26,
+        96,
+        52,
         32,
         26
       ],
@@ -1552,7 +1605,7 @@
     "assets/expanded/白垩之术-v03-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        0,
+        128,
         52,
         32,
         26
@@ -1562,7 +1615,7 @@
     "assets/expanded/白垩之术-v03-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        32,
+        160,
         52,
         32,
         26
@@ -1572,7 +1625,7 @@
     "assets/expanded/赦免宣告-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        320,
+        448,
         52,
         32,
         26
@@ -1582,7 +1635,7 @@
     "assets/expanded/赦免宣告-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        352,
+        480,
         52,
         32,
         26
@@ -1592,8 +1645,8 @@
     "assets/expanded/赦免宣告-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        384,
-        52,
+        0,
+        78,
         32,
         26
       ],
@@ -1602,8 +1655,8 @@
     "assets/expanded/赦免宣告-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        416,
-        52,
+        32,
+        78,
         32,
         26
       ],
@@ -1652,7 +1705,7 @@
     "assets/expanded/蒙德土豆饼-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        128,
+        256,
         52,
         32,
         26
@@ -1662,7 +1715,7 @@
     "assets/expanded/蒙德土豆饼-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        160,
+        288,
         52,
         32,
         26
@@ -1672,7 +1725,7 @@
     "assets/expanded/蒙德土豆饼-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        192,
+        320,
         52,
         32,
         26
@@ -1682,7 +1735,7 @@
     "assets/expanded/蒙德土豆饼-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        224,
+        352,
         52,
         32,
         26
@@ -1692,7 +1745,7 @@
     "assets/expanded/本大爷还没有输-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        192,
+        256,
         26,
         32,
         26
@@ -1702,7 +1755,7 @@
     "assets/expanded/本大爷还没有输-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        224,
+        288,
         26,
         32,
         26
@@ -1712,7 +1765,7 @@
     "assets/expanded/本大爷还没有输-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        256,
+        320,
         26,
         32,
         26
@@ -1722,7 +1775,7 @@
     "assets/expanded/本大爷还没有输-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        288,
+        352,
         26,
         32,
         26
@@ -1732,7 +1785,7 @@
     "assets/expanded/本大爷还没有输-v03-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        320,
+        384,
         26,
         32,
         26
@@ -1742,7 +1795,7 @@
     "assets/expanded/本大爷还没有输-v03-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        352,
+        416,
         26,
         32,
         26
@@ -1852,7 +1905,7 @@
     "assets/expanded/飞叶迴斜-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        192,
+        320,
         78,
         32,
         26
@@ -1862,7 +1915,7 @@
     "assets/expanded/飞叶迴斜-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        224,
+        352,
         78,
         32,
         26
@@ -1872,7 +1925,7 @@
     "assets/expanded/飞叶迴斜-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        256,
+        384,
         78,
         32,
         26
@@ -1882,7 +1935,7 @@
     "assets/expanded/飞叶迴斜-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        288,
+        416,
         78,
         32,
         26
@@ -1892,7 +1945,7 @@
     "assets/expanded/飞叶迴斜-v03-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        320,
+        448,
         78,
         32,
         26
@@ -1902,7 +1955,7 @@
     "assets/expanded/飞叶迴斜-v03-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        352,
+        480,
         78,
         32,
         26
@@ -1912,8 +1965,8 @@
     "assets/expanded/飞叶迴斜-v04-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        384,
-        78,
+        0,
+        104,
         32,
         26
       ],
@@ -1922,8 +1975,8 @@
     "assets/expanded/飞叶迴斜-v04-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        416,
-        78,
+        32,
+        104,
         32,
         26
       ],
@@ -1932,8 +1985,8 @@
     "assets/expanded/飞叶迴斜-v05-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        448,
-        78,
+        64,
+        104,
         32,
         26
       ],
@@ -1942,8 +1995,8 @@
     "assets/expanded/飞叶迴斜-v05-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        480,
-        78,
+        96,
+        104,
         32,
         26
       ],
@@ -1952,7 +2005,7 @@
     "assets/expanded/雷草祝佑-碎霆-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        128,
+        256,
         78,
         32,
         26
@@ -1962,7 +2015,7 @@
     "assets/expanded/雷草祝佑-碎霆-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        160,
+        288,
         78,
         32,
         26
@@ -1972,7 +2025,7 @@
     "assets/expanded/最好的伙伴-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        128,
+        192,
         26,
         32,
         26
@@ -1982,7 +2035,7 @@
     "assets/expanded/最好的伙伴-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        160,
+        224,
         26,
         32,
         26
@@ -1992,7 +2045,7 @@
     "assets/expanded/换班时间-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        0,
+        64,
         26,
         32,
         26
@@ -2002,7 +2055,7 @@
     "assets/expanded/换班时间-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        32,
+        96,
         26,
         32,
         26
@@ -2012,7 +2065,7 @@
     "assets/expanded/莲花酥-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        64,
+        192,
         52,
         32,
         26
@@ -2022,7 +2075,7 @@
     "assets/expanded/莲花酥-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        96,
+        224,
         52,
         32,
         26
@@ -2032,8 +2085,8 @@
     "assets/expanded/雷楔-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        448,
-        52,
+        64,
+        78,
         32,
         26
       ],
@@ -2042,8 +2095,8 @@
     "assets/expanded/雷楔-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        480,
-        52,
+        96,
+        78,
         32,
         26
       ],
@@ -2052,7 +2105,7 @@
     "assets/expanded/雷楔-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        0,
+        128,
         78,
         32,
         26
@@ -2062,7 +2115,7 @@
     "assets/expanded/雷楔-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        32,
+        160,
         78,
         32,
         26
@@ -2072,7 +2125,7 @@
     "assets/expanded/雷楔-v03-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        64,
+        192,
         78,
         32,
         26
@@ -2082,7 +2135,7 @@
     "assets/expanded/雷楔-v03-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        96,
+        224,
         78,
         32,
         26
@@ -2092,7 +2145,7 @@
     "assets/expanded/星天之兆-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        64,
+        128,
         26,
         32,
         26
@@ -2102,7 +2155,7 @@
     "assets/expanded/星天之兆-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        96,
+        160,
         26,
         32,
         26
@@ -2132,7 +2185,7 @@
     "assets/expanded/赌徒的耳环-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        256,
+        384,
         52,
         32,
         26
@@ -2142,12 +2195,52 @@
     "assets/expanded/赌徒的耳环-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        288,
+        416,
         52,
         32,
         26
       ],
       "sourceSha256": "25e0c68d9756133b037a13441db9c093f686685a8663f84c5cbe472c352db8a7"
+    },
+    "assets/expanded/抵天雷罚-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        0,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "0db27d535a316b68045f0fa93d0f113e75a697006dcb3b975e3c5957a372f36d"
+    },
+    "assets/expanded/抵天雷罚-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "4821e4c3ea13c368dd23654f4168268c02cfe2959888de5c16c09b5b190b8574"
+    },
+    "assets/expanded/流放者头冠-v01-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        448,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "45b75fb32229f078db33dc55f63c5429807a26a3bd23094b1deb4cfa01a11d59"
+    },
+    "assets/expanded/流放者头冠-v01-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        480,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "1c64f1415bc977db6be44b5321b1369beb664f20212c71079b79065c3f4324d2"
     }
   },
   "uiAtlas": {

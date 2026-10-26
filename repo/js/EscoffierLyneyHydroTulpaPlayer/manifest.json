@@ -1,0 +1,14 @@
+{
+  "manifest_version": 1,
+  "name": "[我不是牌神]爱可菲林尼水形幻人",
+  "version": "1.9.7",
+  "description": "爱可菲铺设冰召唤物，林尼以隐具魔术箭、余数战技和爆发接力，水形幻人触发召唤物。支持随机料理、奇瑰之汤、圣遗物、伙伴、调和与阵亡接替；每个动作确认后按实际资源重新选择。",
+  "authors": [
+    {
+      "name": "巨鲸也是咸鱼"
+    }
+  ],
+  "bgi_version": "0.66.0",
+  "settings_ui": "settings.json",
+  "main": "main.js"
+}

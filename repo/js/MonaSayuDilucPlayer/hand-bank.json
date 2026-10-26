@@ -340,6 +340,13 @@
             "assets/hand/流火焦灼-v01-p01.png",
             "assets/hand/流火焦灼-v01-p02.png"
           ]
+        },
+        {
+          "name": "runtime-8f7cc078e5",
+          "patches": [
+            "assets/hand/流火焦灼-v02-p01.png",
+            "assets/hand/流火焦灼-v02-p02.png"
+          ]
         }
       ]
     }
@@ -522,6 +529,13 @@
               "assets/expanded/流火焦灼-v01-p01.png",
               "assets/expanded/流火焦灼-v01-p02.png"
             ]
+          },
+          {
+            "name": "runtime-717c402f59",
+            "patches": [
+              "assets/expanded/流火焦灼-v02-p01.png",
+              "assets/expanded/流火焦灼-v02-p02.png"
+            ]
           }
         ]
       }
@@ -651,7 +665,7 @@
     "assets/hand/狼的末路-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         617,
         46,
         22
@@ -661,8 +675,8 @@
     "assets/hand/狼的末路-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        617,
+        0,
+        639,
         46,
         22
       ],
@@ -671,7 +685,7 @@
     "assets/hand/赌徒的耳环-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         639,
         46,
         22
@@ -681,7 +695,7 @@
     "assets/hand/赌徒的耳环-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         639,
         46,
         22
@@ -691,7 +705,7 @@
     "assets/hand/饰金之梦-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         661,
         46,
         22
@@ -701,8 +715,8 @@
     "assets/hand/饰金之梦-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        661,
+        0,
+        683,
         46,
         22
       ],
@@ -711,8 +725,8 @@
     "assets/hand/黄金剧团的奖赏-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        661,
+        46,
+        683,
         46,
         22
       ],
@@ -721,7 +735,7 @@
     "assets/hand/黄金剧团的奖赏-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         683,
         46,
         22
@@ -731,7 +745,7 @@
     "assets/hand/黄金剧团的奖赏-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         683,
         46,
         22
@@ -741,7 +755,7 @@
     "assets/hand/黄金剧团的奖赏-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         683,
         46,
         22
@@ -751,7 +765,7 @@
     "assets/hand/黄金剧团的奖赏-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         683,
         46,
         22
@@ -761,7 +775,7 @@
     "assets/hand/黄金剧团的奖赏-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         683,
         46,
         22
@@ -771,7 +785,7 @@
     "assets/hand/黄金屋-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         683,
         46,
         22
@@ -781,7 +795,7 @@
     "assets/hand/黄金屋-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         683,
         46,
         22
@@ -791,7 +805,7 @@
     "assets/hand/黄金屋-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         683,
         46,
         22
@@ -801,7 +815,7 @@
     "assets/hand/黄金屋-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        368,
+        460,
         683,
         46,
         22
@@ -811,8 +825,8 @@
     "assets/hand/黄金屋-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        683,
+        0,
+        705,
         46,
         22
       ],
@@ -821,8 +835,8 @@
     "assets/hand/黄金屋-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        683,
+        46,
+        705,
         46,
         22
       ],
@@ -871,8 +885,8 @@
     "assets/hand/运筹帷幄-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        414,
-        639,
+        0,
+        661,
         46,
         22
       ],
@@ -881,8 +895,8 @@
     "assets/hand/运筹帷幄-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        639,
+        46,
+        661,
         46,
         22
       ],
@@ -891,7 +905,7 @@
     "assets/hand/运筹帷幄-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         661,
         46,
         22
@@ -901,7 +915,7 @@
     "assets/hand/运筹帷幄-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         661,
         46,
         22
@@ -911,7 +925,7 @@
     "assets/hand/运筹帷幄-v03-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         661,
         46,
         22
@@ -921,7 +935,7 @@
     "assets/hand/运筹帷幄-v03-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         661,
         46,
         22
@@ -931,8 +945,8 @@
     "assets/hand/琴音之诗-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        460,
-        617,
+        46,
+        639,
         46,
         22
       ],
@@ -941,7 +955,7 @@
     "assets/hand/琴音之诗-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        0,
+        92,
         639,
         46,
         22
@@ -951,7 +965,7 @@
     "assets/hand/野猪公主-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         661,
         46,
         22
@@ -961,7 +975,7 @@
     "assets/hand/野猪公主-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        322,
+        414,
         661,
         46,
         22
@@ -1031,7 +1045,7 @@
     "assets/hand/迪娜泽黛-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         661,
         46,
         22
@@ -1041,7 +1055,7 @@
     "assets/hand/迪娜泽黛-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         661,
         46,
         22
@@ -1051,7 +1065,7 @@
     "assets/hand/蒂玛乌斯-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        138,
+        230,
         639,
         46,
         22
@@ -1061,7 +1075,7 @@
     "assets/hand/蒂玛乌斯-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        184,
+        276,
         639,
         46,
         22
@@ -1071,7 +1085,7 @@
     "assets/hand/蒂玛乌斯-v02-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        230,
+        322,
         639,
         46,
         22
@@ -1081,7 +1095,7 @@
     "assets/hand/蒂玛乌斯-v02-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        276,
+        368,
         639,
         46,
         22
@@ -1091,7 +1105,7 @@
     "assets/hand/立本-v01-p01.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        46,
+        138,
         639,
         46,
         22
@@ -1101,7 +1115,7 @@
     "assets/hand/立本-v01-p02.png": {
       "file": "assets/card-atlas/hand.png",
       "rect": [
-        92,
+        184,
         639,
         46,
         22
@@ -1127,6 +1141,26 @@
         22
       ],
       "sourceSha256": "fd5ea00e87c843ae0ba912297e4a1178bb7a83b5453274c96ceee45ee7bc03b3"
+    },
+    "assets/hand/流火焦灼-v02-p01.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        368,
+        617,
+        46,
+        22
+      ],
+      "sourceSha256": "987396d4c93ce886b889391a2585c777e74f279b14f38db1ed8bad1aa57ed4ec"
+    },
+    "assets/hand/流火焦灼-v02-p02.png": {
+      "file": "assets/card-atlas/hand.png",
+      "rect": [
+        414,
+        617,
+        46,
+        22
+      ],
+      "sourceSha256": "0b98c079a890e269b81f0b0731ce7726f08ce36e12f6899f0964716ae72f79b4"
     },
     "assets/expanded/偷懒的新方法-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
@@ -1191,7 +1225,7 @@
     "assets/expanded/赌徒的耳环-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        128,
+        192,
         26,
         32,
         26
@@ -1201,7 +1235,7 @@
     "assets/expanded/赌徒的耳环-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        160,
+        224,
         26,
         32,
         26
@@ -1251,7 +1285,7 @@
     "assets/expanded/运筹帷幄-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        192,
+        256,
         26,
         32,
         26
@@ -1261,7 +1295,7 @@
     "assets/expanded/运筹帷幄-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        224,
+        288,
         26,
         32,
         26
@@ -1311,7 +1345,7 @@
     "assets/expanded/迪娜泽黛-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        256,
+        320,
         26,
         32,
         26
@@ -1321,7 +1355,7 @@
     "assets/expanded/迪娜泽黛-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        288,
+        352,
         26,
         32,
         26
@@ -1331,7 +1365,7 @@
     "assets/expanded/迪娜泽黛-v02-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        320,
+        384,
         26,
         32,
         26
@@ -1341,7 +1375,7 @@
     "assets/expanded/迪娜泽黛-v02-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        352,
+        416,
         26,
         32,
         26
@@ -1351,7 +1385,7 @@
     "assets/expanded/蒂玛乌斯-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        64,
+        128,
         26,
         32,
         26
@@ -1361,7 +1395,7 @@
     "assets/expanded/蒂玛乌斯-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        96,
+        160,
         26,
         32,
         26
@@ -1371,7 +1405,7 @@
     "assets/expanded/立本-v01-p01.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        0,
+        64,
         26,
         32,
         26
@@ -1381,7 +1415,7 @@
     "assets/expanded/立本-v01-p02.png": {
       "file": "assets/card-atlas/expanded.png",
       "rect": [
-        32,
+        96,
         26,
         32,
         26
@@ -1407,6 +1441,26 @@
         26
       ],
       "sourceSha256": "b9c0479fce77d8004a9ac5b826cca6ea0abf9378dc742c2f2b3ab95d1bb56995"
+    },
+    "assets/expanded/流火焦灼-v02-p01.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        0,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "b22d41103d9a654acede6685c0df675d019cdfef5809f7d717849463037ae1a2"
+    },
+    "assets/expanded/流火焦灼-v02-p02.png": {
+      "file": "assets/card-atlas/expanded.png",
+      "rect": [
+        32,
+        26,
+        32,
+        26
+      ],
+      "sourceSha256": "b39824134982d181d5f5bcf8cae169d71cf21962b4ca577d15b045fc786f8985"
     }
   },
   "uiAtlas": {

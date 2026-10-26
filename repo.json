@@ -1,5 +1,5 @@
 {
-  "time": "20261021153604",
+  "time": "20261026094330",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -10,7 +10,7 @@
         {
           "name": "RaidenColleiKeqingPlayer",
           "type": "directory",
-          "version": "1.5.0",
+          "version": "1.9.7",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -21,14 +21,14 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.5.0"
+            "1.9.7"
           ],
-          "lastUpdated": "2026-10-21 15:36:04"
+          "lastUpdated": "2026-10-26 09:43:30"
         },
         {
           "name": "IansanGamingSayuPlayer",
           "type": "directory",
-          "version": "1.5.0",
+          "version": "1.9.7",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -39,14 +39,14 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.5.0"
+            "1.9.7"
           ],
-          "lastUpdated": "2026-10-21 15:36:04"
+          "lastUpdated": "2026-10-26 09:43:30"
         },
         {
           "name": "MoonbloomPlayer",
           "type": "directory",
-          "version": "1.5.0",
+          "version": "1.9.7",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -57,14 +57,14 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.5.0"
+            "1.9.7"
           ],
-          "lastUpdated": "2026-10-21 15:36:04"
+          "lastUpdated": "2026-10-26 09:43:30"
         },
         {
           "name": "MonaSayuDilucPlayer",
           "type": "directory",
-          "version": "1.5.0",
+          "version": "1.9.7",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -75,9 +75,45 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.5.0"
+            "1.9.7"
           ],
-          "lastUpdated": "2026-10-21 15:36:04"
+          "lastUpdated": "2026-10-26 09:43:30"
+        },
+        {
+          "name": "EscoffierLyneyHydroTulpaPlayer",
+          "type": "directory",
+          "version": "1.9.7",
+          "author": "巨鲸也是咸鱼",
+          "authors": [
+            {
+              "name": "巨鲸也是咸鱼"
+            }
+          ],
+          "description": "[我不是牌神]爱可菲林尼水形幻人~|~爱可菲铺设冰召唤物，林尼以隐具魔术箭、余数战技和爆发接力，水形幻人触发召唤物。支持随机料理、奇瑰之汤、圣遗物、伙伴、调和与阵亡接替；每个动作确认后按实际资源重新选择。",
+          "tags": [
+            "七圣召唤",
+            "PVE",
+            "1.9.7"
+          ],
+          "lastUpdated": "2026-10-26 09:43:30"
+        },
+        {
+          "name": "ConsecratedBeastsPlayer",
+          "type": "directory",
+          "version": "1.9.7",
+          "author": "巨鲸也是咸鱼",
+          "authors": [
+            {
+              "name": "巨鲸也是咸鱼"
+            }
+          ],
+          "description": "[我不是牌神]圣骸兽（特化对单）~|~飞蛇蓄能与元素爆发，毒蝎和角鳄接替承伤。围绕噬骸能量块、后台天赋、倒计时和支援安排资源，每一步按实际手牌、血量和骰子重新选择；面向普通PVE单体挑战。",
+          "tags": [
+            "七圣召唤",
+            "PVE",
+            "1.9.7"
+          ],
+          "lastUpdated": "2026-10-26 09:43:30"
         }
       ]
     }

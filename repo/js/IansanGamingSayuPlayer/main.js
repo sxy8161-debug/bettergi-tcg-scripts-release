@@ -193,7 +193,8 @@ function refusalScope(s, action, m) {
       conditions: s ? JSON.stringify([cost ? Object.keys(cost).sort().map(k => [k,cost[k]]) : null,
         diceOrder.map(e => s.dice?.[e] || 0), actor?.frozen, actor?.dead,
         a.skill === "Q" ? actor?.energy : null, target && [target.hp,target.dead,target.frozen],
-        card ? handInstanceFacts(card) : null]) : null };
+        card ? handInstanceFacts(card) : null,
+        ...(a.summonIndex != null ? [s.summons?.find(x => x.index === a.summonIndex) || null] : [])]) : null };
   }
 function blockAction(m, action, before, uncertain = false) {
     const key = actionKey(action), scope = refusalScope(before, action, m);
@@ -266,10 +267,13 @@ function actionRefused(s, m, action) {
   }
   function boardKey(s) {
     return JSON.stringify([s.active,diceOrder.map(e=>s.dice?.[e]||0),s.characters,
-      (s.hand||[]).map(h=>h.id),s.enemies,s.quicken||null,s.supportCounts||null,s.eye||null,s.dendroCore||null]);
+      (s.hand||[]).map(h=>h.id),s.enemies,s.quicken||null,s.supportCounts||null,s.eye||null,s.dendroCore||null,
+      ...(s.summonLayout ? [s.summonLayout] : []),
+      ...(s.skillFees ? [s.skillFees] : [])]);
   }
   function actionKey(action) {
-    return action.type + ":" + (action.id || (["skill","probe"].includes(action.type) ? action.who + ":" + action.skill : action.target));
+    return action.type + ":" + (action.id || (["skill","probe"].includes(action.type) ? action.who + ":" + action.skill : action.target)) +
+      (action.summonIndex != null ? ":summon:" + action.summonIndex + ":" + action.summonName : "");
   }
   function freshMemory() {
     return {
@@ -939,7 +943,7 @@ function actionRefused(s, m, action) {
     const h = indexedHand(b.hand);
     if (["switch", "skill", "probe"].includes(a.type)) return { mode: "unchanged", hand: h };
     if (a.type === "card" && ["draw", "revel", "sing", "lyre", "skivingNewAndImproved"].includes(a.id))
-      return { mode: "full", expectedCount: null };
+      return { mode: "full", expectedCount: null, refreshAfterConsumption:true };
     if (a.type === "card" || a.type === "tune") {
       if (h[a.index]?.id !== a.id) throw new Error("手牌增量计划的目标索引/身份不一致");
       return { mode: "remove", hand: indexedHand(h.filter((_, i) => i !== a.index)) };
@@ -1254,8 +1258,8 @@ function actionRefused(s, m, action) {
   };
 })(globalThis);
 
-globalThis.TCG.version = "1.5.0";
-globalThis.TCG.sharedVersion = "1.7.3";
+globalThis.TCG.version = "1.9.7";
+globalThis.TCG.sharedVersion = "1.9.7";
 globalThis.TCG.defaultStrategy = "default";
 (function (T) {
   const strategies = new Map();
@@ -3210,11 +3214,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     if (point[0] >= size.width || point[1] >= size.height) throw captureGeometryError("鼠标坐标取整后超出当前归一帧");
     return point;
   }
-  function boardDifferences(before, after) {
+  function boardDifferences(before, after, details = false) {
     const fields={active:s=>s.active,dice:s=>TCG.diceOrder.map(e=>s.dice?.[e]||0),
       own:s=>s.characters,enemy:s=>s.enemies,quicken:s=>s.quicken||null,support:s=>s.supportCounts||null,
-      eye:s=>s.eye||null,dendroCore:s=>s.dendroCore||null};
-    return Object.entries(fields).filter(([,read])=>JSON.stringify(read(before))!==JSON.stringify(read(after))).map(([name])=>name);
+      eye:s=>s.eye||null,dendroCore:s=>s.dendroCore||null,summons:s=>s.summonLayout||null};
+    const changed=Object.entries(fields).filter(([,read])=>JSON.stringify(read(before))!==JSON.stringify(read(after)));
+    return details ? Object.fromEntries(changed.map(([name,read])=>[name,{before:read(before),after:read(after)}])) : changed.map(([name])=>name);
   }
   class BetterGIHost {
     constructor(options) {
@@ -3234,6 +3239,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.handNeedsReset = false;
       this.handCountHint = null;
       this.handCache = null;
+      this.handContinuation = null;
       this.handScanSerial = 0;
       this.precisionBoard = false;
       this.forcedPickSession = null;
@@ -3703,8 +3709,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       if (this.has(f, "core/回合结算阶段", this.roi("viewport", [0, 0, 384, 1080]))) return { phase: "settlement", turn: "none" };
       // Native action banners can coexist with the user-turn icon, while HP,
       // generated cards and the hand-count badge are still animating.
-      const banner = TCG.norm(this.ocr(f, this.roi("phase", [700, 508, 580, 65])));
+      const banner = TCG.norm(this.ocr(f, this.roi("phase", [560, 508, 790, 70])));
+      if (banner === "支援区已满需先选择一张支援牌弃置")
+        return { phase:"choice", turn:"none", choiceKind:"support-discard", recognized:true };
       if (this.automaticBanners?.includes(banner)) return { phase: "automatic", turn: "none", automatic: banner };
+      // Target previews can show future summons and HP deltas. A declared
+      // target banner outranks a still-visible turn icon; it is not a board.
+      if (this.targetBanners?.includes(banner)) return { phase: "unknown", turn: "none", cardTarget: true };
       if (["我方行动", "对方行动", "行动阶段", "回合开始"].includes(banner)) return { phase: "transition", turn: "none" };
       const user = this.has(f, "user_turn", this.roi("phase", [64, 518, 33, 42]), 0.9);
       const enemy = this.has(f, "enemy_turn", this.roi("phase", [64, 518, 33, 42]), 0.9);
@@ -4113,9 +4124,18 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       throw error;
     }
     
+    skillX(action) {
+      const actor=TCG.team[action.who],order=actor?.skillOrder||["NA","E","Q"],index=order.indexOf(action.skill);
+      if(!actor||![3,4].includes(order.length)||new Set(order).size!==order.length||
+        order.some(skill=>!actor.skills[skill])||index<0)
+        throw new Error("技能槽位或当前出战角色不符");
+      // Skills stay right-aligned. Lyney's second normal attack adds one slot
+      // on the left; E/Q retain the existing calibrated positions.
+      return 1824-108*(order.length-1-index);
+    }
     async probeSkill(action,before,memory) {
-      const x={NA:1608,E:1716,Q:1824}[action.skill];
-      if(action.who!==before.active || !x)throw new Error("费用检视只能用于当前角色的固定技能槽");
+      const x=this.skillX(action);
+      if(action.who!==before.active)throw new Error("费用检视只能用于当前角色的固定技能槽");
       this.clickAt(...this.point("bottom",x,957));await sleep(1200);
       let fee=null,last=null,stable=0;
       for(let i=0;i<4;i++){
@@ -4228,6 +4248,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         ? 99
         : TCG.team[who].maxHp +
           (this.memory?.extraMaxHp?.[who] || 0) +
+          (this.pendingMaxHpAllowance?.(who) || 0) +
           (this.soupReceipt?.effect === "maxhp" && this.soupReceipt.exited === true &&
             this.soupReceipt.origin === this.confirmationSession?.key &&
             this.confirmationSession?.plan?.action?.target === who &&
@@ -4393,7 +4414,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         const enemies=this.enemiesIn(f);
         const normalHpReadable=this.precisionBoard ? this.normalHpProfileIn(f,characters,enemies) : true;
         return { ...phase, normalHpReadable, pickSelection:phase.phase==="pick"?this.pickSelectionIn(f):null, characters, active: actives.length === 1 ? actives[0] : null,
-          enemies, ...this.boardExtrasIn(f,phase),
+          enemies, ...this.boardExtrasIn(f,phase,actives.length === 1 ? actives[0] : null),
           // Observation truth is independent of the predicted action budget.
           dice: dice.dice, diceKnown: phase.phase === "board" && (TCG.total(dice.dice) > 0 || badgeCount === 0),
           diceObservation: { badge: badgeCount, templates: TCG.total(dice.dice) }, hand: null };
@@ -4473,28 +4494,38 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async expand(resetFirst = true) {
       // The native control is a toggle. Card selection does not close the fan;
       // never click that control again while the same layout remains ready.
-      if (resetFirst && !this.boardReady && !this.handFanReady) await this.reset();
-      if (this.raisedHandIn) {
-        const view = this.frame(f => {
+      const readView = f => {
+        if (!this.raisedHandIn) return null;
+        if (this.raisedHandIn(f)) return "expanded";
+        return this.collapsedLayoutIn(f).status === "readable" ? "folded" : null;
+      };
+      let needsReset;
+      let view = this.frame(f => {
+        this.requireHandObservation(this.adoptPhase(this.phaseIn(f)), "before-hand-expand");
+        needsReset = resetFirst && !this.boardReady && !this.handFanReady;
+        return needsReset ? null : readView(f);
+      });
+      if (needsReset) {
+        await this.reset();
+        view = this.frame(f => {
           this.requireHandObservation(this.phaseIn(f), "before-hand-view-toggle");
-          return this.raisedHandIn(f) ? "expanded" :
-            this.collapsedLayoutIn(f).status === "readable" ? "folded" : null;
+          return readView(f);
         });
-        // Draw/choice animations can raise or fold the fan independently of
-        // our last click. A complete native layout outranks the view hint.
-        // Unknown layout is not permission to toggle an already-open fan.
-        if (view === "expanded") {
-          if (!this.handFanReady) this.handPositionProof = null;
-          this.handFanReady = this.handNeedsReset = true;
-          this.boardReady = false;
-          this.trace("hand-expand-skipped", { reason: "native-expanded-layout" });
-          return;
-        }
-        if (view === "folded" && this.handFanReady) {
-          this.handFanReady = false;
-          this.handPositionProof = null;
-          this.trace("hand-view-reconciled", { view, reason: "native-layout-contradicts-hint" });
-        }
+      }
+      // Draw/choice animations can raise or fold the fan independently of
+      // our last click. A complete native layout outranks the view hint.
+      // Unknown layout is not permission to toggle an already-open fan.
+      if (view === "expanded") {
+        if (!this.handFanReady) this.handPositionProof = null;
+        this.handFanReady = this.handNeedsReset = true;
+        this.boardReady = false;
+        this.trace("hand-expand-skipped", { reason: "native-expanded-layout" });
+        return;
+      }
+      if (view === "folded" && this.handFanReady) {
+        this.handFanReady = false;
+        this.handPositionProof = null;
+        this.trace("hand-view-reconciled", { view, reason: "native-layout-contradicts-hint" });
       }
       if (this.handFanReady) {
         this.trace("hand-expand-skipped", { reason: "fan-already-ready" });
@@ -4546,16 +4577,39 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       return native;
     }
-    async inspectHandCard(action, x) {
+    async inspectHandCard(action, x, before = null) {
+      // A fresh native artwork identity is sufficient for ordinary input.
+      // Details are only opened for unknown identities or actual deck facts.
+      if (before && !this.needsCardDetails?.(action, before) && this.expandedHandIn) {
+        let slot;
+        try {
+          slot=this.frame(f => {
+            const target=this.expandedHandIn(f, before.hand.length, action.index)
+              ?.slots.find(s => s.index === action.index);
+            if(!target?.titleCandidates)return target;
+            // The target already established this frame's complete layout.
+            const row=this.expandedHandIn(f,before.hand.length),
+              cards=row.slots.map(s=>s.id?TCG.observedCard(TCG.byId[s.id].name,s.index):null);
+            this.fillHandVariants(cards,row.slots,before.hand,[],true);
+            return cards[action.index]?{...row.slots[action.index],id:cards[action.index].id}:target;
+          });
+        }
+        catch(e) {
+          if(e.code!=="TCG_HAND_RETRY")throw e;
+          await this.refreshHandBeforeInput("目标牌面读取时数量已变化，重新核对手牌");
+        }
+        if (slot?.id) {
+          if (slot.id !== action.id)
+            await this.refreshHandBeforeInput("目标槽牌面已变化，重新核对手牌");
+          this.trace("hand-input-artwork", { id:action.id,index:action.index,additionalInputs:0 });
+          return slot.point;
+        }
+      }
       const raw = await this.titleAt(x, 945, false, false, "card", action.id, true);
       if (!raw) {
-        // No title is not a conflicting identity. No action was submitted;
-        // restore the view and retry this slot through the state owner.
-        this.requireHandObservation(this.phase(), "missing-input-title");
-        await this.reset();
-        const error = new Error("目标手牌标题暂未读到，保留身份后重试目标槽");
-        error.code = "TCG_STATE_REFRESH";
-        throw error;
+        // The target may have left after a delayed effect. A board-only
+        // refresh would keep selecting the same cached, nonexistent card.
+        await this.refreshHandBeforeInput("目标手牌标题为空，重新读取当前手牌");
       }
       if (TCG.observedCard(raw, action.index)?.id !== action.id)
         await this.refreshHandBeforeInput("目标手牌卡名校验失败，重新核对手牌");
@@ -4622,9 +4676,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         const raw = this.frame((f) => {
           if (watchPhase) this.requireHandObservation(this.phaseIn(f), "title-sampling");
           const title = this.titleIn(f, roi, kind);
-          // Use the already captured stable title frame for optional deck facts.
-          // Normal decks have no facts reader and perform no additional OCR.
-          if (!opening && kind === "card" && previousKey === "title:" + TCG.norm(title)) {
+          // A known target needs one positive identity, not a second copy of
+          // the same OCR. Blind discovery still corroborates an unknown title.
+          if (!opening && kind === "card" && (expected !== null
+              ? TCG.observedCard(title, 0)?.id === expected
+              : previousKey === "title:" + TCG.norm(title))) {
             const card = TCG.identify(title);
             if (card) this.readSelectedCardFacts?.(f, card, x);
           }
@@ -4637,16 +4693,22 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         lastStable = stable ? raw : "";
         const matchesExpected = expected === null || (kind === "character"
           ? who === expected : TCG.observedCard(raw, 0)?.id === expected);
-        if (stable && matchesExpected) {
+        if ((stable || expected !== null) && matchesExpected) {
           this.trace("title-read", {
             point: [x, y],
             roi,
             kind,
             expected,
             reads,
-            stable: true,
+            stable,
             matchesExpected: true,
           });
+          return raw;
+        }
+        // A positively identified, stable different card is a stale target,
+        // not an animation worth polling eight more times.
+        if (stable && expected !== null && kind === "card" && TCG.identify(raw)) {
+          this.trace("title-read", { point:[x,y],roi,kind,expected,reads,stable:true,matchesExpected:false });
           return raw;
         }
         previousKey = key;
@@ -4666,10 +4728,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       // A stable wrong character remains wrong; preserve its raw title for the error.
       return kind === "character" || expected !== null ? lastStable : "";
     }
-    invalidateHand(reason) {
+    invalidateHand(reason, continuation = null) {
       if (this.handCache !== null)
         this.trace("hand-cache-invalidated", { reason, count: this.handCache.length });
       this.handCache = null;
+      this.handContinuation = continuation;
       this.handCountHint = null;
       this.handPositionProof = null;
       this.emptyHandProven = false;
@@ -4684,7 +4747,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.handProvenance = this.handCache;
       this.trace("hand-cache-updated", { reason, count: this.handCache.length });
     }
-    handCostMarkersIn(f, roi, useColor = false) {
+    handCostMarkersIn(f, roi, useColor = roi.layoutKey === "16:10" && roi.panel === "handExpanded") {
+      // In the 1600 fan, grayscale card decorations can merge into a real
+      // corner and move its artwork anchor. Match the corner's own colors;
+      // this is not a table/background test or a lower acceptance threshold.
       const threshold = roi.panel === "handFolded" && roi.layoutKey === "16:10" ? .88 : .9;
       return ["hand_cost_neutral", "hand_cost_element", "hand_cost_dendro", "hand_cost_electro", "hand_cost_matching", "hand_cost_pyro"]
         .flatMap(asset => this.matches(f, asset, roi, threshold, useColor));
@@ -4697,9 +4763,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       });
     }
     handPriceIn(f, marker) {
-      const cost = number(this.numericAt(f, this.observedRoi("handExpanded", [Math.round(marker.x + 12), Math.round(marker.y - 5), 36, 42]), 4));
+      const area = this.observedRoi("handExpanded", [Math.round(marker.x + 12), Math.round(marker.y - 5), 36, 42]);
+      const cost = number(this.numericAt(f, area, 4));
+      // A larger surrounding crop still loses the native green digit in the
+      // saved selected-card frames. Re-read the same digit at its useful scale.
       return cost !== null ? { cost, reads: 1 } : {
-        cost: number(this.numericAt(f, this.observedRoi("handExpanded", [Math.round(marker.x), Math.round(marker.y - 30), 60, 90]), 4)), reads: 2,
+        cost: number(this.numericAt(f, area, 3)), reads: 2,
       };
     }
     costHandIn(f, nativeCount = null) {
@@ -4941,7 +5010,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
     }
     async handCount(expected = null) {
-      this.requireHandObservation(this.phase(), "before-hand-expand");
       await this.expand();
       const readCount = () =>
         this.frame((f) => {
@@ -5030,7 +5098,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     async readHand(expected = this.handCountHint, evidence = null, scan = { titles: 0 }) {
       const started = Date.now(), titlesBefore = scan.titles;
-      let observed = null;
+      let observed = null, failure = null;
       try {
         // One owner for the read transaction. The artwork adapter only seeds
         // identities/count; it cannot finish a second title/reset lifecycle.
@@ -5048,7 +5116,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         // Establish the expanded fan once. Selecting a card only raises that
         // card; it does not require resetting/re-expanding the whole hand.
         if (n > 0 && !hand.every(Boolean) && !this.handFanReady) {
-          this.requireHandObservation(this.phase(), "before-scan-expand");
           await this.expand();
         }
         this.handScanSerial++;
@@ -5063,19 +5130,48 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         observed = this.finishHandObservation ? this.finishHandObservation(hand, scan) : hand;
         if (this.handFanReady || this.handNeedsReset) {
           this.requireHandObservation(this.phase(), "before-hand-reset");
-          await this.reset();
+          // A proven empty fan cannot obscure the board; there is nothing to fold.
+          if (n === 0) {
+            this.handFanReady = false;
+            this.handNeedsReset = false;
+            this.boardReady = true;
+          } else await this.reset();
         }
         this.handCountHint = null;
         return observed;
-      } finally {
+      } catch (e) { failure = e; throw e; }
+      finally {
         // Do not click in finally: a failed title retains this observation's
         // known slots; a changed phase belongs to the recovery/phase owner.
         try { this.trace("hand-read-completed", { route: scan.route || "expanded-artwork-fallback",
           count: observed?.length ?? null, titleSlots: scan.titles - titlesBefore,
-          elapsedMs: Date.now() - started }); } catch {}
+          elapsedMs: Date.now() - started }); } catch (e) { if (!failure) throw e; }
       }
     }
     async observedHand(plan = null, scan = { titles: 0 }) {
+      if (!plan && this.handContinuation) Object.assign(scan, this.handContinuation);
+      // The action guarantees these old cards survive in the same order.
+      // If the current native count is exactly that list's length, there is
+      // no unidentified insertion to scan. Keep identity separate from view
+      // and price; a changed/missing count follows the normal full reader.
+      const retained = plan?.mode === "full" ? plan : !plan ? this.handContinuation : null;
+      if (retained?.retainedHandOrder === true && retained.retainedHand?.length > 0) {
+        const count = this.frame(f => {
+          this.requireHandObservation(this.phaseIn(f), "before-retained-hand-reuse");
+          const native = this.handCountIn(f);
+          if (native !== null || this.handFanReady || this.handNeedsReset) return native;
+          const row = this.collapsedLayoutIn?.(f);
+          if (row?.status !== "readable") return null;
+          this.lastHandCountSource = "full-folded-layout";
+          return row.count;
+        });
+        if (count === retained.retainedHand.length) {
+          if (this.handFanReady || this.handNeedsReset) await this.reset();
+          this.trace("hand-retained-reused", { count, source:this.lastHandCountSource,
+            proof:"retained-order-and-current-native-count", titleInputs:0 });
+          return TCG.indexedHand(retained.retainedHand);
+        }
+      }
       if (plan?.mode === "full") {
         const session = this.confirmationSession,
           observed = session?.handObservation;
@@ -5092,10 +5188,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             return TCG.indexedHand(observed.hand);
           }
         }
-        scan.retainedHand = plan.retainedHand;
+        scan.retainedHand = plan.retainedHand || plan.rejectedHand;
+        scan.retainedHandOrder = plan.retainedHandOrder === true || !!plan.rejectedHand;
         scan.retainedVariantFamilies = plan.retainedVariantFamilies;
         scan.settling = true;
-        this.invalidateHand("generated-drawn-or-replaced-card");
+        this.invalidateHand("generated-drawn-or-replaced-card", this.handContinuation);
         let hand = await this.readHand(plan.expectedCount ?? null, null, scan);
         if (plan.rejectedHand && !this.autoRisk)
           hand = TCG.reconcileHand(plan.rejectedHand, hand, true);
@@ -5109,7 +5206,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         if (
           proof &&
           receipt?.inputSent &&
-          plan.action?.type === "card" &&
+          ["card", "tune"].includes(plan.action?.type) &&
           proof.beforeKey === TCG.boardKey(plan.before) &&
           proof.id === plan.action.id &&
           proof.index === plan.action.index &&
@@ -5144,7 +5241,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           const count = this.frame(f => this.handCountIn(f));
           if (count === null || count === plan.hand.length) {
             this.trace("hand-incremental", { mode:"remove", count:plan.hand.length,
-              proof:plan.paidProven?"confirmed-paid-card-two-stable-boards":"independent-native-effect", visibleCount:count });
+              proof:plan.paidProven?"confirmed-paid-card-current-board":"independent-native-effect", visibleCount:count });
             return TCG.indexedHand(plan.hand);
           }
           this.emptyHandProven = false;
@@ -5170,14 +5267,21 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       const cached = plan?.mode === "unchanged" ? plan.hand : this.handCache;
       if (cached !== null && cached !== undefined) {
-        // Read-only anomaly detector, not a proof that a missing badge is zero.
-        // All real card/tune inputs check visible anomalies and exact target title.
-        const count = this.frame(f => this.handCountIn(f));
-        if (count === null || count === cached.length) {
+        // A preceding hand-changing action can insert/reorder cards without a
+        // net count change. Compare that current row before reusing its order.
+        const {count,row}=this.frame(f=>({count:this.handCountIn(f),
+          row:!plan&&this.handContinuation&&!(this.handContinuation.retainedHandOrder===true&&
+            this.handContinuation.retainedHand?.length===cached.length)&&!this.handFanReady&&!this.handNeedsReset
+            ?this.collapsedIn?.(f):null}));
+        const changed=row?.status==="readable"&&(row.count!==cached.length||
+          row.slots.some(s=>s.id&&s.id!==cached[s.index]?.id));
+        if (!changed && (count === null || count === cached.length)) {
           this.trace("hand-cache-reused", { count:cached.length, mode:plan?.mode || "cached", visibleCount:count });
           return TCG.indexedHand(cached);
         }
-        this.invalidateHand("unexpected-visible-count");
+        this.invalidateHand(changed ? "current-hand-row-changed" : "unexpected-visible-count", this.handContinuation);
+        if(row?.status==="readable")scan.foldedRead={...row,nativeCount:count,
+          countConflict:count!==null&&count!==row.count};
       }
       return await this.readHand(null, null, scan);
     }
@@ -5191,14 +5295,15 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         firstBoard = null;
       }
       this.prepareBoardObservation?.();
-      let previous = "", stableReads = 0, stableSince = 0, hpGapReads = 0, previousNormalHp = false;
-      let last = null;
+      const requiredReads = this.autoRisk ? 2 : 1;
+      let stableReads = 0, hpGapReads = 0;
+      let last = null, previousBoard = null;
       for (let attempt = 0; attempt < 12; attempt++) {
         const sampledAt = Date.now();
         try { last = attempt === 0 && firstBoard ? firstBoard : this.board(true); }
         catch (e) {
           if (e.code !== "TCG_DICE_RETRY") throw e;
-          previous = ""; stableReads = 0; hpGapReads = 0; previousNormalHp = false;
+          previousBoard = null; stableReads = 0; hpGapReads = 0;
           this.trace("board-settle-wait", { attempt, missing: ["dice"], reason: e.message });
           const remaining = 400 - (Date.now() - sampledAt);
           if (attempt < 11 && remaining > 0) await sleep(remaining);
@@ -5213,28 +5318,29 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           [...(last.characters || []), ...(last.enemies || [])].some(c => c?.dead !== true && !TCG.alive(c));
         hpGapReads = hpGap ? hpGapReads + 1 : 0;
         if (hpGapReads === 1 && await this.dismissCharacterOverview("board-hp-gap")) {
-          previous = ""; stableReads = 0; hpGapReads = 0; previousNormalHp = false;
+          previousBoard = null; stableReads = 0; hpGapReads = 0;
           continue;
         }
-        const key = JSON.stringify([last.phase, last.turn, last.active, last.characters, last.dice,
-          last.enemies, last.quicken || null, last.supportCounts || null,last.eye||null,last.dendroCore||null]);
         if (!issues.length) {
-          if (key === previous) stableReads++;
-          else { stableReads = 1; stableSince = Date.now(); }
-          if (stableReads >= (this.autoRisk ? 4 : 2) && (!this.autoRisk || Date.now() - stableSince >= 1200)) {
-            if (this.autoRisk) this.trace("automatic-settled", { active: last.active, proof: "quiet-native-board-not-status-ocr" });
+          if (this.boardsMatch(previousBoard,last)) stableReads++;
+          else stableReads = 1;
+          // Ordinary actions need a complete current board, not repeated
+          // equality. Combat/automatic effects retain one corroborating frame.
+          if (stableReads >= requiredReads) {
+            if (this.autoRisk) this.trace("automatic-settled", { active: last.active, proof: "two-complete-native-boards" });
             this.autoRisk = false;
-            if (previousNormalHp && last.normalHpReadable === true) this.releasePrecisionBoard("two-stable-normal-hp-profiles");
-            return { ...last, nativeStability: { reads: stableReads, key: TCG.boardKey({ ...last, hand: [] }), inputRevision: this.inputRevision } };
+            if (last.normalHpReadable === true) this.releasePrecisionBoard("complete-normal-hp-profile");
+            const observed=previousBoard ? this.stabilizeBoardExtras?.(previousBoard,last)||last : last;
+            return { ...observed, nativeStability: { reads: stableReads, key: TCG.boardKey({ ...observed, hand: [] }), inputRevision: this.inputRevision } };
           }
         } else stableReads = 0;
-        previous = issues.length ? "" : key;
-        previousNormalHp = !issues.length && last.normalHpReadable === true;
+        const changes=previousBoard?boardDifferences(previousBoard,last,true):{};
+        previousBoard = issues.length ? null : last;
         this.trace("board-settle-wait", { attempt, phase: last.phase, turn: last.turn,
-          valid: issues.length === 0, missing: issues, hpGapReads });
+          valid: issues.length === 0, missing: issues, hpGapReads, changed:Object.keys(changes),changes });
         if (hpGapReads === 3 && !this.precisionBoard) {
           this.usePrecisionBoard("three-consecutive-user-hp-gaps");
-          previous = ""; stableReads = 0; previousNormalHp = false;
+          previousBoard = null; stableReads = 0;
         }
         const remaining = 400 - (Date.now() - sampledAt);
         if (attempt < 11 && remaining > 0) await sleep(remaining);
@@ -5271,8 +5377,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     async observe(pendingAction = false, plan = null) {
       // The first fresh action-only board already contains its phase. Reuse it
-      // as the first stable sample instead of a separate full phase capture.
-      // No cross-frame HP caching; subsequent samples and auto quiet windows stay.
+      // instead of a separate full phase capture. Combat alone corroborates
+      // a second board; ordinary complete observations do not wait for equality.
       const p = this.initialObservationBoard?.() || null;
       if (p && (p.phase !== "board" || p.turn !== "user")) return { ...p, hand: null };
       let hand = null;
@@ -5280,17 +5386,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const handScan = { titles: 0 };
       // One recovery budget per pending action, not per 45-second poll.
       const recovery = this.confirmationSession
-        ? (this.confirmationSession.handRecovery ||= { failures:0, reanchored:false })
-        : { failures:0, reanchored:false };
+        ? (this.confirmationSession.handRecovery ||= { failures:0 })
+        : { failures:0 };
       this.emptyHandProven = false;
       this.pendingHandEvidence = null;
       let reusableSettled = null,
-        reusableSettledAt = 0, previousBoardKey = "";
+        reusableSettledAt = 0;
       let settled = null;
-      const boardSnapshotKey = s => JSON.stringify([
-        s.phase, s.turn, s.active, s.dice, s.characters, s.enemies,
-        s.supportCounts, s.quicken || null, s.eye || null, s.dendroCore || null,
-      ]);
       for (let attempt = 0; attempt < 3; attempt++) {
         // A failed quantity/title read may leave the same fan raised. Keep it
         // for read-only retries; only the single explicit re-anchor folds it.
@@ -5363,10 +5465,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
               }
               reusableSettled = settled;
               reusableSettledAt = handReadStart;
-            } else if (!this.autoRisk) {
-              // Same observe(), no input or obscured board. Only retain the
-              // comparison key: a NEW complete board must still match it.
-              previousBoardKey = boardSnapshotKey(settled);
             }
           }
           break;
@@ -5381,7 +5479,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             error.cause = e;
             throw error;
           }
-          if (recovery.failures === 2 && !recovery.reanchored) {
+          if (recovery.failures === 2) {
             // A genuine second failed observation, not every normal scan.
             // Re-anchor once, then require new evidence; never resend a card.
             try {
@@ -5394,7 +5492,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             this.invalidateHand("two-unresolved-hand-observations");
             this.boardReady = false;
             await this.reset();
-            recovery.reanchored = true;
             settled = null;
             this.trace("hand-reanchored", {
               attempt,
@@ -5417,15 +5514,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         });
         return this.finishObservation(state, pendingAction, handRead, reusableSettledAt);
       }
-      let previousKey = previousBoardKey,
-        last = null;
+      let last = null;
       for (let attempt = 0; attempt < 6; attempt++) {
         const sampledAt = Date.now();
         try {
-          last = this.board();
+          last = this.board(true);
         } catch (e) {
           if (e.code !== "TCG_DICE_RETRY") throw e;
-          previousKey = "";
           this.trace("board-read-wait", { attempt, error: String(e.message || e) });
           const remaining = 300 - (Date.now() - sampledAt);
           if (attempt < 5 && remaining > 0) await sleep(remaining);
@@ -5440,17 +5535,15 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           return { ...last, hand: null };
         }
         const state = { ...last, hand, ...(this.pendingHandEvidence ? { handEvidence: this.pendingHandEvidence } : {}) };
-        const key = boardSnapshotKey(last);
-        if (TCG.legalState(state) && TCG.enemyCount(state) !== null && key === previousKey) {
+        if (!this.observationIssues(last).length && TCG.legalState(state)) {
           return this.finishObservation(state, pendingAction, handRead);
         }
-        previousKey = key;
         const remaining = 300 - (Date.now() - sampledAt);
         if (attempt < 5 && remaining > 0) await sleep(remaining);
       }
       this.trace("board-unstable", { last, pendingAction });
       // Preserve the already-read hand: another unstable board must NOT trigger
-      // another hand scan. Recovery still requires a complete two-frame board.
+      // another hand scan. Recovery still requires a complete current board.
       settled = await this.settledBoard(true);
       if (settled.phase !== "board" || settled.turn !== "user") return { ...settled, hand: null };
       const recovered = { ...settled, hand, ...(this.pendingHandEvidence ? { handEvidence: this.pendingHandEvidence } : {}) };
@@ -5484,6 +5577,19 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       for (const row of rows) {
         if (![row.x,row.y,row.w,row.h].every(Number.isFinite) || row.w <= 0 || row.h <= 0)
           return { state:"unknown", reason:"title-location-unreadable", row };
+        // Top enemy-support counters can overlap the detail-title rectangle.
+        // A full numeric row belongs to that badge only with a current card
+        // rim beneath it. An open detail panel hides that rim, so its unknown
+        // title still blocks absence. Neither a digit alone nor a missed OCR
+        // is permission to ignore an overlay.
+        const supportCounter = /^\d+$/.test(TCG.norm(row.text)) && [0,1].some(col => {
+          const [x,y,w,h] = this.roi("board",[350+170*col,120,80,65]).rect,
+            cx=row.x+row.w/2,cy=row.y+row.h/2;
+          return cx>=x&&cx<=x+w&&cy>=y&&cy<=y+h&&
+            this.matches(f,"hand_rim",this.roi("board",[350+170*col,130,80,190]),.85,false)
+              .some(r=>Math.abs(r.x-cx)<=30&&r.y>=row.y+row.h);
+        });
+        if (supportCounter) continue;
         if (titleAreas.some(([x,y,w,h]) =>
           row.x >= x && row.x < x+w && row.y+row.h/2 >= y && row.y+row.h/2 <= y+h))
           return { state:"unknown", reason:"detail-title", row };
@@ -5661,7 +5767,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       if (
         plan?.mode !== "remove" ||
         plan.hand.length === 0 ||
-        a?.type !== "card" ||
+        !["card", "tune"].includes(a?.type) ||
         !r?.inputSent ||
         r.beforeKey !== TCG.boardKey(b) ||
         r.id !== a.id ||
@@ -5935,10 +6041,14 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.inputRevision++;
       this.handPositionProof = null;
       try {
+        // Let the game acquire the selected card before the first long move.
+        // Match official tuning's down/arrival holds; do not retry the drag.
+        await sleep(100);
         for (let i = 1; i <= 10; i++) {
           this.moveTo(start[0] + (end[0] - start[0]) * i / 10, start[1] + (end[1] - start[1]) * i / 10);
           await sleep(15);
         }
+        await sleep(100);
       } finally { leftButtonUp(); }
       await sleep(350);
     }
@@ -5968,10 +6078,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       return { banner, phase, ...(paymentPhase && !targeted ? { targets: this.cardPaymentControlsIn(f) } : {}) };
     }
     cardChoicePreviewIn(f, kind, phase = this.phaseIn(f)) {
+      const banner = TCG.norm(this.ocr(f, this.roi("choice", kind === "target" ? [600, 510, 720, 65] : [740, 510, 450, 65]))),
+        controls = this.cardPaymentControlsIn(f);
       return {
-        banner: TCG.norm(this.ocr(f, this.roi("choice", kind === "target" ? [600, 510, 720, 65] : [740, 510, 450, 65]))),
-        phase, controls: this.cardPaymentControlsIn(f),
-        ...(kind === "target" ? { buttons: this.matches(f, "core/确定", this.roi("bottom", [770, 900, 380, 90])) } : {}),
+        banner, phase, controls,
+        ...(kind === "target" && !controls.length ? { buttons: this.matches(f, "core/确定", this.roi("bottom", [770, 900, 380, 90])) } : {}),
       };
     }
     async waitForSample(sampledAt, interval, revision = this.inputRevision) {
@@ -5984,10 +6095,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.requireMatchTime();
     }
     cardTargetPreviewIn(f) {
+      const banner = TCG.norm(this.cardBannerIn ? this.cardBannerIn(f) : this.ocr(f, this.roi("phase", [740, 510, 450, 65]))),
+        buttons = this.matches(f, "core/确定", this.roi("bottom", [770, 900, 380, 90]));
       return {
-        banner: TCG.norm(this.cardBannerIn ? this.cardBannerIn(f) : this.ocr(f, this.roi("phase", [740, 510, 450, 65]))),
-        buttons: this.matches(f, "core/确定", this.roi("bottom", [770, 900, 380, 90])),
-        rows: this.ocrRows(f, this.roi("bottom", [770, 900, 380, 90])),
+        banner, buttons,
+        ...(!buttons.length ? { rows: this.ocrRows(f, this.roi("bottom", [770, 900, 380, 90])) } : {}),
         phase: this.phaseIn(f), warning: this.warnings(f),
       };
     }
@@ -6002,8 +6114,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       // Native normal switching has NO bottom action label. Only the fast
       // status displays 快速行动; absence alone never identifies this overlay.
       const expectedSpeed = memory.fastSwitch ? "快速行动" : "";
-      let stable = 0,
-        previousSpeed = null;
       for (let attempt = 0; attempt < 10; attempt++) {
         const sampledAt = Date.now();
         const preview = this.frame((f) => ({
@@ -6035,20 +6145,33 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           throw error;
         }
         const actualSpeed = TCG.norm(preview.speed);
-        stable = matched ? (actualSpeed === previousSpeed ? stable + 1 : 1) : 0;
-        previousSpeed = matched ? actualSpeed : null;
-        if (stable >= 2) return { fast: actualSpeed === "快速行动", speed: actualSpeed };
-        const remaining = (matched ? 120 : 300) - (Date.now() - sampledAt);
+        if (matched) return { fast: actualSpeed === "快速行动", speed: actualSpeed };
+        if (preview.phase.phase === "board" && preview.phase.turn === "user" &&
+            !TCG.norm(preview.banner) && !TCG.norm(preview.control)) {
+          // The first click did not open payment (native handoff was still
+          // running). Nothing was submitted: return to the existing state
+          // owner, rather than polling a nonexistent overlay or confirming it.
+          this.autoRisk = true;
+          const error = new Error("切换付款页未打开，交回当前牌桌重新决策");
+          error.code = "TCG_STATE_REFRESH";
+          throw error;
+        }
+        const remaining = 300 - (Date.now() - sampledAt);
         if (attempt < 9 && remaining > 0) await sleep(remaining);
       }
       throw new Error("切换确认页未核实横幅、控件与行动类型");
     }
     
-    async requireUnchangedBoard(before) {
+    boardsMatch(before, after, purpose = "observation", _action = null) {
+      const key=s=>JSON.stringify([s.phase,s.turn,s.active,TCG.diceOrder.map(e=>s.dice?.[e]||0),s.characters,s.enemies,
+        s.quicken||null,s.supportCounts||null,...(purpose==="observation"?[s.eye||null,s.dendroCore||null]:[]),s.summonLayout||null]);
+      return !!before && !!after && key(before)===key(after);
+    }
+    async requireUnchangedBoard(before, action = null) {
       // One pre-input owner: a clean board is read with its phase in the same
       // frame. Only an actually raised view needs a phase guard and a reset.
       let entryPhasePending = !this.boardReady && !this.handFanReady && !this.handNeedsReset;
-      if (!this.boardReady && !entryPhasePending) {
+      if (this.handFanReady || this.handNeedsReset) {
         const phase = this.phase();
         if (phase.phase !== "board" || phase.turn !== "user") {
           const error = new Error("执行前页面/回合已变化");
@@ -6059,19 +6182,27 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       // Dice maps are unordered and zero entries may be omitted. Compare
       // resources semantically, not by host dictionary insertion order.
-      const keyOf=s=>JSON.stringify([s.active,TCG.diceOrder.map(e=>s.dice?.[e]||0),s.characters,s.enemies,s.quicken||null,s.supportCounts||null]);
-      const expected=keyOf(before);let stable=0,last=null;
-      const recent=this.preInputBoardClean() && this.lastObservedState && keyOf(this.lastObservedState)===expected &&
+      const matches=(a,b)=>this.boardsMatch(a,b,"execution",action);
+      const recent=this.boardReady && matches(this.lastObservedState,before) &&
         this.lastObservedRevision===this.inputRevision && Date.now()-this.lastObservedAt<=1500 && !this.autoRisk;
+      if (recent) {
+        const phase = this.phase();
+        if (phase.phase !== "board" || phase.turn !== "user") {
+          const error = new Error("执行前页面/回合已变化");
+          error.code = "TCG_OBSERVATION_INTERRUPTED"; error.phase = { ...phase, hand: null };
+          throw error;
+        }
+        return before;
+      }
+      let last=null;
       for(let attempt=0;attempt<6;attempt++) {
         const sampledAt = Date.now();
         // A clean but unready entry has no reset/input between its phase and
-        // full-board reads. Let this same fresh frame prove both. Do not turn
-        // it into boardReady/recent evidence or remove either stable board.
+        // full-board reads. Let this same fresh frame prove both.
         const entryPhase = entryPhasePending; entryPhasePending = false;
-        try{last=entryPhase ? this.adoptPhase(this.board(true)) : this.board();}catch(e){
+        try{last=this.board(true);if(entryPhase)this.adoptPhase(last);}catch(e){
           if(e.code!=="TCG_DICE_RETRY")throw e;
-          stable=0;this.trace("execution-board-wait",{attempt,error:String(e.message||e)});
+          this.trace("execution-board-wait",{attempt,error:String(e.message||e)});
           const remaining = 300 - (Date.now() - sampledAt);
           if(attempt<5 && remaining>0)await sleep(remaining);continue;
         }
@@ -6080,17 +6211,24 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           error.code=!entryPhase && last.phase==="unknown" ? "TCG_STATE_REFRESH" : "TCG_OBSERVATION_INTERRUPTED";
           error.phase={...last,hand:null};this.boardReady=false;throw error;
         }
-        const matched=keyOf(last)===expected;stable=matched?stable+1:0;
-        this.trace("execution-board-wait",{attempt,matched,stable,active:last.active,dice:last.dice,changed:matched?[]:boardDifferences(before,last)});
-        if(stable>=2 || recent&&attempt===0&&matched)return last;
+        const complete=!this.observationIssues(last).length;
+        const matched=complete&&matches(before,last);
+        const changes=matched?{}:boardDifferences(before,last,true);
+        if(matched)return last;
+        this.trace("execution-board-wait",{attempt,matched,active:last.active,dice:last.dice,changed:Object.keys(changes),changes});
+        // A changed complete board invalidates the old decision immediately.
+        // Only missing observations retry; never wait for old resources back.
+        if(complete){
+          const error=new Error("执行前局面已变化，重新决策");
+          error.code="TCG_STATE_REFRESH";throw error;
+        }
         const remaining = 300 - (Date.now() - sampledAt);
         if(attempt<5 && remaining>0)await sleep(remaining);
       }
-      const error = new Error("执行前牌桌已变化或六次读取未稳定匹配");
+      const error = new Error("执行前六次读取仍有缺失字段");
       error.code = "TCG_STATE_REFRESH";
       throw error;
     }
-    preInputBoardClean() { return this.boardReady; }
     async execute(action, before, memory) {
       this.consumptionReceipt = null;
       this.pendingHandEvidence = null;
@@ -6103,12 +6241,15 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           throw new Error("未核实身份的牌禁止调和");
         const result = await this.executeInput(action, before, memory);
         if (!result?.probed) {
+          this.handContinuation = null;
           this.actionSubmittedAt = Date.now();
           this.trace("input-submitted", { action, ms: this.actionSubmittedAt - startedAt,
             inputRevision: this.inputRevision, awaitingChoice: !!this.choiceSession });
         }
         return result;
       } catch (e) {
+        if (this.consumptionReceipt?.inputSent || e.code === "TCG_NATIVE_REJECTION")
+          this.handContinuation = null;
         this.consumptionReceipt = null;
         this.pendingHandEvidence = null;
         const nativeRejection = e.code === "TCG_NATIVE_REJECTION";
@@ -6130,7 +6271,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const h = current.find(c => c.index === action.index);
       if (!h || h.id !== action.id) throw new Error("执行前重新核对卡名失败");
       const selected = prepared && !prepared.viewOnly;
-      if (prepared?.viewOnly && !this.handFanReady) await this.requireUnchangedBoard(before);
+      if (prepared?.viewOnly && !this.handFanReady) await this.requireUnchangedBoard(before,action);
       const priceIndex = action.type==="card"&&this.checkCardInput?action.index:null;
       // Non-selected inputs always enter inspectHandCard below. Its fresh
       // pre-click phase owns the boundary; quantity reads stay independent.
@@ -6138,21 +6279,21 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       if (prepared?.viewOnly && !sourceCount) {
         // No title/drag has been sent for this target. Unknown new quantity
         // cannot authorize bypassing the ordinary complete-board preflight.
-        await this.requireUnchangedBoard(before);
+        await this.requireUnchangedBoard(before,action);
         sourceCount=await this.prepareHandInput(before.hand.length,priceIndex,false,true);
       }
-      const x = selected?prepared.x:this.handPoints(current.length)[action.index];
-      if (!selected) await this.inspectHandCard(action, x);
+      let x = selected?prepared.x:this.handPoints(current.length)[action.index];
+      if (!selected) x = await this.inspectHandCard(action, x, before) ?? x;
       await this.checkCardInput?.(action,before,x,memory);
       const phase = this.phase();
       if (phase.turn !== "user") {
-        const error = new Error("拖牌前回合已改变"), actual = this.captureGeometry?.actualSize;
-        if (actual?.width === 2560 && [1440,1600].includes(actual.height)) {
-          error.code = "TCG_OBSERVATION_INTERRUPTED"; error.phase = { ...phase, hand: null };
-          this.boardReady = false; this.preparedHandInput = null; this.autoRisk = true;
-          this.trace("hand-input-interrupted", { action, stage: "before-drag", phase: phase.phase,
-            turn: phase.turn, inputSubmitted: false });
-        }
+        // No drag/payment was sent. The phase owner must resume from fresh
+        // observations at every supported size, not treat 1080 as fatal.
+        const error = new Error("拖牌前回合已改变");
+        error.code = "TCG_OBSERVATION_INTERRUPTED"; error.phase = { ...phase, hand: null };
+        this.boardReady = false; this.preparedHandInput = null; this.autoRisk = true;
+        this.trace("hand-input-interrupted", { action, stage: "before-drag", phase: phase.phase,
+          turn: phase.turn, inputSubmitted: false });
         throw error;
       }
       const targeted = action.type === "card" && action.target !== null;
@@ -6187,8 +6328,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     async inputSkill(action, before) {
       // executeInput already verified the current actor, board and resources.
       // Fixed role + fixed slot identifies the skill; no title/type OCR.
-      const x = { NA: 1608, E: 1716, Q: 1824 }[action.skill];
-      if (!x || action.who !== before.active) throw new Error("技能槽位或当前出战角色不符");
+      const x = this.skillX(action);
+      if (action.who !== before.active) throw new Error("技能槽位或当前出战角色不符");
       this.clickAt(...this.point("bottom",x,957));
       await sleep(1200);
       const preview = this.frame(f => ({ phase:this.phaseIn(f), warning:this.warnings(f) }));
@@ -6221,10 +6362,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     }
     async inputEnd() {
       await this.clickButton("回合结束", this.roi("viewport", [0, 0, 384, 1080]));
+      // Official RoundEnd waits 1000ms for the popup animation. clickButton
+      // already waited 200ms; confirm inside the native five-second window.
+      await sleep(800);
       if (this.phase().turn === "user") await this.clickButton("回合结束", this.roi("viewport", [0, 0, 384, 1080]));
     }
     async prepareHandInput(expected, priceIndex = null, requireReusableCount = false, deferToTitle = false) {
-      this.requireHandObservation(this.phase(), "before-target-expand");
       // execute already normalized and verified the board; do not blank-click
       // a second time simply to raise the fan.
       await this.expand(false);
@@ -6269,8 +6412,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         await this.refreshHandBeforeInput("执行前手牌数量证据冲突");
       }
       const reads = samples.map((s) => s.count), sources = samples.map((s) => s.source);
-      // Ordinary input immediately enters inspectHandCard, whose titleAt
-      // takes a fresh phase before the title click. Keep that later guard,
+      // Ordinary input immediately enters inspectHandCard, whose artwork or
+      // title path takes a fresh phase before input. Keep that later check,
       // rather than capturing two adjacent phase-only frames with no input
       // between them. Price-only probes/standalone callers keep this guard.
       if (deferToTitle !== true) this.requireHandObservation(this.phase(), "before-target-title");
@@ -6294,7 +6437,9 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         ? { count: expected, stableReads: 2, source: stableSamples[0].source, reads, sources } : null;
     }
     async refreshHandBeforeInput(reason) {
-      this.invalidateHand(reason);
+      // No card was submitted: a delayed insertion changes positions, not the
+      // preceding action's guarantee that its old cards stayed in the hand.
+      this.invalidateHand(reason, this.handContinuation);
       this.requireHandObservation(this.phase(), "before-cache-refresh-reset");
       await this.reset();
       const error = new Error(reason);
@@ -6335,18 +6480,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         if (remaining > 0) await sleep(remaining);
       };
       const combat = ["skill", "switch", "end"].includes(action.type) ||
-        action.type === "card" && (TCG.byId[action.id]?.combatSkill || ["floralSidewinder", "skivingNewAndImproved", "wedge", "penance"].includes(action.id));
+        action.type === "card" && (TCG.byId[action.id]?.combatSkill || TCG.byId[action.id]?.combatAction || ["floralSidewinder", "skivingNewAndImproved", "wedge", "penance"].includes(action.id));
       // The existing combat flag also owns switch/end recovery. This new
       // refresh policy is only for casts, not ordinary fast/manual switches.
       const effectAction = combat && !["switch", "end"].includes(action.type);
-      const actual = this.captureGeometry?.actualSize;
-      const handoff = actual?.width === 2560 && [1440,1600].includes(actual.height) &&
-        (effectAction || action.type === "switch" && !memory.fastSwitch)
-        ? (session.handoff ||= { startedAt: session.submittedAt ?? Date.now(), ownSince: null, ownReads: 0, ready: false }) : null;
-      // Edict consumption can precede its healing animation. Keep consumption
-      // confirmed, but use the existing quiet-board observer before planning.
-      // Do not require HP gain: full HP or healing suppression may prevent it.
-      const quietObservationRequired = action.type === "card" && action.id === "edict";
       // The pending action owns both identity synchronization and whether
       // consumption might still precede insertion. The lifecycle must not
       // reconstruct that plan after commit has changed the deck memory.
@@ -6355,21 +6492,34 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         // A card may enter combat confirmation as a skill (e.g. a kernel).
         // That adapter preserves cardAction; its hand effects remain a card's.
         handRefreshRequired: confirmed && (action.cardAction || action).type === "card" &&
-          session.plan?.mode === "full" && session.plan.refreshAfterConsumption !== false &&
+          session.plan?.refreshAfterConsumption === true &&
           Array.isArray(after.hand) && after.hand.length <= before.hand.length,
-        freshObservationRequired: confirmed && (effectAction && !session.transition || quietObservationRequired),
-        quietObservationRequired: confirmed && quietObservationRequired,
+        // The observation owner, not the finished confirmation session, owns
+        // retained identities through a later insertion from this action.
+        handContinuation: confirmed && session.plan?.retainedHand ? {
+          retainedHand: session.plan.retainedHand,
+          retainedVariantFamilies: session.plan.retainedVariantFamilies || [],
+          retainedHandOrder: session.plan.retainedHandOrder === true,
+        } : null,
+        // Edict consumption can precede healing. Both it and a cast without
+        // observed handoff need the existing corroborated board, not predicted HP.
+        freshObservationRequired: confirmed && (effectAction && !session.transition ||
+          action.type === "card" && action.id === "edict"),
       });
       while (Date.now() < deadline) {
         sampledAt = Date.now();
         const p = this.phase();
         lastPhase = p;
-        if (handoff && (p.phase !== "board" || p.turn !== "user")) {
-          handoff.ownSince = null; handoff.ownReads = 0; handoff.ready = false;
-        }
         if (p.result) return { ...p, confirmed: true };
-        if (p.turn === "enemy" || ["choice", "roll", "pick", "settlement"].includes(p.phase))
+        if (p.choiceKind === "support-discard") {
+          const error = new Error("支援区已满，卡牌尚未完成出牌；停止本局，不自动弃置已有支援或重复出牌");
+          error.code = "TCG_SUPPORT_FULL";
+          throw error;
+        }
+        if (p.turn === "enemy" || ["choice", "roll", "pick", "settlement"].includes(p.phase)) {
           session.handObservation = null;
+          session.skillViewClosed = true;
+        }
         if (this.choiceSession || p.phase === "choice") {
           session.handObservation = null;
           try { await this.resolveChoice(before, memory); }
@@ -6380,8 +6530,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           const receipt = this.soupReceipt || this.choiceReceipt;
           if (!(session.plan?.mode === "remove" && receipt?.origin === session.key &&
               receipt.exited === true && (this.soupReceipt === receipt || ["payment", "target"].includes(receipt.kind))))
-            session.plan = { mode: "full", action, before, expectedCount: this.handCountHint,
-              retainedHand: session.plan?.retainedHand,retainedVariantFamilies:session.plan?.retainedVariantFamilies };
+            session.plan = { ...session.plan, mode: "full", action, before, expectedCount: this.handCountHint };
           continue;
         }
         if (action.type === "card" && action.id === "toss" && (this.tossSession || p.phase === "roll")) {
@@ -6406,39 +6555,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           let after;
           try {
             this.requireHandObservation(p, "before-confirm-reset");
-            // Finish the submitted card's view as soon as its own board returns,
-            // not after the entire combat handoff wait. Never fold enemy/choice
-            // pages, and keep pre-reset consumption evidence bound to this action.
+            // Finish the submitted view on our board and preserve its native
+            // consumption evidence. Never fold enemy/choice pages.
             const receipt = await this.removalEvidenceBeforeReset(session.plan);
             if (p.phase === "board" && (this.handNeedsReset || this.handFanReady)) await this.reset();
             if (receipt && this.inputRevision >= receipt.revision && this.inputRevision <= receipt.revision + 1)
               session.plan = { ...session.plan, preResetEvidence: { ...receipt, revision: this.inputRevision } };
-            if (handoff && !handoff.ready) {
-              const now = Date.now(), minimumMs = action.skill === "Q" ? 15000 : 10000;
-              // Reuse the official 10s/15s no-handoff grace, but keep observing:
-              // a real opponent return can release it early; terminal/pick/choice
-              // still dispatch above. Never require a nonexistent enemy turn.
-              const eligible = p.phase === "board" &&
-                (session.transition || now - handoff.startedAt >= minimumMs);
-              if (eligible) { handoff.ownSince ??= now; handoff.ownReads++; }
-              else { handoff.ownSince = null; handoff.ownReads = 0; }
-              if (!eligible || handoff.ownReads < 3 || now - handoff.ownSince < 2000) {
-                const reason = eligible ? "own-turn-still-settling" : "handoff-not-observed";
-                if (handoff.reason !== reason) {
-                  handoff.reason = reason;
-                  this.trace("combat-handoff-wait", { action, reason, phase: p.phase, turn: p.turn,
-                    transition: session.transition, elapsedMs: now - handoff.startedAt, minimumMs });
-                }
-                await waitForSample(450); continue;
-              }
-              handoff.ready = true;
-              // Phase persistence is not full effect proof. Keep the existing
-              // quiet COMPLETE-board observer before any hand scan or input.
-              this.autoRisk = true;
-              this.trace("combat-handoff-ready", { action, transition: session.transition,
-                elapsedMs: now - handoff.startedAt, ownStableMs: now - handoff.ownSince,
-                ownReads: handoff.ownReads, proof: session.transition ? "observed-opponent-return" : "conservative-no-handoff-window" });
-            }
             after = await this.observe(true, session.plan ? { ...session.plan, transitionPassed: session.transition } : null);
           } catch (e) {
             if (["TCG_BOARD_RETRY", "TCG_DICE_RETRY", "TCG_HAND_RETRY"].includes(e.code)) {
@@ -6450,9 +6572,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           }
           if (after.result) return { ...after, confirmed: true };
           if (after.phase !== "board" || after.turn !== "user") {
-            if (handoff) { handoff.ownSince = null; handoff.ownReads = 0; handoff.ready = false; }
-            if (after.turn === "enemy" || ["choice", "roll", "pick", "settlement"].includes(after.phase))
+            if (after.turn === "enemy" || ["choice", "roll", "pick", "settlement"].includes(after.phase)) {
               session.handObservation = null;
+              session.skillViewClosed = true;
+            }
             if (after.turn === "enemy") session.transition = true;
             this.trace("confirmation-deferred", { action, phase: after.phase, turn: after.turn });
             await waitForSample(450); continue;
@@ -6460,6 +6583,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           // Consumed source can precede a late soup page. Keep its owner even
           // after a complete resync; neither success nor uncertain exit closes it.
           if (TCG.confirmationReady && !TCG.confirmationReady(action, before, after)) {
+            session.handObservation = null;
             await waitForSample(250); continue;
           }
           await this.provePaidDraw(action,before,after,memory);
@@ -6488,21 +6612,26 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             await waitForSample(400); continue;
           }
           this.trace("state-resync", { action, verified, budgetMatches, expectedDice: this.expectedDice,
-            observedDice: TCG.total(after.dice), reuseFullRead: after.handRead === "full" });
-          if (!verified && session.plan?.mode !== "unchanged" && after.handRead !== "full") {
-            this.invalidateHand("post-action-state-mismatch"); this.emptyHandProven = false;
+            observedDice: TCG.total(after.dice), reuseFullRead: verified && after.handRead === "full" });
+          // A completed read is not proof that its identities are correct.
+          // If the action contradicts it, invalidate the pending snapshot too
+          // and use the existing single resync read before an uncertain exit.
+          if (!verified && session.plan?.mode !== "unchanged") {
+            this.invalidateHand("post-action-state-mismatch");
             after = await this.observe(true, { mode: "full", expectedCount: null });
           }
           if (after.result) return { ...after, confirmed: true };
           if (after.phase !== "board" || after.turn !== "user") {
+            if (after.turn === "enemy" || ["choice", "roll", "pick", "settlement"].includes(after.phase))
+              session.skillViewClosed = true;
             if (after.turn === "enemy") session.transition = true;
-            if (handoff) { handoff.ownSince = null; handoff.ownReads = 0; handoff.ready = false; }
             await waitForSample(450); continue;
           }
           if (!TCG.legalState(after)) {
             await waitForSample(400); continue;
           }
           if (TCG.confirmationReady && !TCG.confirmationReady(action, before, after)) {
+            session.handObservation = null;
             await waitForSample(250); continue;
           }
           await this.provePaidDraw(action,before,after,memory);
@@ -6512,6 +6641,20 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           return { ...completed(after, confirmed), resynchronized: true };
         }
         if (p.phase === "roll" && combat) return { ...p, confirmed: session.transition };
+        // A skill detail can cover the turn marker if a submitted click did
+        // not finish the cast. Reuse the existing blank-area reset once after
+        // the same effect-start window, only until a native scene exit closes
+        // that opportunity. Later unknown frames cannot reopen an old detail.
+        // A new native observation, not dismissing the view, decides the outcome.
+        if (action.type === "skill" && !action.cardAction && !action.technique &&
+            p.phase === "unknown" && p.turn === "none" && !p.cardTarget &&
+            !session.skillViewClosed && session.submittedAt !== null &&
+            Date.now() - session.submittedAt >= 1200) {
+          session.skillViewClosed = true;
+          await this.reset();
+          this.trace("skill-view-reset", { action, reason: "unresolved-phase-after-skill-input" });
+          continue;
+        }
         await waitForSample(450);
       }
       const error = new Error("动作仍待核实，保留本次输入并继续观察");
@@ -6620,9 +6763,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
 (function(root){
   "use strict";
   const {charX,number,mousePoint}=root.TCGBetterGI;
-  // Verified skill names from DSTCG's repository card dictionary. The native
-  // skill/payment preview hides the usual turn marker; it is not an unknown
-  // board. Require BOTH a uniquely matched skill name and its type, not merely a panel.
   // This asset is the tooltip ABOVE the control, not its clickable area.
   // Use it only as a scene marker. First-pick confirmation uses the official
   // character-card path, not the separate tooltip/control geometry.
@@ -6634,6 +6774,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.automaticBanners=["风风轮舞踢","踏云献瑞","准备技能","正在准备技能"];
     }
 
+    // Shared Mystique Soup native labels, one selection and action-bound exit receipt.
     choiceIn(f) {
       const header = TCG.norm(this.ocr(f, this.roi("header", [700, 155, 520, 130])));
       if (!header.includes("挑选卡牌") || !header.includes("请选择一张卡牌")) return null;
@@ -6939,6 +7080,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const entrySampledAt = Date.now(), entryRevision = this.inputRevision;
       const foodPage = this.frame((f) => this.cardConfirmationEntryIn(f, targetedBanners[type] || []));
       this.trace("card-page", { id: action.id, target: action.target, type, ...foodPage });
+      if (foodPage.phase.choiceKind === "support-discard") {
+        const error = new Error("支援区已满，卡牌尚未完成出牌；停止本局，不自动弃置已有支援或重复出牌");
+        error.code = "TCG_SUPPORT_FULL";
+        throw error;
+      }
       if (
         type === "weapon" &&
         (!weaponKind ||
@@ -6989,9 +7135,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             });
             return;
           }
-          const play = selected.rows.filter((r) => TCG.norm(r.text) === "打出手牌" ||
+          const controls = selected.buttons.length ? selected.buttons : selected.rows.filter((r) => TCG.norm(r.text) === "打出手牌" ||
             type === "food" && TCG.norm(r.text) === "确定");
-          const controls = selected.buttons.length ? selected.buttons : play;
           const otherTarget = Object.values(targetedBanners).some(labels => labels.includes(selected.banner)) &&
             !targetedBanners[type].includes(selected.banner);
           const matched =
@@ -7043,9 +7188,12 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
             "legend",
             "food",
             "recycle",
+            "combat",
+            "summon",
+            "team-food",
           ].includes(card.type) && this.namedCardBannerMatches(action, banner);
         const teamEvent =
-          (action.id === "sing" && ["对我方所有角色生效", "对所有我方角色生效"].includes(banner)) ||
+          ((action.id === "sing" || card.type === "team-food") && ["对我方所有角色生效", "对所有我方角色生效"].includes(banner)) ||
           (["garden", "boar"].includes(action.id) &&
             ["对我方生效", "对我方全体生效"].includes(banner));
         const talentWho = this.talentTargets?.[action.id] ?? (action.id === "skivingNewAndImproved" ? 2 : null);
@@ -7219,7 +7367,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
   const options={enemyCount:3,maxMinutes:Number(supplied.maxMinutes||defaultMinutes),
     mulligan:TCG.openingSetting(supplied.mulligan),
     actionEntry:supplied.actionEntry||"禁止从行动页启动"};
-  if(![10,15,20,defaultMinutes].includes(options.maxMinutes)||
+  if(![10,15,20,30,defaultMinutes].includes(options.maxMinutes)||
     !["全部保留","优先装备与启动牌"].includes(options.mulligan)||
     !["禁止从行动页启动","确认新开局未行动"].includes(options.actionEntry))throw new Error("设置值无效");
   return options;
@@ -7240,8 +7388,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     house: "为后续装备减费",
     shift: "为接下来的切换减费",
     fast: "准备快速切换",
-    draw: "补充手牌，抽牌后重新规划",
-    revel: "补充手牌，抽牌后重新规划",
+    draw: "补充手牌",
+    revel: "补充手牌",
     boar: "为装备替换准备返骰",
     sing: "为后续减费与抽牌组合做准备",
     opera: "布置满足装备条件时的返骰支援",
@@ -7278,7 +7426,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     // Direct damage only: prepared/end-phase hits cannot justify this attack's
     // kill. The opponent's shields/reply and estimated own buffs remain unknown.
     if (enemy && Number.isFinite(enemy.hp) && estimate.direct >= enemy.hp)
-      reasons.push(`敌方出战剩${enemy.hp}点生命，按当前伤害估计尝试主动补刀`);
+      reasons.push(`敌方出战剩${enemy.hp}点生命，准备补刀`);
     if (reaction && aura) reasons.push(`敌方已有${aura}附着，尝试${reaction}`);
     if (skill === "NA" && !reasons.length) {
       reasons.push(estimate.weapon > 0
@@ -7333,11 +7481,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       const ready = ["E", "Q", "NA"].some((skill) =>
         T.followupReachable(state, memory, { who: state.active, skill }));
       return (ready ? "由健康队友接手承伤，保留后续输出"
-        : "剩余资源不足以继续输出，先由健康队友接手承伤") + "；后续按实际牌面重算";
+        : "剩余资源不足以继续输出，先由健康队友接手承伤");
     }
     return weapon
-      ? `让持有「${weapon}」的角色接力，后续按实际牌面重算`
-      : "转交出战位置，后续按实际牌面重算";
+      ? `让持有「${weapon}」的角色接力`
+      : "转交出战位置，准备接力";
   }
 
   // Separate observed facts, selected intentions and explicitly labelled estimates.
@@ -7360,7 +7508,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         return `${ready}${intent}，${attackPurpose(state, memory, action.who, action.skill)}${finish}。`;
       }
       case "probe":
-        return `确认${who}的${skill}费用，再决定后续行动。`;
+        return `查看${who}的${skill}费用，安排接下来的输出。`;
       case "switch": {
         const current = state.characters[state.active];
         const fragile =
@@ -7453,6 +7601,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     finishOpening() {
       const accepted = this.openingFlow.enterBoard(this.memory);
       if (!accepted) return;
+      T.initializeOpening?.(this.memory);
       if (accepted.roundSeeded)
         this.host.trace("round", {
           round: this.memory.round,
@@ -7660,10 +7809,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       this.readyState = null;
       Object.assign(host, previousBudget);
       if (error.code === "TCG_INPUT_REJECTED") T.rejectAction(this.memory, action, state);
-      const after = await this.awaitObservation({ mode: "full",
+      let after = await this.awaitObservation({ mode: "full",
         ...(error.code === "TCG_INPUT_REJECTED" ? { rejectedHand: state.hand } : {}) });
       if (tune && error.code === "TCG_TUNE_UNCONFIRMED") {
         if (T.verifyResynchronized(action, state, after, false)) {
+          // The same native effect predicate has confirmed recovery. Carry
+          // that fact to commit, without changing the raw observed frame.
+          after = { ...after, confirmed: true };
           T.commit(this.memory, action, state, after);
           host.trace("confirmed", { action, after, memory: this.memory, source: "tuning-recovery" });
           log.info("[调和] 已核实手牌消耗与元素骰变化，继续后续行动。");
@@ -7724,7 +7876,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         this.notice("resync", "[调整] 牌面发生变化，重新同步后继续。");
           let refreshed;
           try { refreshed = await host.observe(true, error.code === "TCG_HAND_REFRESH"
-            ? { mode: "full" } : { mode: "unchanged", hand: state.hand });
+            ? { mode: "full", ...host.handContinuation } : { mode: "unchanged", hand: state.hand });
           } catch (e) {
             await this.defer(e, [...BOARD_RETRIES, "TCG_HAND_RETRY"], "execution-resync-deferred", "牌桌重新同步超时（60秒）");
             return;
@@ -7813,13 +7965,13 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           log.warn("动作效果未确认，已重新同步，不重复输入。");
         }
         T.noteBoard(memory, after);
+        host.handContinuation = after.handContinuation || null;
         const refreshHand = after.confirmed && after.handRefreshRequired === true;
         if (refreshHand) {
           // Consumption can precede card insertion (native draw 3 -> 2). Do not
           // plan from that partial hand. This also covers non-draw categories
-          // declared full by handPlan. No predicted count or replayed input.
-          host.invalidateHand("consumed-hand-changing-card-needs-fresh-hand");
-          host.emptyHandProven = false;
+          // explicitly declaring delayed insertion. No predicted count or replayed input.
+          host.invalidateHand("consumed-hand-changing-card-needs-fresh-hand", host.handContinuation);
           host.trace("draw-hand-refresh-required", { id: action.id, beforeCount: state.hand.length,
             observedCount: after.hand.length, handPlanMode: "full", consumptionConfirmed: true, effectsComplete: false });
         }
@@ -7829,10 +7981,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           this.readyState = null;
           host.boardReady = false; host.lastObservedAt = 0; host.lastObservedRevision = -1;
           host.preparedHandInput = null;
-          if (after.quietObservationRequired) host.autoRisk = true;
+          if (after.freshObservationRequired) host.autoRisk = true;
           host.trace("post-confirmation-refresh-required", { action, handRefresh: refreshHand,
             combatWithoutObservedTransition: after.freshObservationRequired === true,
-            quietObservationRequired: after.quietObservationRequired === true,
+            quietObservationRequired: after.freshObservationRequired === true,
             consumptionConfirmed: after.confirmed, effectsComplete: false });
         } else if (after.phase === "board" && after.turn === "user" && T.legalState(after)) this.readyState = after;
         this.actions++; this.progress();
@@ -7925,8 +8077,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
     const distance=(m,i)=>Math.abs(m.x-firstExpected-i*STEP)+Math.abs(m.y-983);
     const marks=selected.map((g,i)=>g.slice().sort((a,b)=>distance(a,i)-distance(b,i)||Math.abs(a.y-983)-Math.abs(b.y-983))[0]);
     const n=marks.length;
-    if(!n)return {status:"unavailable",reason:"no-visible-cost-row",count:null,slots:[]};
-    if(n>10)return {status:"unknown",reason:"extra-markers",count:null,slots:[]};
     const first=median(marks.map((m,i)=>m.x-i*STEP)),yy=median(marks.map(m=>m.y));
     if(Math.abs(first+(n-1)*STEP/2-CENTER)>4||Math.abs(yy-983)>4||
       marks.some((m,i)=>Math.abs(m.x-first-i*STEP)>5||Math.abs(m.y-yy)>4))
@@ -7968,7 +8118,10 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           const scores=view.patches.map((file,k)=>file===null?NaN:score(slot,bank.patches[k],file));
           const rank={id:view.id,view:view.name,scores,scoreFloor:view.scoreFloor,titleCandidates:view.titleCandidates,
             score:scores.length===bank.patches.length&&scores.length>0&&scores.every(Number.isFinite)?Math.min(...scores):-1};
-          if(!identities.has(view.id)||rank.score>identities.get(view.id).score)identities.set(view.id,rank);
+          // Explicit same-art variants (such as countdown stages) compete as
+          // one unresolved family. Distinct artwork competes by exact card ID.
+          const identity=view.titleCandidates?"family:"+view.titleCandidates.slice().sort().join("/"):view.id;
+          if(!identities.has(identity)||rank.score>identities.get(identity).score)identities.set(identity,rank);
       }
       const ranks=[...identities.values()].sort((a,b)=>b.score-a.score);
       const best=ranks[0],gap=best&&ranks[1]?best.score-ranks[1].score:0;
@@ -8239,16 +8392,17 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           this.trace("hand-unlisted",{id:card.id,name:card.name,point:[x,945],inputs:0});
         }
       }
-      expandedHandIn(f,count){
+      expandedHandIn(f,count,targetIndex=null){
+        if(!bank.expanded)return null;
         this.requireHandObservation(this.phaseIn(f),"expanded-hand-artwork");
         const native=this.nativeHandCountIn(f);
         if(native!==null&&native!==count){
           const error=Error("展开手牌数量已变化");error.code="TCG_HAND_RETRY";throw error;
         }
-        const roi=[450,750,1310,200],marks=this.handCostMarkersIn(f,this.roi("handExpanded", roi));
-        const layout=env.TCGBetterGI.costMarkerLayout(marks,count,this.panelTransform("handExpanded"));
+        const layout=this.handCostLayoutIn(f,count);
         if(!layout)return null;
-        const read=C.identify({status:"readable",count,slots:layout.markers.map((marker,index)=>({index,marker}))},
+        const slots=layout.markers.map((marker,index)=>({index,marker,point:layout.points[index]}));
+        const read=C.identify({status:"readable",count,slots:targetIndex===null?slots:slots.filter(s=>s.index===targetIndex)},
           bank.expanded,(slot,p,filename)=>score(this,env,f,Math.round(slot.marker.x)+p[0],
             Math.round(slot.marker.y)+p[1],p[2],p[3],filename,2,
             this.observedRoi("handExpanded",[Math.round(slot.marker.x)+p[0],Math.round(slot.marker.y)+p[1],p[2],p[3]])));
@@ -8260,18 +8414,29 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
       }
       async fillHandArtwork(cards,scan){
         if(!bank.expanded||!cards.length||cards.every(Boolean))return;
-        const read=this.frame(f=>this.expandedHandIn(f,cards.length));
+        const revision=this.inputRevision,started=Date.now();
+        let read=this.frame(f=>this.expandedHandIn(f,cards.length));
+        if(!read){
+          // The first frame after the fan toggle may still be moving. Give
+          // that same view one read-only follow-up, never another toggle.
+          const remaining=120-(Date.now()-started);
+          if(remaining>0)await env.sleep(remaining);
+          if(this.inputRevision!==revision){
+            const error=Error("展开牌面补帧期间输入已变化");error.code="TCG_HAND_RETRY";throw error;
+          }
+          read=this.frame(f=>this.expandedHandIn(f,cards.length));
+        }
         if(!read)return;
         scan.titleCandidates??=[];
         for(const slot of read.slots)if(!cards[slot.index]){
           if(slot.id)cards[slot.index]=T.observedCard(T.byId[slot.id].name,slot.index);
           else if(slot.titleCandidates)scan.titleCandidates[slot.index]=slot.titleCandidates;
         }
-        this.fillHandVariants(cards,read.slots,scan.retainedHand,scan.retainedVariantFamilies);
+        this.fillHandVariants(cards,read.slots,scan.retainedHand,scan.retainedVariantFamilies,scan.retainedHandOrder);
         this.trace("expanded-hand-artwork",{count:cards.length,known:cards.filter(Boolean).length,
           unknown:cards.flatMap((c,i)=>c?[]:[i]),inputs:0});
       }
-      fillHandVariants(cards,slots,retainedHand,retainedFamilies=[]){
+      fillHandVariants(cards,slots,retainedHand,retainedFamilies=[],retainedOrder=false){
         // The deck owns variant rules; this layer only intersects a rule proof
         // with the observed artwork family. Prices never identify a variant.
         const proof=T.handVariantProof?.(this.memory,this.confirmationSession?.plan?.action);
@@ -8284,10 +8449,14 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         }
         // Only an explicit rule guarantee can retain old identities across a
         // full sync. Artwork must classify all members of the current family.
-        // Equal counts and one old identity resolve membership without guessing
-        // order, a printed stage, a current price or a newly drawn family card.
+        // Equal counts plus a unique identity or an explicit relative-order
+        // contract resolve old members; new family members still need titles.
         if(!retainedHand)return;
-        const complete=slots.every(s=>s.id||s.titleCandidates);
+        // Folded and expanded readers fill the same observation. An identity
+        // already read in the folded row is not lost when its expanded art
+        // misses; use the combined current evidence for family counting.
+        const observed=slots.map(s=>cards[s.index]?{...s,id:cards[s.index].id}:s);
+        const complete=observed.every(s=>s.id||s.titleCandidates);
         const done=new Set();
         for(const slot of slots)if(!slot.id&&slot.titleCandidates){
           const family=slot.titleCandidates,key=family.slice().sort().join("/");
@@ -8297,17 +8466,17 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           const unchangedFamily=retainedFamilies.some(ids=>ids.length===family.length&&ids.every(id=>family.includes(id)));
           if(!complete&&!unchangedFamily)continue;
           const prior=retainedHand.filter(c=>family.includes(c.id)),ids=new Set(prior.map(c=>c.id));
-          const current=slots.filter(s=>s.id?family.includes(s.id):
+          const current=observed.filter(s=>s.id?family.includes(s.id):
             s.titleCandidates?.length===family.length&&s.titleCandidates.every(id=>family.includes(id)));
-          if(ids.size!==1||prior.length!==current.length)continue;
-          const id=prior[0].id;
-          if(current.some(s=>s.id&&s.id!==id))continue;
+          if(!prior.length||prior.length!==current.length||ids.size!==1&&!retainedOrder)continue;
+          if(current.some((s,i)=>s.id&&s.id!==(retainedOrder?prior[i].id:prior[0].id)))continue;
           const indices=[];
-          for(const s of current)if(!cards[s.index]){
+          for(const [i,s] of current.entries())if(!cards[s.index]){
+            const id=retainedOrder?prior[i].id:prior[0].id;
             cards[s.index]=T.observedCard(T.byId[id].name,s.index);indices.push(s.index);
           }
-          if(indices.length)this.trace("hand-variants-reused",{id,indices,
-            proof:unchangedFamily?"rule-proven-unchanged-family-and-native-family-count":
+          if(indices.length)this.trace("hand-variants-reused",{id:ids.size===1?prior[0].id:null,ids:indices.map(i=>cards[i].id),indices,
+            proof:retainedOrder?"retained-family-order-and-native-family-count":unchangedFamily?"rule-proven-unchanged-family-and-native-family-count":
               "retained-native-identities-and-complete-current-family-count",inputs:0});
         }
       }
@@ -8327,7 +8496,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           }
           return {read,nativeCount:mode==="board"?this.nativeHandCountIn(f):5};
         });
-        let read=null,unavailableReason="first-frame-unavailable";
+        let read=null,failure=null,unavailableReason="first-frame-unavailable";
         try{
           let sampledAt=Date.now();
           const a=sample();if(!a)return null;
@@ -8337,6 +8506,11 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           if(a.read.status==="readable"&&(a.nativeCount===null||a.nativeCount===a.read.count)&&a.read.slots.every(slot=>slot.id||slot.titleCandidates)){
             read={...a.read,nativeCount:a.nativeCount,countConflict:false,stableReads:1};
             return read;
+          }
+          // With neither a row nor a positive count, let handCount inspect the actual
+          // view now. Only its stable structural absence can prove zero.
+          if(settling&&a.read.reason==="no-visible-cost-row"&&!(a.nativeCount>0)){
+            unavailableReason="no-row-count-next";return null;
           }
           unavailableReason="second-frame-unavailable";
           const remaining=120-(Date.now()-sampledAt);
@@ -8378,8 +8552,9 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
               ?{...old,marker:s.marker,identityFrame:1}:s;
           });
           return read;
-        }finally{
-          // Best-effort diagnostics must not replace an OCR/cancellation error.
+        }catch(e){failure=e;throw e;}
+        finally{
+          // Keep the original OCR/cancellation error; otherwise report diagnostic failures.
           try{this.trace("folded-hand",{mode,count:read?.count??null,nativeCount:read?.nativeCount??null,
             reason:!read?"unavailable":read.status==="raised"?"raised-fan":read.countConflict?"count-conflict":read.slots.every(s=>s.id)?"full":"partial",
             ...(!read?{unavailableReason}:{}),
@@ -8389,7 +8564,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
               score:Number.isFinite(s.score)?Number(s.score.toFixed(4)):null,
               gap:Number.isFinite(s.gap)?Number(s.gap.toFixed(4)):null,view:s.view??null,
               reason:s.rejectionReason??null}))??[],
-            elapsedMs:Date.now()-started,inputs:0});}catch{}
+            elapsedMs:Date.now()-started,inputs:0});}catch(e){if(!failure)throw e;}
         }
       }
       async readFoldedHand(expected,evidence,scan){
@@ -8403,7 +8578,8 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
           }
           await this.reset();
         }
-        let read=await this.folded("board",scan.settling===true);
+        let read=scan.foldedRead || await this.folded("board",scan.settling===true);
+        delete scan.foldedRead;
         if(read?.status==="raised"){
           this.requireHandObservation(this.phase(),"raised-hand-before-folded-read");
           if(read.nativeCount!==null)evidence={count:read.nativeCount};
@@ -8420,7 +8596,6 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         // Only an actual disagreement requires another measurement; a missing
         // expanded badge alone is not a reason to toggle an already folded fan.
         if(count===null && expected!==null && expected!==read.count){
-          this.requireHandObservation(this.phase(),"before-local-hand-count");
           count=await this.handCount(expected);
         }
         count??=read.count;
@@ -8430,7 +8605,7 @@ function panelRegion(layoutKey, panel, rect, observed = false) {
         // family/count checks; never infer a countdown stage from its price.
         const retained=scan.retainedHand??(this.handScanSerial===0&&!this.currentAction&&read.count===5
           ?this.openingCards:null);
-        this.fillHandVariants(cards,read.slots,retained,scan.retainedVariantFamilies);
+        this.fillHandVariants(cards,read.slots,retained,scan.retainedVariantFamilies,scan.retainedHandOrder);
         scan.cards=cards;
         scan.route=cards.every(Boolean)
           ?this.handFanReady?"folded-identities-native-count":"folded-full"
