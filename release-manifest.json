@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sourceRepository": "sxy8161-debug/bettergi-tcg-scripts",
-  "sourceCommit": "a8ddba66013133d4f210c1deb5d77519fc3c1720",
-  "sourceDate": "2026-10-26T17:42:10+08:00",
+  "sourceCommit": "cbf533d2cd165eac23229424672671eb34023d85",
+  "sourceDate": "2026-10-26T18:11:42+08:00",
   "sharedVersion": "2.0.0",
   "playerVersions": {
     "suite": "2.0.0"
@@ -17,9 +17,10 @@
     "repo/js/TCGPlayerSuite/assets/card-atlas/hand.png": "392a561587b7d6124867ec05e54e1afbd19198a9c3729dd2a30bd33643ea6124",
     "repo/js/TCGPlayerSuite/assets/card-atlas/expanded.png": "9caf94f38cb00e6713956202f0fc9439780433edfaaf1cd49a00da51c80b8393",
     "repo/js/TCGPlayerSuite/assets/card-atlas/ui.png": "2931fa47c3208602337061b070beafa0455ccec3781fba3b9a2e85b24ceca848",
-    "repo.json": "c25406a4f4d40db3a13b49415a166228cce8426ad2e4e4862b19165d5ede5a6e",
-    "repo.json.gz": "6bf30e01f8185fbe68dc02dea30ffdbf713babc8ff8e6113da0d10c5f62fc865",
+    "repo.json": "20b5b80713d2347522ca11705b46995e454e427061e34daad13d7103bd111aaa",
+    "repo.json.gz": "aab02d6431e1cafc974e8be7f92a03b2a5a4f2d1b558e7f52fccf1653ea278e4",
     "README.md": "ddf713270883d4ada199da93dbec81f2457b6504e46a98e8e0aac2a0ae389dfd",
+    "RELEASE-NOTES.md": "ed4e9447e21131156af7786abc2226694166c54ae12cf007d434cc1572c98539",
     "LICENSE-GPL-3.0.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
   }
 }
