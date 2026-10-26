@@ -64,7 +64,7 @@ jobs:
               const manifest = await response.json();
               if (manifest.sourceCommit === sha) {
                 const versions = Object.values(manifest.playerVersions || {});
-                const folders = Object.values(JSON.parse(fs.readFileSync('players.json')).players).map(player => player.packageId);
+                const folders = [JSON.parse(fs.readFileSync('players.json')).package.packageId];
                 if (versions.length !== folders.length || !versions.every(v => /^\d+\.\d+\.\d+$/.test(v)) ||
                     !/^\d+\.\d+\.\d+$/.test(manifest.sharedVersion)) throw Error('Invalid published versions');
                 const tag = 'v' + manifest.sharedVersion + '-' + sha.slice(0, 12);
@@ -170,7 +170,7 @@ jobs:
           const crypto = require('node:crypto');
           const zlib = require('node:zlib');
           const root = path.join(process.env.PAYLOAD, 'dist');
-          const players = {raiden: 'RaidenColleiKeqingPlayer', iansan: 'IansanGamingSayuPlayer', moonbloom: 'MoonbloomPlayer', mozailu: 'MonaSayuDilucPlayer', ailin: 'EscoffierLyneyHydroTulpaPlayer', consecrated: 'ConsecratedBeastsPlayer'};
+          const players = {suite: 'TCGPlayerSuite'};
           const roots = ['repo.json', 'repo.json.gz', 'README.md', 'LICENSE-GPL-3.0.txt'];
           const safe = name => typeof name === 'string' && name.length > 0 &&
             !path.posix.isAbsolute(name) && !/[\\:\u0000-\u001f\u007f]/.test(name) &&
