@@ -1,5 +1,5 @@
 {
-  "time": "20261026094330",
+  "time": "20261026125343",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -8,112 +8,22 @@
       "type": "directory",
       "children": [
         {
-          "name": "RaidenColleiKeqingPlayer",
+          "name": "TCGPlayerSuite",
           "type": "directory",
-          "version": "1.9.7",
+          "version": "2.0.0",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
               "name": "巨鲸也是咸鱼"
             }
           ],
-          "description": "[我不是牌神]雷神柯莱刻晴~|~支持1920×1080、2560×1440和2560×1600游戏画面。雷电将军、柯莱、刻晴的七圣召唤PVE全自动牌手，支持新手版与完全版。雷神爆发补能，柯莱挂草激化，刻晴以雷楔返场、附魔普攻和爆发穿透衔接输出。自动换牌、选人、重投，按手牌与骰子安排补能、调和、切人、技能和结束回合；搭配雷草祝佑、天赋、流放者头冠、赌徒的耳环及减伤、治疗、普攻减费料理，阵亡后由存活角色接力。完全版分享码：AhAA8i8PASDA81gPBjCw9JcPCUBw9ZkPCVCR9qMPJWDA+OUPDpFQC+YQDrFgDPEQD+AA。",
+          "description": "七圣召唤全自动打牌（实时计算临场变招）~|~[我不是牌神]六套七圣召唤PVE牌组，在设置中按特色选择牌手，自动完成换牌、选人、重投、出牌、调和、技能与回合推进。支持1920×1080、2560×1440、2560×1600，需要较高画质与至少0.8渲染精度。",
           "tags": [
             "七圣召唤",
             "PVE",
-            "1.9.7"
+            "2.0.0"
           ],
-          "lastUpdated": "2026-10-26 09:43:30"
-        },
-        {
-          "name": "IansanGamingSayuPlayer",
-          "type": "directory",
-          "version": "1.9.7",
-          "author": "巨鲸也是咸鱼",
-          "authors": [
-            {
-              "name": "巨鲸也是咸鱼"
-            }
-          ],
-          "description": "[我不是牌神]伊安珊嘉明早柚~|~支持1920×1080、2560×1440和2560×1600游戏画面。伊安珊、嘉明、早柚的七圣召唤PVE全自动牌手。伊安珊挂雷与爆发增伤，嘉明负责火伤、超载和返场追击，早柚利用扩散、风风轮舞踢及爆发兼顾多目标输出与治疗。按敌方人数、附着和手牌选择输出角色，自动换牌、选人、重投，安排技能、装备、料理与切换。保留关键装备和所需元素骰，结合减费、返骰、抽牌及调和衔接输出；按血量和资源选择奇瑰之汤效果，角色阵亡后由存活队友接力。牌组分享码：H/CivxYTFGEBNkQNFKBA8oYPCCBg9I4PCEHgCJcQCYFxOzATE7IBBzMgFXFx1FcdC8AA。",
-          "tags": [
-            "七圣召唤",
-            "PVE",
-            "1.9.7"
-          ],
-          "lastUpdated": "2026-10-26 09:43:30"
-        },
-        {
-          "name": "MoonbloomPlayer",
-          "type": "directory",
-          "version": "1.9.7",
-          "author": "巨鲸也是咸鱼",
-          "authors": [
-            {
-              "name": "巨鲸也是咸鱼"
-            }
-          ],
-          "description": "[我不是牌神]月绽放~|~支持1920×1080、2560×1440和2560×1600游戏画面。菈乌玛、哥伦比娅、奈芙尔的七圣召唤PVE全自动牌手。自动完成换牌、选人、重投、出牌、调和、技能和回合推进；衔接草水反应、召唤物与诳言之核输出，结合附着、血量、充能和增益选择普攻、战技、爆发与切换。支持减费返骰、过牌、料理、装备回收转交、生成牌选择和阵亡接力。分享码：JUBC+WwQJGGQBn0YB6HQipcdG7GR27khIeLSHkMjDoKwOOskJHJSR0UlD+IgXvQRDyAA",
-          "tags": [
-            "七圣召唤",
-            "PVE",
-            "1.9.7"
-          ],
-          "lastUpdated": "2026-10-26 09:43:30"
-        },
-        {
-          "name": "MonaSayuDilucPlayer",
-          "type": "directory",
-          "version": "1.9.7",
-          "author": "巨鲸也是咸鱼",
-          "authors": [
-            {
-              "name": "巨鲸也是咸鱼"
-            }
-          ],
-          "description": "[我不是牌神]莫娜早柚迪卢克~|~莫娜先挂水并快速切换，早柚留场扩散、准备攻击与爆发处理群怪，迪卢克以蒸发、连续战技和爆发接力收尾。自动安排起手留牌、伙伴检索、装备减费、返骰、过牌与调和，根据血量、附着和可用骰子选择输出，角色阵亡后由队友接力。",
-          "tags": [
-            "七圣召唤",
-            "PVE",
-            "1.9.7"
-          ],
-          "lastUpdated": "2026-10-26 09:43:30"
-        },
-        {
-          "name": "EscoffierLyneyHydroTulpaPlayer",
-          "type": "directory",
-          "version": "1.9.7",
-          "author": "巨鲸也是咸鱼",
-          "authors": [
-            {
-              "name": "巨鲸也是咸鱼"
-            }
-          ],
-          "description": "[我不是牌神]爱可菲林尼水形幻人~|~爱可菲铺设冰召唤物，林尼以隐具魔术箭、余数战技和爆发接力，水形幻人触发召唤物。支持随机料理、奇瑰之汤、圣遗物、伙伴、调和与阵亡接替；每个动作确认后按实际资源重新选择。",
-          "tags": [
-            "七圣召唤",
-            "PVE",
-            "1.9.7"
-          ],
-          "lastUpdated": "2026-10-26 09:43:30"
-        },
-        {
-          "name": "ConsecratedBeastsPlayer",
-          "type": "directory",
-          "version": "1.9.7",
-          "author": "巨鲸也是咸鱼",
-          "authors": [
-            {
-              "name": "巨鲸也是咸鱼"
-            }
-          ],
-          "description": "[我不是牌神]圣骸兽（特化对单）~|~飞蛇蓄能与元素爆发，毒蝎和角鳄接替承伤。围绕噬骸能量块、后台天赋、倒计时和支援安排资源，每一步按实际手牌、血量和骰子重新选择；面向普通PVE单体挑战。",
-          "tags": [
-            "七圣召唤",
-            "PVE",
-            "1.9.7"
-          ],
-          "lastUpdated": "2026-10-26 09:43:30"
+          "lastUpdated": "2026-10-26 12:53:43"
         }
       ]
     }
