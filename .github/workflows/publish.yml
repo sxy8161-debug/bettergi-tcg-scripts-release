@@ -292,6 +292,7 @@ jobs:
             echo "Release $TAG already exists; keeping its notes and assets unchanged."
             exit 0
           fi
+          RELEASE_NAME=$(node -e "const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync(process.env.PAYLOAD+'/dist/repo/js/TCGPlayerSuite/manifest.json','utf8')).name)")
           gh release create "$TAG" "$PAYLOAD/"*.zip \
             --repo "$GITHUB_REPOSITORY" --verify-tag --target "$RELEASE_HEAD" \
-            --title "自动牌手 ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
+            --title "$RELEASE_NAME ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
