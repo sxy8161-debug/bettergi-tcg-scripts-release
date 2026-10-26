@@ -6,6 +6,12 @@
 
 当前版本 **2.0.0**。先按下表选牌手、导入对应牌组，再在启动配置中选择牌手。脚本每次处理一局，结束后由你手动进入下一局。
 
+## 本次更新
+
+- 六套七圣召唤PVE牌组合并为一个脚本入口，在启动配置的「使用牌手」中选择本局牌组。
+- 牌手选项保留完整名称和特色标签，圣骸兽统一显示为「圣骸兽（对单核爆）」。
+- 手动安装只需下载一个安装包，Release 页面显示为「自动牌手v2.0.0.zip」。
+
 ## 开局准备
 
 - 使用 **BetterGI 0.66.0 或更新版本**，游戏语言为**简体中文**。
@@ -98,7 +104,7 @@ https://github.com/sxy8161-debug/bettergi-tcg-scripts-release
 
 更新仓库后，订阅 **「七圣召唤全自动打牌（实时计算临场变招）」**。后续使用「一键更新订阅」更新。
 
-也可从 [Releases](https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/releases) 下载 `TCGPlayerSuite.zip`，将其中的 `TCGPlayerSuite` 文件夹解压到 BetterGI 的 `User/JsScript/`，确保 `manifest.json` 直接位于该目录根部。安装这一包即可，不需要其他独立牌手、开发目录或 Node.js。已有旧六套包可以保留，运行时选择这个新入口。
+也可从 [Releases](https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/releases) 下载页面上的 **「自动牌手v2.0.0.zip」**，将其中的 `TCGPlayerSuite` 文件夹解压到 BetterGI 的 `User/JsScript/`，确保 `manifest.json` 直接位于该目录根部。安装这一包即可，不需要其他独立牌手、开发目录或 Node.js。已有旧六套包可以保留，运行时选择这个新入口。
 
 ## 三个配置
 
@@ -340,7 +346,7 @@ BetterGI 日志中的 **`[启动摘要]`** 用来核对本次配置；结束或�
 - **超时结束**：在启动前调长时限，提供本局摘要与日志，便于区分对局耗时和重复操作。
 - **截图失败**：核对是否切出、最小化或关闭了游戏；恢复窗口后重新开局。
 
-反馈时附启动摘要、对局摘要和同一局日志，截图前检查个人信息。可到[源码仓库](https://github.com/sxy8161-debug/bettergi-tcg-scripts)查看实现，或在[发布仓库 Issues](https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/issues)反馈。
+遇到问题时，请提供本局日志及问题发生时的完整截图，方便定位问题。请一并附上启动摘要和对局摘要，截图前检查个人信息。可到[源码仓库](https://github.com/sxy8161-debug/bettergi-tcg-scripts)查看实现，或在[发布仓库 Issues](https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/issues)反馈。
 
 <a id="attribution"></a>
 
