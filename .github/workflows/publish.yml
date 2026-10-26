@@ -67,20 +67,18 @@ jobs:
                 const folders = [JSON.parse(fs.readFileSync('players.json')).package.packageId];
                 if (versions.length !== folders.length || !versions.every(v => /^\d+\.\d+\.\d+$/.test(v)) ||
                     !/^\d+\.\d+\.\d+$/.test(manifest.sharedVersion)) throw Error('Invalid published versions');
-                const tag = 'v' + manifest.sharedVersion + '-' + sha.slice(0, 12);
+                const tag = 'v' + manifest.sharedVersion + '-' + manifest.sourceCommit.slice(0, 12);
                 const release = await get('https://api.github.com/repos/' + repo + '/releases/tags/' + tag);
                 if (release.ok) published = true;
                 else if (release.status !== 404) throw Error('Release lookup failed: HTTP ' + release.status);
                 else {
-                  // A user-authorized same-version replacement keeps its original
-                  // tag. Its notes explicitly bind the replacement to this source.
+                  // Same-version replacements may retain their original tag.
+                  // The manifest binds the source; notes remain installation text.
                   const releases = await get('https://api.github.com/repos/' + repo + '/releases?per_page=100');
                   if (!releases.ok) throw Error('Replacement lookup failed: HTTP ' + releases.status);
-                  const sourceUrl = 'https://github.com/sxy8161-debug/bettergi-tcg-scripts/commit/' + sha;
-                  const assets = ['tcg-scripts.zip', ...folders.map(folder => folder + '.zip')];
+                  const assets = folders.map(folder => folder + '.zip');
                   published = (await releases.json()).some(item => !item.draft && !item.prerelease &&
                     item.tag_name.startsWith('v' + manifest.sharedVersion + '-') &&
-                    (item.body || '').includes('](' + sourceUrl + ')') &&
                     assets.every(name => item.assets.some(asset => asset.name === name && asset.state === 'uploaded')));
                 }
               }
@@ -101,7 +99,7 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npm test
           node tools/build-release.cjs --output dist --source-sha "$SOURCE_SHA" --source-date "$SOURCE_DATE"
-      - name: Package the entire distribution and each standalone player
+      - name: Package the directly installable suite
         if: steps.source.outputs.build == 'true'
         id: package
         working-directory: source
@@ -110,7 +108,6 @@ jobs:
           set -euo pipefail
           mkdir -p "$PAYLOAD"
           cp -a dist "$PAYLOAD/dist"
-          (cd "$PAYLOAD/dist" && zip -qr "$PAYLOAD/tcg-scripts.zip" .)
           for player in $(node -p "Object.values(require('./tools/build.cjs').scriptFolders).join(' ')"); do
             (cd "$PAYLOAD/dist/repo/js" && zip -qr "$PAYLOAD/$player.zip" "$player")
           done
@@ -119,7 +116,7 @@ jobs:
           const path = require('node:path');
           const crypto = require('node:crypto');
           const hash = name => crypto.createHash('sha256').update(fs.readFileSync(path.join(process.env.PAYLOAD, name))).digest('hex');
-          const archives = ['tcg-scripts.zip', ...Object.values(require('./tools/build.cjs').scriptFolders).map(folder => folder + '.zip')];
+          const archives = Object.values(require('./tools/build.cjs').scriptFolders).map(folder => folder + '.zip');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,
             'manifest_sha=' + hash('dist/release-manifest.json') + '\narchives_sha=' +
             JSON.stringify(Object.fromEntries(archives.map(name => [name, hash(name)]))) + '\n');
@@ -230,7 +227,7 @@ jobs:
             assert.equal(pkg.version, manifest.playerVersions[id]);
             assert(safe(pkg.main) && Object.hasOwn(manifest.files, prefix + pkg.main), 'Missing player entry');
           }
-          const archives = ['tcg-scripts.zip', ...Object.values(players).map(id => id + '.zip')];
+          const archives = Object.values(players).map(id => id + '.zip');
           const archiveHashes = JSON.parse(process.env.ARCHIVES_SHA);
           assert.deepEqual(Object.keys(archiveHashes).sort(), [...archives].sort());
           assert.deepEqual(fs.readdirSync(process.env.PAYLOAD).sort(), ['dist', ...archives].sort());
@@ -293,6 +290,6 @@ jobs:
             exit 0
           fi
           RELEASE_NAME=$(node -e "const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync(process.env.PAYLOAD+'/dist/repo/js/TCGPlayerSuite/manifest.json','utf8')).name)")
-          gh release create "$TAG" "$PAYLOAD/"*.zip \
+          gh release create "$TAG" "$PAYLOAD/TCGPlayerSuite.zip#自动牌手${TAG%%-*}.zip" \
             --repo "$GITHUB_REPOSITORY" --verify-tag --target "$RELEASE_HEAD" \
             --title "$RELEASE_NAME ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
