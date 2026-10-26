@@ -168,7 +168,7 @@ jobs:
           const zlib = require('node:zlib');
           const root = path.join(process.env.PAYLOAD, 'dist');
           const players = {suite: 'TCGPlayerSuite'};
-          const roots = ['repo.json', 'repo.json.gz', 'README.md', 'LICENSE-GPL-3.0.txt'];
+          const roots = ['repo.json', 'repo.json.gz', 'README.md', 'RELEASE-NOTES.md', 'LICENSE-GPL-3.0.txt'];
           const safe = name => typeof name === 'string' && name.length > 0 &&
             !path.posix.isAbsolute(name) && !/[\\:\u0000-\u001f\u007f]/.test(name) &&
             name.split('/').every(part => part && part !== '.' && part !== '..' && !part.toLowerCase().startsWith('.git'));
@@ -269,7 +269,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git --work-tree="$PAYLOAD/dist" add -A -- repo repo.json repo.json.gz release-manifest.json README.md LICENSE-GPL-3.0.txt
+          git --work-tree="$PAYLOAD/dist" add -A -- repo repo.json repo.json.gz release-manifest.json README.md RELEASE-NOTES.md LICENSE-GPL-3.0.txt
           if ! git diff --cached --quiet; then
             git -c core.hooksPath=/dev/null commit -m "Publish TCG scripts from $SOURCE_SHA"
           fi
@@ -292,4 +292,4 @@ jobs:
           RELEASE_NAME=$(node -e "const fs=require('node:fs');process.stdout.write(JSON.parse(fs.readFileSync(process.env.PAYLOAD+'/dist/repo/js/TCGPlayerSuite/manifest.json','utf8')).name)")
           gh release create "$TAG" "$PAYLOAD/TCGPlayerSuite.zip#自动牌手${TAG%%-*}.zip" \
             --repo "$GITHUB_REPOSITORY" --verify-tag --target "$RELEASE_HEAD" \
-            --title "$RELEASE_NAME ${TAG%%-*}" --notes-file "$PAYLOAD/dist/README.md"
+            --title "$RELEASE_NAME ${TAG%%-*}" --notes-file "$PAYLOAD/dist/RELEASE-NOTES.md"
