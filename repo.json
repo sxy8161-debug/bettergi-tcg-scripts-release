@@ -1,5 +1,5 @@
 {
-  "time": "20261026181142",
+  "time": "20261028090230",
   "url": "https://github.com/sxy8161-debug/bettergi-tcg-scripts-release/archive/refs/heads/release.zip",
   "file": "repo.json",
   "indexes": [
@@ -10,7 +10,7 @@
         {
           "name": "TCGPlayerSuite",
           "type": "directory",
-          "version": "2.0.0",
+          "version": "2.0.16",
           "author": "巨鲸也是咸鱼",
           "authors": [
             {
@@ -21,9 +21,9 @@
           "tags": [
             "七圣召唤",
             "PVE",
-            "2.0.0"
+            "2.0.16"
           ],
-          "lastUpdated": "2026-10-26 18:11:42"
+          "lastUpdated": "2026-10-28 09:02:30"
         }
       ]
     }

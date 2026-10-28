@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "sourceRepository": "sxy8161-debug/bettergi-tcg-scripts",
-  "sourceCommit": "cbf533d2cd165eac23229424672671eb34023d85",
-  "sourceDate": "2026-10-26T18:11:42+08:00",
-  "sharedVersion": "2.0.0",
+  "sourceCommit": "c861a5509b9e39ac9496417dc60bf532c0b7e6b2",
+  "sourceDate": "2026-10-28T09:02:30+08:00",
+  "sharedVersion": "2.0.16",
   "playerVersions": {
-    "suite": "2.0.0"
+    "suite": "2.0.16"
   },
   "files": {
-    "repo/js/TCGPlayerSuite/hand-bank.json": "5851ead2db6dd31060c91ac523a8ec4658306aea3a9d41fb63911099e9e0f06d",
+    "repo/js/TCGPlayerSuite/hand-bank.json": "55dcec0a3ecd37584a66d529da36892afdbfc90ba27ea11a606ea3892001bc74",
     "repo/js/TCGPlayerSuite/opening-bank.json": "e7de6131a8815410e9235055aeace67be664118660dc512f37b72fcbf150fc91",
-    "repo/js/TCGPlayerSuite/manifest.json": "7ea30b8656bb2329471d9e1caee0eab0ddaf66fac448d8ed6dfeffc0bc0bbe7c",
+    "repo/js/TCGPlayerSuite/manifest.json": "a4327082c03ddc2efb14c2fa62c4120d28c55f5ee3c21b9bb3917f8a3a8035fc",
     "repo/js/TCGPlayerSuite/settings.json": "8a0f59e5dd054196247ee47b29ecd5508400c101b309c3c98c64d176d050e913",
-    "repo/js/TCGPlayerSuite/main.js": "dccaf3834606789db817b92e62f30a45034a29b4cfebe80f201ea877f38b4c9e",
-    "repo/js/TCGPlayerSuite/README.md": "ddf713270883d4ada199da93dbec81f2457b6504e46a98e8e0aac2a0ae389dfd",
+    "repo/js/TCGPlayerSuite/main.js": "f132eac80339411865e81d03d1bd621a95c48efd3ec92057001f349d80c9ec3f",
+    "repo/js/TCGPlayerSuite/README.md": "b03f0669e9d8752ed4688ec54538ed0c3b9e90392d7f312ef6bc3e20fafabb55",
     "repo/js/TCGPlayerSuite/assets/card-atlas/hand.png": "392a561587b7d6124867ec05e54e1afbd19198a9c3729dd2a30bd33643ea6124",
     "repo/js/TCGPlayerSuite/assets/card-atlas/expanded.png": "9caf94f38cb00e6713956202f0fc9439780433edfaaf1cd49a00da51c80b8393",
     "repo/js/TCGPlayerSuite/assets/card-atlas/ui.png": "2931fa47c3208602337061b070beafa0455ccec3781fba3b9a2e85b24ceca848",
-    "repo.json": "20b5b80713d2347522ca11705b46995e454e427061e34daad13d7103bd111aaa",
-    "repo.json.gz": "aab02d6431e1cafc974e8be7f92a03b2a5a4f2d1b558e7f52fccf1653ea278e4",
-    "README.md": "ddf713270883d4ada199da93dbec81f2457b6504e46a98e8e0aac2a0ae389dfd",
-    "RELEASE-NOTES.md": "ed4e9447e21131156af7786abc2226694166c54ae12cf007d434cc1572c98539",
+    "repo.json": "057901248e7224dab1d4ac29544aa652e2353ca372423daedfe6fa2a128c179d",
+    "repo.json.gz": "7be0a883c9dc5a0f078d212dab4b57ddfb2b867292dd866164fe4a772418322b",
+    "README.md": "b03f0669e9d8752ed4688ec54538ed0c3b9e90392d7f312ef6bc3e20fafabb55",
+    "RELEASE-NOTES.md": "8955c28bc7ab53bff435873e09c81e03e5db88d11c9806b9cda523df3b116e72",
     "LICENSE-GPL-3.0.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
   }
 }
